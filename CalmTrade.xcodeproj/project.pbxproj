@@ -1,0 +1,797 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		9859E789EDBB92812A07EF5A /* Pods_CalmTrade_CalmTradeUITests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B2231FCD143F91BF1023E30D /* Pods_CalmTrade_CalmTradeUITests.framework */; };
+		CF13DE24A6D0E5300E224238 /* Pods_CalmTrade.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E77AE29738C7335E47C1CDEB /* Pods_CalmTrade.framework */; };
+		D5E0DFC412C895AF85356079 /* Pods_CalmTradeTests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D0227C9A0C5DF780E733FB1C /* Pods_CalmTradeTests.framework */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		D66CA8612E5CA2FB0019DC20 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = D66CA83F2E5CA2FB0019DC20 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = D66CA8462E5CA2FB0019DC20;
+			remoteInfo = CalmTrade;
+		};
+		D66CA86B2E5CA2FB0019DC20 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = D66CA83F2E5CA2FB0019DC20 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = D66CA8462E5CA2FB0019DC20;
+			remoteInfo = CalmTrade;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		0F56B44C836ECD822017FDB5 /* Pods-CalmTrade-CalmTradeUITests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-CalmTrade-CalmTradeUITests.debug.xcconfig"; path = "Target Support Files/Pods-CalmTrade-CalmTradeUITests/Pods-CalmTrade-CalmTradeUITests.debug.xcconfig"; sourceTree = "<group>"; };
+		1D2E3D31DFAD240D6048C741 /* Pods-CalmTrade.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-CalmTrade.release.xcconfig"; path = "Target Support Files/Pods-CalmTrade/Pods-CalmTrade.release.xcconfig"; sourceTree = "<group>"; };
+		42C1C4F0855BE32D92A7901B /* Pods-CalmTrade-CalmTradeUITests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-CalmTrade-CalmTradeUITests.release.xcconfig"; path = "Target Support Files/Pods-CalmTrade-CalmTradeUITests/Pods-CalmTrade-CalmTradeUITests.release.xcconfig"; sourceTree = "<group>"; };
+		7AB8F1938B95DAB1912D7B00 /* Pods-CalmTrade.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-CalmTrade.debug.xcconfig"; path = "Target Support Files/Pods-CalmTrade/Pods-CalmTrade.debug.xcconfig"; sourceTree = "<group>"; };
+		B2231FCD143F91BF1023E30D /* Pods_CalmTrade_CalmTradeUITests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_CalmTrade_CalmTradeUITests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		B38C10CFE44428FFCD1262E9 /* Pods-CalmTradeTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-CalmTradeTests.debug.xcconfig"; path = "Target Support Files/Pods-CalmTradeTests/Pods-CalmTradeTests.debug.xcconfig"; sourceTree = "<group>"; };
+		BAFA96FEA11DF37561022B06 /* Pods-CalmTradeTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-CalmTradeTests.release.xcconfig"; path = "Target Support Files/Pods-CalmTradeTests/Pods-CalmTradeTests.release.xcconfig"; sourceTree = "<group>"; };
+		D0227C9A0C5DF780E733FB1C /* Pods_CalmTradeTests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_CalmTradeTests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		D66CA8472E5CA2FB0019DC20 /* CalmTrade.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CalmTrade.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		D66CA8602E5CA2FB0019DC20 /* CalmTradeTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CalmTradeTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		D66CA86A2E5CA2FB0019DC20 /* CalmTradeUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CalmTradeUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		E77AE29738C7335E47C1CDEB /* Pods_CalmTrade.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_CalmTrade.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		D69E96CD2E5CA77D00F53E1C /* Exceptions for "CalmTrade" folder in "CalmTrade" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Resources/Info.plist,
+			);
+			target = D66CA8462E5CA2FB0019DC20 /* CalmTrade */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		D66CA8492E5CA2FB0019DC20 /* CalmTrade */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				D69E96CD2E5CA77D00F53E1C /* Exceptions for "CalmTrade" folder in "CalmTrade" target */,
+			);
+			path = CalmTrade;
+			sourceTree = "<group>";
+		};
+		D66CA8632E5CA2FB0019DC20 /* CalmTradeTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = CalmTradeTests;
+			sourceTree = "<group>";
+		};
+		D66CA86D2E5CA2FB0019DC20 /* CalmTradeUITests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = CalmTradeUITests;
+			sourceTree = "<group>";
+		};
+/* End PBXFileSystemSynchronizedRootGroup section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		D66CA8442E5CA2FB0019DC20 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				CF13DE24A6D0E5300E224238 /* Pods_CalmTrade.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D66CA85D2E5CA2FB0019DC20 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				D5E0DFC412C895AF85356079 /* Pods_CalmTradeTests.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D66CA8672E5CA2FB0019DC20 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				9859E789EDBB92812A07EF5A /* Pods_CalmTrade_CalmTradeUITests.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		09B1352215CCD568A111514C /* Pods */ = {
+			isa = PBXGroup;
+			children = (
+				7AB8F1938B95DAB1912D7B00 /* Pods-CalmTrade.debug.xcconfig */,
+				1D2E3D31DFAD240D6048C741 /* Pods-CalmTrade.release.xcconfig */,
+				0F56B44C836ECD822017FDB5 /* Pods-CalmTrade-CalmTradeUITests.debug.xcconfig */,
+				42C1C4F0855BE32D92A7901B /* Pods-CalmTrade-CalmTradeUITests.release.xcconfig */,
+				B38C10CFE44428FFCD1262E9 /* Pods-CalmTradeTests.debug.xcconfig */,
+				BAFA96FEA11DF37561022B06 /* Pods-CalmTradeTests.release.xcconfig */,
+			);
+			path = Pods;
+			sourceTree = "<group>";
+		};
+		68F2C4EBA5E8CC1B798459A3 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				E77AE29738C7335E47C1CDEB /* Pods_CalmTrade.framework */,
+				B2231FCD143F91BF1023E30D /* Pods_CalmTrade_CalmTradeUITests.framework */,
+				D0227C9A0C5DF780E733FB1C /* Pods_CalmTradeTests.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		D66CA83E2E5CA2FB0019DC20 = {
+			isa = PBXGroup;
+			children = (
+				D66CA8492E5CA2FB0019DC20 /* CalmTrade */,
+				D66CA8632E5CA2FB0019DC20 /* CalmTradeTests */,
+				D66CA86D2E5CA2FB0019DC20 /* CalmTradeUITests */,
+				D66CA8482E5CA2FB0019DC20 /* Products */,
+				09B1352215CCD568A111514C /* Pods */,
+				68F2C4EBA5E8CC1B798459A3 /* Frameworks */,
+			);
+			sourceTree = "<group>";
+		};
+		D66CA8482E5CA2FB0019DC20 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				D66CA8472E5CA2FB0019DC20 /* CalmTrade.app */,
+				D66CA8602E5CA2FB0019DC20 /* CalmTradeTests.xctest */,
+				D66CA86A2E5CA2FB0019DC20 /* CalmTradeUITests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		D66CA8462E5CA2FB0019DC20 /* CalmTrade */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = D66CA8732E5CA2FB0019DC20 /* Build configuration list for PBXNativeTarget "CalmTrade" */;
+			buildPhases = (
+				1390C8631E8F2C6F26C923A6 /* [CP] Check Pods Manifest.lock */,
+				D66CA8432E5CA2FB0019DC20 /* Sources */,
+				D66CA8442E5CA2FB0019DC20 /* Frameworks */,
+				D66CA8452E5CA2FB0019DC20 /* Resources */,
+				0C26EED9DEC1B9DE837FB008 /* [CP] Embed Pods Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				D66CA8492E5CA2FB0019DC20 /* CalmTrade */,
+			);
+			name = CalmTrade;
+			productName = CalmTrade;
+			productReference = D66CA8472E5CA2FB0019DC20 /* CalmTrade.app */;
+			productType = "com.apple.product-type.application";
+		};
+		D66CA85F2E5CA2FB0019DC20 /* CalmTradeTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = D66CA8782E5CA2FB0019DC20 /* Build configuration list for PBXNativeTarget "CalmTradeTests" */;
+			buildPhases = (
+				0487C2D271E65CABD2C3C685 /* [CP] Check Pods Manifest.lock */,
+				D66CA85C2E5CA2FB0019DC20 /* Sources */,
+				D66CA85D2E5CA2FB0019DC20 /* Frameworks */,
+				D66CA85E2E5CA2FB0019DC20 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				D66CA8622E5CA2FB0019DC20 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				D66CA8632E5CA2FB0019DC20 /* CalmTradeTests */,
+			);
+			name = CalmTradeTests;
+			productName = CalmTradeTests;
+			productReference = D66CA8602E5CA2FB0019DC20 /* CalmTradeTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		D66CA8692E5CA2FB0019DC20 /* CalmTradeUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = D66CA87B2E5CA2FB0019DC20 /* Build configuration list for PBXNativeTarget "CalmTradeUITests" */;
+			buildPhases = (
+				458E7031107292EB88A8BD13 /* [CP] Check Pods Manifest.lock */,
+				D66CA8662E5CA2FB0019DC20 /* Sources */,
+				D66CA8672E5CA2FB0019DC20 /* Frameworks */,
+				D66CA8682E5CA2FB0019DC20 /* Resources */,
+				58D13679DBF58822C4520C99 /* [CP] Embed Pods Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				D66CA86C2E5CA2FB0019DC20 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				D66CA86D2E5CA2FB0019DC20 /* CalmTradeUITests */,
+			);
+			name = CalmTradeUITests;
+			productName = CalmTradeUITests;
+			productReference = D66CA86A2E5CA2FB0019DC20 /* CalmTradeUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		D66CA83F2E5CA2FB0019DC20 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1640;
+				LastUpgradeCheck = 1640;
+				TargetAttributes = {
+					D66CA8462E5CA2FB0019DC20 = {
+						CreatedOnToolsVersion = 16.4;
+					};
+					D66CA85F2E5CA2FB0019DC20 = {
+						CreatedOnToolsVersion = 16.4;
+						TestTargetID = D66CA8462E5CA2FB0019DC20;
+					};
+					D66CA8692E5CA2FB0019DC20 = {
+						CreatedOnToolsVersion = 16.4;
+						TestTargetID = D66CA8462E5CA2FB0019DC20;
+					};
+				};
+			};
+			buildConfigurationList = D66CA8422E5CA2FB0019DC20 /* Build configuration list for PBXProject "CalmTrade" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = D66CA83E2E5CA2FB0019DC20;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = D66CA8482E5CA2FB0019DC20 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				D66CA8462E5CA2FB0019DC20 /* CalmTrade */,
+				D66CA85F2E5CA2FB0019DC20 /* CalmTradeTests */,
+				D66CA8692E5CA2FB0019DC20 /* CalmTradeUITests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		D66CA8452E5CA2FB0019DC20 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D66CA85E2E5CA2FB0019DC20 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D66CA8682E5CA2FB0019DC20 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		0487C2D271E65CABD2C3C685 /* [CP] Check Pods Manifest.lock */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
+				"${PODS_ROOT}/Manifest.lock",
+			);
+			name = "[CP] Check Pods Manifest.lock";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(DERIVED_FILE_DIR)/Pods-CalmTradeTests-checkManifestLockResult.txt",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
+			showEnvVarsInLog = 0;
+		};
+		0C26EED9DEC1B9DE837FB008 /* [CP] Embed Pods Frameworks */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-CalmTrade/Pods-CalmTrade-frameworks-${CONFIGURATION}-input-files.xcfilelist",
+			);
+			inputPaths = (
+			);
+			name = "[CP] Embed Pods Frameworks";
+			outputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-CalmTrade/Pods-CalmTrade-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-CalmTrade/Pods-CalmTrade-frameworks.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+		1390C8631E8F2C6F26C923A6 /* [CP] Check Pods Manifest.lock */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
+				"${PODS_ROOT}/Manifest.lock",
+			);
+			name = "[CP] Check Pods Manifest.lock";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(DERIVED_FILE_DIR)/Pods-CalmTrade-checkManifestLockResult.txt",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
+			showEnvVarsInLog = 0;
+		};
+		458E7031107292EB88A8BD13 /* [CP] Check Pods Manifest.lock */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
+				"${PODS_ROOT}/Manifest.lock",
+			);
+			name = "[CP] Check Pods Manifest.lock";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(DERIVED_FILE_DIR)/Pods-CalmTrade-CalmTradeUITests-checkManifestLockResult.txt",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
+			showEnvVarsInLog = 0;
+		};
+		58D13679DBF58822C4520C99 /* [CP] Embed Pods Frameworks */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-CalmTrade-CalmTradeUITests/Pods-CalmTrade-CalmTradeUITests-frameworks-${CONFIGURATION}-input-files.xcfilelist",
+			);
+			inputPaths = (
+			);
+			name = "[CP] Embed Pods Frameworks";
+			outputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-CalmTrade-CalmTradeUITests/Pods-CalmTrade-CalmTradeUITests-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-CalmTrade-CalmTradeUITests/Pods-CalmTrade-CalmTradeUITests-frameworks.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+/* End PBXShellScriptBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		D66CA8432E5CA2FB0019DC20 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D66CA85C2E5CA2FB0019DC20 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D66CA8662E5CA2FB0019DC20 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		D66CA8622E5CA2FB0019DC20 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = D66CA8462E5CA2FB0019DC20 /* CalmTrade */;
+			targetProxy = D66CA8612E5CA2FB0019DC20 /* PBXContainerItemProxy */;
+		};
+		D66CA86C2E5CA2FB0019DC20 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = D66CA8462E5CA2FB0019DC20 /* CalmTrade */;
+			targetProxy = D66CA86B2E5CA2FB0019DC20 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		D66CA8742E5CA2FB0019DC20 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 7AB8F1938B95DAB1912D7B00 /* Pods-CalmTrade.debug.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = CalmTrade/CalmTrade.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 6FQ7UW27Y5;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"\"${PODS_CONFIGURATION_BUILD_DIR}/BoringSSL-GRPC\"",
+					"\"${PODS_CONFIGURATION_BUILD_DIR}/FirebaseAppCheckInterop\"",
+					"\"${PODS_CONFIGURATION_BUILD_DIR}/FirebaseAuth\"",
+					"\"${PODS_CONFIGURATION_BUILD_DIR}/FirebaseAuthInterop\"",
+					"\"${PODS_CONFIGURATION_BUILD_DIR}/FirebaseCore\"",
+					"\"${PODS_CONFIGURATION_BUILD_DIR}/FirebaseCoreExtension\"",
+					"\"${PODS_CONFIGURATION_BUILD_DIR}/FirebaseCoreInternal\"",
+					"\"${PODS_CONFIGURATION_BUILD_DIR}/FirebaseFirestore\"",
+					"\"${PODS_CONFIGURATION_BUILD_DIR}/FirebaseFirestoreInternal\"",
+					"\"${PODS_CONFIGURATION_BUILD_DIR}/FirebaseSharedSwift\"",
+					"\"${PODS_CONFIGURATION_BUILD_DIR}/GTMSessionFetcher\"",
+					"\"${PODS_CONFIGURATION_BUILD_DIR}/RecaptchaInterop\"",
+					"\"${PODS_CONFIGURATION_BUILD_DIR}/abseil\"",
+					"\"${PODS_CONFIGURATION_BUILD_DIR}/gRPC-C++\"",
+					"\"${PODS_CONFIGURATION_BUILD_DIR}/gRPC-Core\"",
+					"\"${PODS_CONFIGURATION_BUILD_DIR}/leveldb-library\"",
+					"\"${PODS_CONFIGURATION_BUILD_DIR}/nanopb\"",
+					"\"${PODS_ROOT}/GoogleAppUtilities/Frameworks/frameworks\"",
+					"\"${PODS_ROOT}/GoogleAuthUtilities/Frameworks/frameworks\"",
+					"\"${PODS_ROOT}/GoogleNetworkingUtilities/Frameworks/frameworks\"",
+					"\"${PODS_ROOT}/GoogleSignIn/Frameworks\"",
+					"\"${PODS_ROOT}/GoogleSymbolUtilities/Frameworks/frameworks\"",
+					"\"${PODS_ROOT}/GoogleUtilities/Frameworks/frameworks\"",
+					"$(SRCROOT)/Pods/GoogleUtilities",
+				);
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = CalmTrade/Resources/Info.plist;
+				INFOPLIST_KEY_NSHealthShareUsageDescription = "CalmTrade needs to read your heart rate, HRV, and sleep data to calculate your Trading Wellness Score and provide performance insights.";
+				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "CalmTrade needs to save your manually entered sleep sessions to your Health data.";
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
+				INFOPLIST_KEY_UIMainStoryboardFile = Main;
+				INFOPLIST_KEY_UIStatusBarHidden = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.burnscapital.calmtradeapp;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		D66CA8752E5CA2FB0019DC20 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 1D2E3D31DFAD240D6048C741 /* Pods-CalmTrade.release.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = CalmTrade/CalmTrade.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 6FQ7UW27Y5;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"\"${PODS_CONFIGURATION_BUILD_DIR}/BoringSSL-GRPC\"",
+					"\"${PODS_CONFIGURATION_BUILD_DIR}/FirebaseAppCheckInterop\"",
+					"\"${PODS_CONFIGURATION_BUILD_DIR}/FirebaseAuth\"",
+					"\"${PODS_CONFIGURATION_BUILD_DIR}/FirebaseAuthInterop\"",
+					"\"${PODS_CONFIGURATION_BUILD_DIR}/FirebaseCore\"",
+					"\"${PODS_CONFIGURATION_BUILD_DIR}/FirebaseCoreExtension\"",
+					"\"${PODS_CONFIGURATION_BUILD_DIR}/FirebaseCoreInternal\"",
+					"\"${PODS_CONFIGURATION_BUILD_DIR}/FirebaseFirestore\"",
+					"\"${PODS_CONFIGURATION_BUILD_DIR}/FirebaseFirestoreInternal\"",
+					"\"${PODS_CONFIGURATION_BUILD_DIR}/FirebaseSharedSwift\"",
+					"\"${PODS_CONFIGURATION_BUILD_DIR}/GTMSessionFetcher\"",
+					"\"${PODS_CONFIGURATION_BUILD_DIR}/RecaptchaInterop\"",
+					"\"${PODS_CONFIGURATION_BUILD_DIR}/abseil\"",
+					"\"${PODS_CONFIGURATION_BUILD_DIR}/gRPC-C++\"",
+					"\"${PODS_CONFIGURATION_BUILD_DIR}/gRPC-Core\"",
+					"\"${PODS_CONFIGURATION_BUILD_DIR}/leveldb-library\"",
+					"\"${PODS_CONFIGURATION_BUILD_DIR}/nanopb\"",
+					"\"${PODS_ROOT}/GoogleAppUtilities/Frameworks/frameworks\"",
+					"\"${PODS_ROOT}/GoogleAuthUtilities/Frameworks/frameworks\"",
+					"\"${PODS_ROOT}/GoogleNetworkingUtilities/Frameworks/frameworks\"",
+					"\"${PODS_ROOT}/GoogleSignIn/Frameworks\"",
+					"\"${PODS_ROOT}/GoogleSymbolUtilities/Frameworks/frameworks\"",
+					"\"${PODS_ROOT}/GoogleUtilities/Frameworks/frameworks\"",
+					"$(SRCROOT)/Pods/GoogleUtilities",
+				);
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = CalmTrade/Resources/Info.plist;
+				INFOPLIST_KEY_NSHealthShareUsageDescription = "CalmTrade needs to read your heart rate, HRV, and sleep data to calculate your Trading Wellness Score and provide performance insights.";
+				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "CalmTrade needs to save your manually entered sleep sessions to your Health data.";
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
+				INFOPLIST_KEY_UIMainStoryboardFile = Main;
+				INFOPLIST_KEY_UIStatusBarHidden = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.burnscapital.calmtradeapp;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		D66CA8762E5CA2FB0019DC20 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.5;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		D66CA8772E5CA2FB0019DC20 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.5;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		D66CA8792E5CA2FB0019DC20 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = B38C10CFE44428FFCD1262E9 /* Pods-CalmTradeTests.debug.xcconfig */;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.5;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.burnscapital.CalmTradeTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/CalmTrade.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/CalmTrade";
+			};
+			name = Debug;
+		};
+		D66CA87A2E5CA2FB0019DC20 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = BAFA96FEA11DF37561022B06 /* Pods-CalmTradeTests.release.xcconfig */;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.5;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.burnscapital.CalmTradeTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/CalmTrade.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/CalmTrade";
+			};
+			name = Release;
+		};
+		D66CA87C2E5CA2FB0019DC20 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 0F56B44C836ECD822017FDB5 /* Pods-CalmTrade-CalmTradeUITests.debug.xcconfig */;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.burnscapital.CalmTradeUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = CalmTrade;
+			};
+			name = Debug;
+		};
+		D66CA87D2E5CA2FB0019DC20 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 42C1C4F0855BE32D92A7901B /* Pods-CalmTrade-CalmTradeUITests.release.xcconfig */;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.burnscapital.CalmTradeUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = CalmTrade;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		D66CA8422E5CA2FB0019DC20 /* Build configuration list for PBXProject "CalmTrade" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				D66CA8762E5CA2FB0019DC20 /* Debug */,
+				D66CA8772E5CA2FB0019DC20 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		D66CA8732E5CA2FB0019DC20 /* Build configuration list for PBXNativeTarget "CalmTrade" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				D66CA8742E5CA2FB0019DC20 /* Debug */,
+				D66CA8752E5CA2FB0019DC20 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		D66CA8782E5CA2FB0019DC20 /* Build configuration list for PBXNativeTarget "CalmTradeTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				D66CA8792E5CA2FB0019DC20 /* Debug */,
+				D66CA87A2E5CA2FB0019DC20 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		D66CA87B2E5CA2FB0019DC20 /* Build configuration list for PBXNativeTarget "CalmTradeUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				D66CA87C2E5CA2FB0019DC20 /* Debug */,
+				D66CA87D2E5CA2FB0019DC20 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = D66CA83F2E5CA2FB0019DC20 /* Project object */;
+}

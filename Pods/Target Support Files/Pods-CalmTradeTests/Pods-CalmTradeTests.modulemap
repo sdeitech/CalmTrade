@@ -1,0 +1,6 @@
+framework module Pods_CalmTradeTests {
+  umbrella header "Pods-CalmTradeTests-umbrella.h"
+
+  export *
+  module * { export * }
+}
