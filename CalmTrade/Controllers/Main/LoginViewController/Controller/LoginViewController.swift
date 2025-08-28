@@ -54,8 +54,8 @@ class LoginViewController: BaseViewController {
     
     // MARK: - Actions
     @IBAction func btnLoginTapped(_ sender: UIButton) {
-        let connectVC = UIStoryboard(name: "Main", bundle: nil).instantiateViewController(withIdentifier: "ConnectViewController") as! ConnectViewController
-        navigationController?.pushViewController(connectVC, transitionType: .fade, duration: 0.3)
+        let tabBarController = UIStoryboard(name: Constants.Storyboard.Dashboard, bundle: nil).instantiateViewController(withIdentifier: "TabbarController") as! TabbarController
+        navigationController?.pushViewController(tabBarController, transitionType: .reveal, duration: 0.03)
     }
     
     @IBAction func btnPasswordEyeTapped(_ sender: UIButton) {

@@ -46,6 +46,11 @@ class ConnectViewController: BaseViewController {
     @IBAction func btnConnectAppleTapped(_ sender: UIButton) {
         viewModel.connectToHealthKit()
     }
+    
+    @IBAction func btnSkipTapped(_ sender: UIButton) {
+        let breathingVC = UIStoryboard(name: "Main", bundle: nil).instantiateViewController(withIdentifier: "BreathingViewController") as! BreathingViewController
+        navigationController?.pushViewController(breathingVC, transitionType: .fade, duration: 0.03)
+    }
 }
 
 

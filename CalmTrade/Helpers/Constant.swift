@@ -46,11 +46,16 @@ public struct Constants {
     }
     
     enum AlertButtonType {
-            case OnlyOk
-            case OkCancel
-            case YesNo
-            case ConfirmCancel
-            case EnableCancel
-            case CancelPurchase
-        }
+        case OnlyOk
+        case OkCancel
+        case YesNo
+        case ConfirmCancel
+        case EnableCancel
+        case CancelPurchase
+    }
+    
+    struct Storyboard {
+        static let Main = "Main"
+        static let Dashboard = "Dashboard"
+    }
 }

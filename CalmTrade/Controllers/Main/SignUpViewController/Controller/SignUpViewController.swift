@@ -125,7 +125,7 @@ class SignUpViewController: BaseViewController {
     
     func navigateToVerificationScreen() {
         
-        let verificationVC = UIStoryboard(name: "Main", bundle: nil).instantiateViewController(withIdentifier: "EmailVerificationViewController")
+        let verificationVC = UIStoryboard(name: "Main", bundle: nil).instantiateViewController(withIdentifier: "EmailVerificationViewController") as! EmailVerificationViewController
         self.navigationController?.pushViewController(verificationVC, animated: true)
     }
     
