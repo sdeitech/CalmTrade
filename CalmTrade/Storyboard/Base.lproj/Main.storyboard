@@ -1006,16 +1006,25 @@
                                                         <rect key="frame" x="0.0" y="0.0" width="120.66666666666667" height="58"/>
                                                         <inset key="imageEdgeInsets" minX="0.0" minY="0.0" maxX="2.2250738585072014e-308" maxY="0.0"/>
                                                         <state key="normal" image="Google"/>
+                                                        <connections>
+                                                            <action selector="btnGoogleLoginTapped:" destination="gN0-Fp-me0" eventType="touchUpInside" id="UmL-yR-Xan"/>
+                                                        </connections>
                                                     </button>
                                                     <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="ubY-tL-C8l">
                                                         <rect key="frame" x="135.66666666666666" y="0.0" width="120.66666666666666" height="58"/>
                                                         <inset key="imageEdgeInsets" minX="0.0" minY="0.0" maxX="2.2250738585072014e-308" maxY="0.0"/>
                                                         <state key="normal" image="Facebook"/>
+                                                        <connections>
+                                                            <action selector="btnFacebookLoginTapped:" destination="gN0-Fp-me0" eventType="touchUpInside" id="qQC-jc-k2D"/>
+                                                        </connections>
                                                     </button>
                                                     <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="2VS-gC-vZC">
                                                         <rect key="frame" x="271.33333333333331" y="0.0" width="120.66666666666669" height="58"/>
                                                         <inset key="imageEdgeInsets" minX="0.0" minY="0.0" maxX="2.2250738585072014e-308" maxY="0.0"/>
                                                         <state key="normal" image="Apple"/>
+                                                        <connections>
+                                                            <action selector="btnAppleLoginTapped:" destination="gN0-Fp-me0" eventType="touchUpInside" id="oUR-LC-nqB"/>
+                                                        </connections>
                                                     </button>
                                                 </subviews>
                                                 <constraints>
@@ -2242,6 +2251,7 @@ from </string>
                                         </userDefinedRuntimeAttributes>
                                         <connections>
                                             <action selector="btnContinueTapped:" destination="NXK-jR-PAG" eventType="touchUpInside" id="7Qi-rw-Nzw"/>
+                                            <action selector="btnContinueTapped:" destination="Kmf-bi-pQz" eventType="touchUpInside" id="bGM-tG-MsX"/>
                                         </connections>
                                     </button>
                                 </subviews>
@@ -3371,6 +3381,9 @@ of calm</string>
                                                     </userDefinedRuntimeAttribute>
                                                     <userDefinedRuntimeAttribute type="boolean" keyPath="hasShadow2" value="YES"/>
                                                 </userDefinedRuntimeAttributes>
+                                                <connections>
+                                                    <action selector="btnSubmitTapped:" destination="yFp-6h-t5d" eventType="touchUpInside" id="Kpk-Zz-Xcl"/>
+                                                </connections>
                                             </button>
                                         </subviews>
                                         <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
@@ -3516,7 +3529,7 @@ successfully created</string>
                                             <userDefinedRuntimeAttribute type="boolean" keyPath="hasShadow2" value="YES"/>
                                         </userDefinedRuntimeAttributes>
                                         <connections>
-                                            <action selector="btnGoToDasboardTapped:" destination="DFw-n8-nJW" eventType="touchUpInside" id="qGl-md-iat"/>
+                                            <action selector="btnGoToDashboardTapped:" destination="DFw-n8-nJW" eventType="touchUpInside" id="k3b-4N-3WL"/>
                                         </connections>
                                     </button>
                                 </subviews>

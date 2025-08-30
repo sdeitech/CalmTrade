@@ -19,7 +19,7 @@ class EmailVerifiedViewController: UIViewController {
     //MARK: Actions
     @IBAction func btnContinueTapped(_ sender: UIButton) {
         let connectVC = UIStoryboard(name: "Main", bundle: nil).instantiateViewController(withIdentifier: "ConnectViewController") as! ConnectViewController
-        self.navigationController?.pushViewController(connectVC, animated: true)
+        self.navigationController?.pushViewController(connectVC, transitionType: .fade)
     }
 
 }

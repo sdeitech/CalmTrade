@@ -114,7 +114,8 @@ class EmotionTagCell: UICollectionViewCell {
         gradient.frame = mainView.bounds
         gradient.colors = [
             selectionColor.cgColor,
-            UIColor.white.withAlphaComponent(0).cgColor
+//            UIColor.white.withAlphaComponent(0).cgColor,
+            selectionColor.cgColor
         ]
         gradient.startPoint = CGPoint(x: 0, y: 0.5)
         gradient.endPoint = CGPoint(x: 1, y: 0.5)
@@ -151,19 +152,19 @@ class EmotionTagCell: UICollectionViewCell {
         let strokeEndAnimation = CABasicAnimation(keyPath: "strokeEnd")
         strokeEndAnimation.fromValue = 0
         strokeEndAnimation.toValue = 1
-        strokeEndAnimation.duration = 1.0
+        strokeEndAnimation.duration = 3.0
         strokeEndAnimation.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
 
         let strokeStartAnimation = CABasicAnimation(keyPath: "strokeStart")
         strokeStartAnimation.fromValue = 0
         strokeStartAnimation.toValue = 1
-        strokeStartAnimation.duration = 1.0
+        strokeStartAnimation.duration = 4.2
         strokeStartAnimation.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
-        strokeStartAnimation.beginTime = 0.2
+        strokeStartAnimation.beginTime = 0.3
 
         let animationGroup = CAAnimationGroup()
         animationGroup.animations = [strokeEndAnimation, strokeStartAnimation]
-        animationGroup.duration = 1.0
+        animationGroup.duration = 3.0
         animationGroup.repeatCount = .infinity
         animationGroup.isRemovedOnCompletion = false
         

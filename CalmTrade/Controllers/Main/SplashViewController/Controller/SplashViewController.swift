@@ -45,11 +45,11 @@ class SplashViewController: BaseViewController {
 
     @IBAction func btnLoginClk(_ sender: UIButton) {
         let loginViewController = UIStoryboard(name: "Main", bundle: nil).instantiateViewController(withIdentifier: "LoginViewController") as! LoginViewController
-        self.navigationController?.pushViewController(loginViewController, animated: false)
+        self.navigationController?.pushViewController(loginViewController,transitionType: .fade)
     }
     
     @IBAction func btnSignUpClk(_ sender: UIButton) {
-        let signUpVC = UIStoryboard(name: "Main", bundle: nil).instantiateViewController(withIdentifier: "SignUpViewController") as! SignUpViewController
-        self.navigationController?.pushViewController(signUpVC, animated: true)
+        let signUpVC = UIStoryboard(name: "Main", bundle: nil).instantiateViewController(withIdentifier: "EmotionalTagsViewController") as! EmotionalTagsViewController
+        self.navigationController?.pushViewController(signUpVC, transitionType: .fade)
     }
 }

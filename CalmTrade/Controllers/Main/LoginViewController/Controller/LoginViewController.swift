@@ -73,7 +73,7 @@ class LoginViewController: BaseViewController {
     
     @IBAction func btnSignUpTapped(_ sender: UIButton) {
         let signUpVC = UIStoryboard(name: "Main", bundle: nil).instantiateViewController(withIdentifier: "SignUpViewController") as! SignUpViewController
-        self.navigationController?.pushViewController(signUpVC, animated: true)
+        self.navigationController?.pushViewController(signUpVC, transitionType: .fade)
     }
     
     @IBAction func btnGoogleLoginTapped(_ sender: UIButton) {
@@ -89,6 +89,8 @@ class LoginViewController: BaseViewController {
                     switch result {
                     case .success(_):
                         print("Google Sign In Successful, now signing into Firebase...")
+                        let dashBoard = UIStoryboard(name: Constants.Storyboard.Dashboard, bundle: nil).instantiateViewController(withIdentifier: "TabbarController") as! TabbarController
+                        self.navigationController?.pushViewController(dashBoard, transitionType: .reveal, duration: 0.03)
                         
                     case .failure(let error):
                         print("Google Sign-In Failed with error: \(error.localizedDescription)")
@@ -109,7 +111,8 @@ class LoginViewController: BaseViewController {
                     // The handler has successfully created the Firebase credential.
                     // Now, sign in to Firebase.
                     print("Facebook Sign In Successful, now signing into Firebase...")
-                    
+                    let dashBoard = UIStoryboard(name: Constants.Storyboard.Dashboard, bundle: nil).instantiateViewController(withIdentifier: "TabbarController") as! TabbarController
+                    self.navigationController?.pushViewController(dashBoard, transitionType: .reveal, duration: 0.03)
                     
                 case .failure(let error):
                     // --- FAILURE ---
@@ -129,7 +132,8 @@ class LoginViewController: BaseViewController {
                     // The handler has successfully created the Firebase credential.
                     // Now, sign in to Firebase.
                     print("Apple Sign In Successful, now signing into Firebase...")
-                    
+                    let dashBoard = UIStoryboard(name: Constants.Storyboard.Dashboard, bundle: nil).instantiateViewController(withIdentifier: "TabbarController") as! TabbarController
+                    self.navigationController?.pushViewController(dashBoard, transitionType: .reveal, duration: 0.03)
                     
                 case .failure(let error):
                     // --- FAILURE ---

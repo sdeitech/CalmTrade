@@ -60,6 +60,13 @@ class EmotionalTagsViewController: UIViewController, UICollectionViewDataSource,
         collectionView.collectionViewLayout = layout
     }
     
+    //MARK: - Actions
+    
+    @IBAction func btnSubmitTapped(_ sender: Any) {
+        let accountCreatedVC = UIStoryboard(name: Constants.Storyboard.Main, bundle: nil).instantiateViewController(withIdentifier: "AccountCreatedViewController") as! AccountCreatedViewController
+        navigationController?.pushViewController(accountCreatedVC, transitionType: .fade)
+    }
+    
     // MARK: - Height Calculation
     
     func updateAllCollectionViewHeights() {

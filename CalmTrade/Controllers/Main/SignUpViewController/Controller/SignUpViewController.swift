@@ -43,6 +43,8 @@ class SignUpViewController: BaseViewController {
         return obj
     }()
     
+    private let socialLoginHandler = SocialLoginHandler()
+    
     //MARK: - App Lifecycle
 
     override func viewDidLoad() {
@@ -88,7 +90,7 @@ class SignUpViewController: BaseViewController {
     }
     
     @IBAction func btnLoginTapped(_ sender: UIButton) {
-        self.navigationController?.popViewController(animated: true)
+        self.navigationController?.popViewController(transitionType: .fade)
     }
     
     @IBAction func btnSignUpTapped(_ sender: UIButton) {
@@ -121,12 +123,80 @@ class SignUpViewController: BaseViewController {
         }
     }
     
+    @IBAction func btnGoogleLoginTapped(_ sender: UIButton) {
+        // Ensure the entire sign-in process is initiated on the main thread.
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            
+            // Use the handler to start the Google Sign-In process.
+            self.socialLoginHandler.signInWithGoogle(presentingVC: self) { result in
+                // The completion handler from the SDK will often return on a background thread,
+                // so we still need to dispatch any UI updates back to the main thread.
+                DispatchQueue.main.async {
+                    switch result {
+                    case .success(_):
+                        print("Google Sign In Successful, now signing into Firebase...")
+                        let connectVC = UIStoryboard(name: Constants.Storyboard.Main, bundle: nil).instantiateViewController(withIdentifier: "ConnectViewController") as! ConnectViewController
+                        self.navigationController?.pushViewController(connectVC, transitionType: .reveal, duration: 0.03)
+                        
+                    case .failure(let error):
+                        print("Google Sign-In Failed with error: \(error.localizedDescription)")
+                        // Show an alert to the user here.
+                    }
+                }
+            }
+        }
+    }
+    
+    @IBAction func btnFacebookLoginTapped(_ sender: UIButton) {
+        // Use the handler to start the Facebook Sign-In process.
+        socialLoginHandler.signInWithFacebook(presentingVC: self) { result in
+            DispatchQueue.main.async {
+                switch result {
+                case .success(_):
+                    // --- SUCCESS ---
+                    // The handler has successfully created the Firebase credential.
+                    // Now, sign in to Firebase.
+                    print("Facebook Sign In Successful, now signing into Firebase...")
+                    let connectVC = UIStoryboard(name: Constants.Storyboard.Main, bundle: nil).instantiateViewController(withIdentifier: "ConnectViewController") as! ConnectViewController
+                    self.navigationController?.pushViewController(connectVC, transitionType: .reveal, duration: 0.03)
+                    
+                case .failure(let error):
+                    // --- FAILURE ---
+                    print("Facebook Sign-In Failed with error: \(error.localizedDescription)")
+                    // You can show an alert to the user here.
+                }
+            }
+        }
+    }
+    
+    @IBAction func btnAppleLoginTapped(_ sender: UIButton) {
+        socialLoginHandler.signInWithApple(presentingVC: self, completion: { result in
+            DispatchQueue.main.async {
+                switch result {
+                case .success(_):
+                    // --- SUCCESS ---
+                    // The handler has successfully created the Firebase credential.
+                    // Now, sign in to Firebase.
+                    print("Apple Sign In Successful, now signing into Firebase...")
+                    let connectVC = UIStoryboard(name: Constants.Storyboard.Main, bundle: nil).instantiateViewController(withIdentifier: "ConnectViewController") as! ConnectViewController
+                    self.navigationController?.pushViewController(connectVC, transitionType: .reveal, duration: 0.03)
+                    
+                case .failure(let error):
+                    // --- FAILURE ---
+                    print("Apple Sign-In Failed with error: \(error.localizedDescription)")
+                    // You can show an alert to the user here.
+                }
+            }
+        })
+    }
+    
     // MARK: - Helper Methods
     
     func navigateToVerificationScreen() {
         
         let verificationVC = UIStoryboard(name: "Main", bundle: nil).instantiateViewController(withIdentifier: "EmailVerificationViewController") as! EmailVerificationViewController
-        self.navigationController?.pushViewController(verificationVC, animated: true)
+        self.navigationController?.pushViewController(verificationVC, transitionType: .fade)
     }
     
     /// Updates the border and label color for a text field's container.

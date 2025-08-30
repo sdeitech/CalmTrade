@@ -12,7 +12,6 @@ target 'CalmTrade' do
   pod 'GoogleUtilities'
   pod 'FBSDKLoginKit'
   pod 'IQKeyboardManagerSwift'
-  pod 'ABGaugeViewKit'
 
 
   target 'CalmTradeTests' do

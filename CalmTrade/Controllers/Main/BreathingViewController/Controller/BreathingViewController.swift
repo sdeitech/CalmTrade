@@ -23,6 +23,7 @@ class BreathingViewController: UIViewController {
     }
 
     @IBAction func btnSkipTapped(_ sender: UIButton) {
-        
+        let dashboardVC = UIStoryboard(name: Constants.Storyboard.Dashboard, bundle: nil).instantiateViewController(withIdentifier: "TabbarController") as! TabbarController
+        navigationController?.pushViewController(dashboardVC, transitionType: .fade, duration: 0.03)
     }
 }

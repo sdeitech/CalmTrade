@@ -46,4 +46,11 @@ class AppleConnectedViewController: UIViewController {
         // 2. Load the "heartbeat" GIF and set it to loop forever
         heartbeatImageView.loadGif(name: "heartbeat", repeatCount: 0)
     }
+    
+    //MARK: - Action
+    
+    @IBAction func btnContinueTapped(_ sender: Any) {
+        let breathingVC = UIStoryboard(name: "Main", bundle: nil).instantiateViewController(withIdentifier: "BreathingViewController") as! BreathingViewController
+        self.navigationController?.pushViewController(breathingVC, transitionType: .fade)
+    }
 }

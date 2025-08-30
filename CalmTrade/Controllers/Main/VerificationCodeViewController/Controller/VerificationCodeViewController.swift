@@ -67,7 +67,8 @@ class VerificationCodeViewController: BaseViewController {
         viewModel.onValidationResult = { [weak self] isValid, errorMessage in
             if isValid {
                 print("OTP Verified Successfully!")
-                // self?.navigateToNextScreen()
+                 let emailVerifiedVC = UIStoryboard(name: "Main", bundle: nil).instantiateViewController(withIdentifier: "EmailVerifiedViewController") as! EmailVerifiedViewController
+                self?.navigationController?.pushViewController(emailVerifiedVC, transitionType: .fade)
             } else {
                 if let message = errorMessage {
                     self?.showAlert(message: message)
@@ -99,7 +100,7 @@ class VerificationCodeViewController: BaseViewController {
         for vc in viewControllers {
             if vc is SignUpViewController {
                 // 3. If we find it, pop back to that specific view controller.
-                self.navigationController?.popToViewController(vc, animated: true)
+                self.navigationController?.popToViewController(vc, transitionType: .fade, duration: 0.03)
                 break // Exit the loop once we've found it
             }
         }

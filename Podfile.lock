@@ -1,5 +1,4 @@
 PODS:
-  - ABGaugeViewKit (1.0.2)
   - abseil/algorithm (1.20240722.0):
     - abseil/algorithm/algorithm (= 1.20240722.0)
     - abseil/algorithm/container (= 1.20240722.0)
@@ -1444,7 +1443,6 @@ PODS:
   - RecaptchaInterop (101.0.0)
 
 DEPENDENCIES:
-  - ABGaugeViewKit
   - FBSDKLoginKit
   - FirebaseAuth
   - FirebaseFirestore
@@ -1454,7 +1452,6 @@ DEPENDENCIES:
 
 SPEC REPOS:
   trunk:
-    - ABGaugeViewKit
     - abseil
     - AppAuth
     - AppCheckCore
@@ -1492,7 +1489,6 @@ SPEC REPOS:
     - RecaptchaInterop
 
 SPEC CHECKSUMS:
-  ABGaugeViewKit: 1d4c179cd68213303d0cc369b366ac330da9fbc0
   abseil: a05cc83bf02079535e17169a73c5be5ba47f714b
   AppAuth: 1c1a8afa7e12f2ec3a294d9882dfa5ab7d3cb063
   AppCheckCore: cc8fd0a3a230ddd401f326489c99990b013f0c4f
@@ -1529,6 +1525,6 @@ SPEC CHECKSUMS:
   PromisesObjC: f5707f49cb48b9636751c5b2e7d227e43fba9f47
   RecaptchaInterop: 11e0b637842dfb48308d242afc3f448062325aba
 
-PODFILE CHECKSUM: 1f68c6a33838778278fe57cbd3d3e845f69b30e7
+PODFILE CHECKSUM: 579069e540a93e6155c7e2ee5f066b74616e2f40
 
 COCOAPODS: 1.16.2

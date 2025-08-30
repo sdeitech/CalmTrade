@@ -81,7 +81,7 @@ class EmailVerificationViewController: BaseViewController {
     
     @IBAction func btnEnterManuallyTapped(_ sender: UIButton) {
         let vc = UIStoryboard(name: "Main", bundle: nil).instantiateViewController(withIdentifier: "VerificationCodeViewController") as! VerificationCodeViewController
-        navigationController?.pushViewController(vc, animated: true)
+        navigationController?.pushViewController(vc, transitionType: .fade)
     }
     
     @IBAction func btnBackToSignupTapped(_ sender: UIButton) {
@@ -92,7 +92,7 @@ class EmailVerificationViewController: BaseViewController {
     
     private func navigateToEmailVerifiedScreen() {
         let verifiedVC = UIStoryboard(name: "Main", bundle: nil).instantiateViewController(withIdentifier: "EmailVerifiedViewController") as! EmailVerifiedViewController
-        self.navigationController?.pushViewController(verifiedVC, animated: true)
+        self.navigationController?.pushViewController(verifiedVC, transitionType: .fade)
     }
     
     /// Helper function to show a simple alert.

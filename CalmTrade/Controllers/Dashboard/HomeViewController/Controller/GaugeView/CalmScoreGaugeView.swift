@@ -18,10 +18,14 @@ class CalmScoreGaugeView: UIView {
     
     @IBInspectable public var needleColor: UIColor = UIColor(red: 18/255.0, green: 112/255.0, blue: 178/255.0, alpha: 1.0)
     @IBInspectable public var needleValue: CGFloat = 0 {
-        didSet {
-            setNeedsDisplay()
+            didSet {
+                let value = Int(needleValue)
+                let color = getColor(for: needleValue)
+                // Call the closure with the updated value and color
+                onValueChange?(value, color)
+                setNeedsDisplay()
+            }
         }
-    }
     
     @IBInspectable public var applyShadow: Bool = true {
         didSet {
@@ -38,6 +42,9 @@ class CalmScoreGaugeView: UIView {
     @IBInspectable public var blinkAnimate: Bool = false
     
     @IBInspectable public var circleColor: UIColor = UIColor.black
+    
+    
+    public var onValueChange: ((_ value: Int, _ color: UIColor) -> Void)?
     
     var firstAngle = CGFloat()
     var capStyle = CGLineCap.round
@@ -104,6 +111,40 @@ class CalmScoreGaugeView: UIView {
 //            startAngle = endAngle
 //        }
 //    }
+    
+    private func getColor(for value: CGFloat) -> UIColor {
+        let colors = colorCodes.components(separatedBy: ",").map { UIColor($0) }
+        let progress = value / 100.0
+        
+        // Determine which two colors to interpolate between
+        let colorIndex = progress * CGFloat(colors.count - 1)
+        let startIndex = Int(floor(colorIndex))
+        let endIndex = min(colors.count - 1, Int(ceil(colorIndex)))
+        
+        let startColor = colors[startIndex]
+        let endColor = colors[endIndex]
+        
+        // Calculate the progress between the two selected colors
+        let segmentProgress = colorIndex - CGFloat(startIndex)
+        
+        return interpolatedColor(from: startColor, to: endColor, progress: segmentProgress)
+    }
+        
+        /// Helper function to blend two colors.
+    private func interpolatedColor(from startColor: UIColor, to endColor: UIColor, progress: CGFloat) -> UIColor {
+        var r1: CGFloat = 0, g1: CGFloat = 0, b1: CGFloat = 0, a1: CGFloat = 0
+        startColor.getRed(&r1, green: &g1, blue: &b1, alpha: &a1)
+        
+        var r2: CGFloat = 0, g2: CGFloat = 0, b2: CGFloat = 0, a2: CGFloat = 0
+        endColor.getRed(&r2, green: &g2, blue: &b2, alpha: &a2)
+        
+        let r = r1 + (r2 - r1) * progress
+        let g = g1 + (g2 - g1) * progress
+        let b = b1 + (b2 - b1) * progress
+        let a = a1 + (a2 - a1) * progress
+        
+        return UIColor(red: r, green: g, blue: b, alpha: a)
+    }
     
     func drawSmartArc() {
         let colors = colorCodes
