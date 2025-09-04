@@ -136,7 +136,7 @@ class SignUpViewController: BaseViewController {
                     switch result {
                     case .success(_):
                         print("Google Sign In Successful, now signing into Firebase...")
-                        let connectVC = UIStoryboard(name: Constants.Storyboard.Main, bundle: nil).instantiateViewController(withIdentifier: "ConnectViewController") as! ConnectViewController
+                        let connectVC = UIStoryboard(name: Constants.Storyboard.Devices, bundle: nil).instantiateViewController(withIdentifier: "ConnectViewController") as! ConnectViewController
                         self.navigationController?.pushViewController(connectVC, transitionType: .reveal, duration: 0.03)
                         
                     case .failure(let error):
@@ -158,7 +158,7 @@ class SignUpViewController: BaseViewController {
                     // The handler has successfully created the Firebase credential.
                     // Now, sign in to Firebase.
                     print("Facebook Sign In Successful, now signing into Firebase...")
-                    let connectVC = UIStoryboard(name: Constants.Storyboard.Main, bundle: nil).instantiateViewController(withIdentifier: "ConnectViewController") as! ConnectViewController
+                    let connectVC = UIStoryboard(name: Constants.Storyboard.Devices, bundle: nil).instantiateViewController(withIdentifier: "ConnectViewController") as! ConnectViewController
                     self.navigationController?.pushViewController(connectVC, transitionType: .reveal, duration: 0.03)
                     
                 case .failure(let error):
@@ -179,7 +179,7 @@ class SignUpViewController: BaseViewController {
                     // The handler has successfully created the Firebase credential.
                     // Now, sign in to Firebase.
                     print("Apple Sign In Successful, now signing into Firebase...")
-                    let connectVC = UIStoryboard(name: Constants.Storyboard.Main, bundle: nil).instantiateViewController(withIdentifier: "ConnectViewController") as! ConnectViewController
+                    let connectVC = UIStoryboard(name: Constants.Storyboard.Devices, bundle: nil).instantiateViewController(withIdentifier: "ConnectViewController") as! ConnectViewController
                     self.navigationController?.pushViewController(connectVC, transitionType: .reveal, duration: 0.03)
                     
                 case .failure(let error):

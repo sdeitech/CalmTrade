@@ -57,5 +57,7 @@ public struct Constants {
     struct Storyboard {
         static let Main = "Main"
         static let Dashboard = "Dashboard"
+        static let Biometrics = "Biometrics"
+        static let Devices = "Devices"
     }
 }

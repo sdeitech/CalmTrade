@@ -21,13 +21,18 @@ class HomeViewController: BaseViewController, UICollectionViewDataSource, UIColl
     @IBOutlet weak var lblNeutral: UILabel!
     @IBOutlet weak var lblCognitive: UILabel!
     
-    @IBOutlet weak var viewPositiveBottom: UIView!
-    @IBOutlet weak var viewNegativeBottom: UIView!
-    @IBOutlet weak var viewNeutralBottom: UIView!
-    @IBOutlet weak var viewCognitiveBottom: UIView!
+    // **FIX**: Ensure these are connected to the main container views for each category tab.
+    @IBOutlet weak var viewPositive: UIView!
+    @IBOutlet weak var viewNegative: UIView!
+    @IBOutlet weak var viewNeutral: UIView!
+    @IBOutlet weak var viewCognitive: UIView!
     
-    @IBOutlet weak var collectionView: UICollectionView!
-    @IBOutlet weak var collectionViewHeight: NSLayoutConstraint! // **NEW**: Single height constraint for the collection view
+    @IBOutlet weak var positiveCollectionView: UICollectionView!
+    @IBOutlet weak var negativeCollectionView: UICollectionView!
+    @IBOutlet weak var neutralCollectionView: UICollectionView!
+    @IBOutlet weak var cognitiveCollectionView: UICollectionView!
+    
+    @IBOutlet weak var collectionViewContainerHeight: NSLayoutConstraint!
     
     //MARK: - Properties
     
@@ -37,24 +42,22 @@ class HomeViewController: BaseViewController, UICollectionViewDataSource, UIColl
         return obj
     }()
     
-    // MARK: - Emotion Tag Properties
-    let unselectedColor = UIColor.lightGray
-    
-    enum EmotionCategory {
-        case positive, negative, neutral, cognitive
+    enum EmotionCategory: Int {
+        case positive = 0, negative, neutral, cognitive
         
         var selectedColor: UIColor {
             switch self {
-            case .positive: return .systemGreen
-            case .negative: return .systemRed
-            case .neutral: return .systemOrange
-            case .cognitive: return .systemBlue
+            case .positive: return UIColor(red: 0.14, green: 0.37, blue: 0.17, alpha: 1.00) // #245E2B
+            case .negative: return UIColor(red: 0.71, green: 0.18, blue: 0.04, alpha: 1.00) // #B52D0B
+            case .neutral:  return UIColor(red: 0.96, green: 0.69, blue: 0.30, alpha: 1.00) // #F4B04C
+            case .cognitive:return UIColor(red: 0.70, green: 0.89, blue: 0.99, alpha: 1.00) // #B3E3FC
             }
         }
     }
     
     private var selectedCategory: EmotionCategory = .positive
-
+    private var allCollectionViews: [UICollectionView] = []
+    
     // MARK: - View Lifecycle
     
     override func viewDidLoad() {
@@ -65,90 +68,119 @@ class HomeViewController: BaseViewController, UICollectionViewDataSource, UIColl
             self?.lblCalmScore.textColor = color
             self?.viewCalmScore.borderColor = color
         }
-        
         calmScoreGauge.needleValue = 20
         
         setupViewModelBindings()
         viewModel.determineButtonState()
+        setupCollectionViews()
         
-        updateCategorySelection()
-        setupCollectionView()
-    }
-    
-    override func viewDidLayoutSubviews() {
-        super.viewDidLayoutSubviews()
-        // Update height after the initial layout pass
-        updateCollectionViewHeight()
+        showCategory(.positive)
+        
+        viewModel.startLiveUpdates()
     }
     
     // MARK: - Setup
     
     private func setupViewModelBindings() {
-        viewModel.onStateUpdate = { [weak self] state in
-            self?.updateUI(for: state)
+        viewModel.onEmotionDeselected = { [weak self] category, index in
+            let indexPath = IndexPath(item: index, section: 0)
+            
+            // This is called by the ViewModel's timer to deselect a cell
+            let collectionViewToUpdate = self?.allCollectionViews[category.rawValue]
+            collectionViewToUpdate?.reloadItems(at: [indexPath])
+        }
+        
+        viewModel.onCalmScoreUpdate = { [weak self] score, color in
+            self?.lblCalmScore.text = "\(score)"
+            self?.lblCalmScore.textColor = color
+            self?.viewCalmScore.borderColor = color
+            self?.calmScoreGauge.needleValue = CGFloat(score)
         }
     }
     
-    private func setupCollectionView() {
-        collectionView.dataSource = self
-        collectionView.delegate = self
-        collectionView.isScrollEnabled = false
+    private func setupCollectionViews() {
+        allCollectionViews = [positiveCollectionView, negativeCollectionView, neutralCollectionView, cognitiveCollectionView]
         let nib = UINib(nibName: "EmotionTagCell", bundle: nil)
-        collectionView.register(nib, forCellWithReuseIdentifier: "EmotionTagCell")
         
-        let layout = UICollectionViewFlowLayout()
-        layout.scrollDirection = .vertical
-        layout.estimatedItemSize = UICollectionViewFlowLayout.automaticSize
-        layout.minimumInteritemSpacing = 10
-        layout.minimumLineSpacing = 10
-        collectionView.collectionViewLayout = layout
+        for (index, cv) in allCollectionViews.enumerated() {
+            cv.dataSource = self
+            cv.delegate = self
+            cv.isScrollEnabled = false
+            cv.tag = index
+            cv.register(nib, forCellWithReuseIdentifier: "EmotionTagCell")
+            
+            let layout = UICollectionViewFlowLayout()
+            layout.scrollDirection = .vertical
+            layout.estimatedItemSize = UICollectionViewFlowLayout.automaticSize
+            layout.minimumInteritemSpacing = 10
+            layout.minimumLineSpacing = 10
+            cv.collectionViewLayout = layout
+        }
     }
     
     // MARK: - UI Update Logic
-    
-    private func updateUI(for state: HomeViewModel.ButtonState) {
-        // ... (Your existing button logic) ...
-    }
-    
-    private func updateCollectionViewHeight() {
-        collectionViewHeight.constant = collectionView.collectionViewLayout.collectionViewContentSize.height
-    }
-    
-    private func updateCategorySelection() {
-        // ... (Your existing category selection UI logic) ...
-        collectionView.reloadData()
-        // Update height after a short delay to allow the collection view to reload.
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-            self.updateCollectionViewHeight()
+    private func showCategory(_ category: EmotionCategory) {
+        selectedCategory = category
+        let selectedLabelColor: UIColor = .white
+        let unselectedLabelColor: UIColor = .gray
+        let unselectedViewColor: UIColor = .clear
+        
+        let allLabels = [lblPositive, lblNegative, lblNeutral, lblCognitive]
+        let allCategoryViews = [viewPositive, viewNegative, viewNeutral, viewCognitive]
+        
+        // Reset all tabs to their unselected state
+        allLabels.forEach { $0?.textColor = unselectedLabelColor }
+        allCategoryViews.forEach {
+            $0?.backgroundColor = unselectedViewColor
+            $0?.layer.borderWidth = 0
+        }
+        
+        // Apply selected styles to the correct tab
+        let selectedView: UIView = allCategoryViews[category.rawValue]!
+        let selectedLabel: UILabel = allLabels[category.rawValue]!
+        
+        selectedView.backgroundColor = category.selectedColor
+        selectedView.layer.borderWidth = 2
+        selectedView.layer.borderColor = category.selectedColor.cgColor
+        selectedLabel.textColor = selectedLabelColor
+        
+        // Show the correct collection view and hide the others
+        for (index, cv) in allCollectionViews.enumerated() {
+            cv.isHidden = (index != category.rawValue)
+        }
+        
+//        let activeCollectionView = allCollectionViews[category.rawValue]
+//        activeCollectionView.performBatchUpdates({
+//            activeCollectionView.reloadData()
+//        }, completion: { _ in
+//            activeCollectionView.layoutIfNeeded()
+//            self.updateContainerHeight(for: category)
+//        })
+        
+        // Update the container height after the data is reloaded.
+        view.layoutIfNeeded()
+        DispatchQueue.main.async {
+            self.updateContainerHeight(for: category)
         }
     }
-
+    
+    private func updateContainerHeight(for category: EmotionCategory) {
+        let activeCollectionView = allCollectionViews[category.rawValue]
+        let contentHeight = activeCollectionView.collectionViewLayout.collectionViewContentSize.height
+        collectionViewContainerHeight.constant = contentHeight
+    }
+    
     // MARK: - Actions
-    
-    @IBAction func didTapPositiveCategory(_ sender: Any) {
-        selectedCategory = .positive
-        updateCategorySelection()
-    }
-    
-    @IBAction func didTapNegativeCategory(_ sender: Any) {
-        selectedCategory = .negative
-        updateCategorySelection()
-    }
-    
-    @IBAction func didTapNeutralCategory(_ sender: Any) {
-        selectedCategory = .neutral
-        updateCategorySelection()
-    }
-    
-    @IBAction func didTapCognitiveCategory(_ sender: Any) {
-        selectedCategory = .cognitive
-        updateCategorySelection()
-    }
+    @IBAction func didTapPositiveCategory(_ sender: Any) { showCategory(.positive) }
+    @IBAction func didTapNegativeCategory(_ sender: Any) { showCategory(.negative) }
+    @IBAction func didTapNeutralCategory(_ sender: Any) { showCategory(.neutral) }
+    @IBAction func didTapCognitiveCategory(_ sender: Any) { showCategory(.cognitive) }
     
     // MARK: - UICollectionViewDataSource & Delegate
     
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        switch selectedCategory {
+        guard let category = EmotionCategory(rawValue: collectionView.tag) else { return 0 }
+        switch category {
         case .positive: return viewModel.positiveEmotions.count
         case .negative: return viewModel.negativeEmotions.count
         case .neutral: return viewModel.neutralEmotions.count
@@ -158,38 +190,48 @@ class HomeViewController: BaseViewController, UICollectionViewDataSource, UIColl
     
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "EmotionTagCell", for: indexPath) as! EmotionTagCell
+        cell.btnSelect.removeTarget(nil, action: nil, for: .allEvents)
         
-        // **NEW**: Add target to the button inside the cell
         cell.btnSelect.tag = indexPath.item
-        cell.btnSelect.addTarget(self, action: #selector(handleCellSelection), for: .touchUpInside)
+        cell.btnSelect.accessibilityHint = String(collectionView.tag) // which category
+        cell.btnSelect.addTarget(self, action: #selector(handleCellSelection(_:)), for: .touchUpInside)
         
-        switch selectedCategory {
-        case .positive:
-            let emotion = viewModel.positiveEmotions[indexPath.item]
-            cell.configure(with: emotion.title, color: .systemGreen)
-            cell.updateSelection(isSelected: emotion.isSelected)
-        case .negative:
-            let emotion = viewModel.negativeEmotions[indexPath.item]
-            cell.configure(with: emotion.title, color: .systemRed)
-            cell.updateSelection(isSelected: emotion.isSelected)
-        case .neutral:
-            let emotion = viewModel.neutralEmotions[indexPath.item]
-            cell.configure(with: emotion.title, color: .systemOrange)
-            cell.updateSelection(isSelected: emotion.isSelected)
-        case .cognitive:
-            let emotion = viewModel.cognitiveEmotions[indexPath.item]
-            cell.configure(with: emotion.title, color: .systemBlue)
-            cell.updateSelection(isSelected: emotion.isSelected)
+        guard let category = EmotionCategory(rawValue: collectionView.tag) else { return cell }
+        
+        let emotion: EmotionTag
+        switch category {
+        case .positive: emotion = viewModel.positiveEmotions[indexPath.item]
+        case .negative: emotion = viewModel.negativeEmotions[indexPath.item]
+        case .neutral:  emotion = viewModel.neutralEmotions[indexPath.item]
+        case .cognitive:emotion = viewModel.cognitiveEmotions[indexPath.item]
         }
+        
+        cell.configure(with: emotion.title, color: category.selectedColor)
+        cell.updateSelection(isSelected: emotion.isSelected)
         
         return cell
     }
     
-    // **NEW**: Target action method to handle cell button taps
     @objc func handleCellSelection(_ sender: UIButton) {
-        let index = sender.tag
-        viewModel.toggleEmotionSelection(at: index, for: selectedCategory)
-        collectionView.reloadItems(at: [IndexPath(item: index, section: 0)])
-    }
-}
+        // determine which category this button belongs to:
+        guard let hint = sender.accessibilityHint, let catIndex = Int(hint),
+              let category = EmotionCategory(rawValue: catIndex) else {
+            return
+        }
+        let idx = sender.tag
+        viewModel.toggleEmotionSelection(at: idx, for: category)
 
+        let activeCollectionView = allCollectionViews[category.rawValue]
+        let ip = IndexPath(item: idx, section: 0)
+
+        // reload the single item; performBatchUpdates ensures collection has time to layout
+        activeCollectionView.performBatchUpdates({
+            activeCollectionView.reloadItems(at: [ip])
+        }, completion: { _ in
+            // force layout pass so cell layoutSubviews runs and animation starts correctly
+            activeCollectionView.layoutIfNeeded()
+            self.updateContainerHeight(for: category) // recalc height if needed
+        })
+    }
+
+}

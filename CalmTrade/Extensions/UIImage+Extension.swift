@@ -19,7 +19,7 @@ extension UIImageView {
     ///   - name: The name of the GIF file (without the .gif extension).
     ///   - repeatCount: The number of times to repeat the animation. Use 0 for infinite loop, 1 for single playback.
     /// - Returns: The total duration of one loop of the GIF animation.
-    public func loadGif(name: String, repeatCount: Int = 1) -> TimeInterval {
+    public func loadGifi(name: String, repeatCount: Int = 1) -> TimeInterval {
         // 1. Check if the GIF file exists in the bundle.
         guard let bundleURL = Bundle.main.url(forResource: name, withExtension: "gif") else {
             print("Error: GIF not found with name: \(name)")

@@ -5,7 +5,6 @@
 //  Created by Anas Parekh on 25/08/25.
 //
 
-
 import UIKit
 import GoogleSignIn
 import FirebaseAuth
@@ -17,6 +16,9 @@ import AuthenticationServices
 
 /// A centralized handler for managing different social login providers, using the latest Google Sign-In SDK.
 class SocialLoginHandler: NSObject {
+    
+    // This will hold the controller to prevent it from being deallocated.
+    private var authorizationController: ASAuthorizationController?
     
     private var presentingVC: UIViewController?
     private var appleSignInCompletion: ((Swift.Result<AuthCredential, Error>) -> Void)?
@@ -108,8 +110,8 @@ class SocialLoginHandler: NSObject {
     
     // MARK: - Apple Sign-In
 
-        /// Initiates a simplified Sign in with Apple flow (without nonce for development).
-        @available(iOS 13.0, *)
+    /// Initiates a simplified Sign in with Apple flow (without nonce for development).
+    @available(iOS 13.0, *)
     func signInWithApple(presentingVC: UIViewController, completion: @escaping (Swift.Result<AuthCredential, Error>) -> Void) {
         self.presentingVC = presentingVC
         self.appleSignInCompletion = completion
@@ -119,23 +121,24 @@ class SocialLoginHandler: NSObject {
         request.requestedScopes = [.fullName, .email]
         // The nonce is omitted in this simplified version.
         
-        let authorizationController = ASAuthorizationController(authorizationRequests: [request])
-        authorizationController.delegate = self
-        authorizationController.presentationContextProvider = self
-        authorizationController.performRequests()
+        // Assign the controller to the class property to keep it in memory.
+        self.authorizationController = ASAuthorizationController(authorizationRequests: [request])
+        self.authorizationController?.delegate = self
+        self.authorizationController?.presentationContextProvider = self
+        self.authorizationController?.performRequests()
     }
 }
 
 // MARK: - Apple Sign-In Delegate Conformance
 
-@available(iOS 13.0, *) // <-- FIX 2: Add availability check
+@available(iOS 13.0, *)
 extension SocialLoginHandler: ASAuthorizationControllerDelegate, ASAuthorizationControllerPresentationContextProviding {
     
     func presentationAnchor(for controller: ASAuthorizationController) -> ASPresentationAnchor {
         return self.presentingVC!.view.window!
     }
     
-    func controller(_ controller: ASAuthorizationController, didCompleteWithAuthorization authorization: ASAuthorization) {
+    func authorizationController(controller: ASAuthorizationController, didCompleteWithAuthorization authorization: ASAuthorization) {
         guard let appleIDCredential = authorization.credential as? ASAuthorizationAppleIDCredential else {
             let error = NSError(domain: "SocialLoginHandler", code: -5, userInfo: [NSLocalizedDescriptionKey: "Apple Sign-In credential is not of the expected type."])
             appleSignInCompletion?(.failure(error))
@@ -149,14 +152,22 @@ extension SocialLoginHandler: ASAuthorizationControllerDelegate, ASAuthorization
             return
         }
         
-        // Create the Firebase credential without the rawNonce.
-        let credential = OAuthProvider.credential(providerID: AuthProviderID.apple, idToken: idTokenString, accessToken: nil) // Access token is not needed here
-        
+        // In SocialLoginHandler.swift, inside the didCompleteWithAuthorization method...
+
+        // This is the most compatible method and has no nonce parameter.
+        let credential = OAuthProvider.credential(providerID: AuthProviderID.apple, idToken: idTokenString)
+//        let credential = OAuthProvider.credential(withProviderID: "apple.com",
+//                                                  idToken: idTokenString,
+//                                                  accessToken: nil)
+
         appleSignInCompletion?(.success(credential))
     }
     
-    func controller(_ controller: ASAuthorizationController, didCompleteWithError error: Error) {
+    func authorizationController(controller: ASAuthorizationController, didCompleteWithError error: Error) {
+        // Handle user cancellation separately if needed.
+        if (error as NSError).code == ASAuthorizationError.canceled.rawValue {
+            print("Apple Sign-In was cancelled by the user.")
+        }
         appleSignInCompletion?(.failure(error))
     }
 }
-

@@ -32,7 +32,7 @@ class SplashViewController: BaseViewController {
     func playGIF(completion: (() -> Void)?) {
 
         // Load the GIF and get its duration.
-        let duration = splashAnimationImageView.loadGif(name: "splash_animation", repeatCount: 0) - 1.0
+        let duration = splashAnimationImageView.loadGifi(name: "splash_animation", repeatCount: 0) - 1.0
         
         // Start the animation.
         splashAnimationImageView.startAnimating()
@@ -49,7 +49,7 @@ class SplashViewController: BaseViewController {
     }
     
     @IBAction func btnSignUpClk(_ sender: UIButton) {
-        let signUpVC = UIStoryboard(name: "Main", bundle: nil).instantiateViewController(withIdentifier: "EmotionalTagsViewController") as! EmotionalTagsViewController
+        let signUpVC = UIStoryboard(name: "Main", bundle: nil).instantiateViewController(withIdentifier: "SignUpViewController") as! SignUpViewController
         self.navigationController?.pushViewController(signUpVC, transitionType: .fade)
     }
 }

@@ -12,6 +12,9 @@ target 'CalmTrade' do
   pod 'GoogleUtilities'
   pod 'FBSDKLoginKit'
   pod 'IQKeyboardManagerSwift'
+  pod 'SwiftGifOrigin', '~> 1.7.0'
+  pod 'Charts'
+  pod 'PolarBleSdk', '~> 5.0'
 
 
   target 'CalmTradeTests' do

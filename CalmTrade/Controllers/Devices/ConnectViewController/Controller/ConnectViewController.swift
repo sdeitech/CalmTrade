@@ -26,7 +26,7 @@ class ConnectViewController: BaseViewController {
                 // --- SUCCESS ---
                 print("Successfully connected to HealthKit!")
                 // You can now show the "You're Connected" pop-up.
-                self?.showConnectedPopup()
+                self?.showAppleConnectedScreen()
             } else {
                 // --- FAILURE ---
                 // Show an alert with the error message.
@@ -35,6 +35,25 @@ class ConnectViewController: BaseViewController {
         }
     }
     
+    func showAppleConnectedScreen() {
+        let storyboard = UIStoryboard(name: "Main", bundle: nil) // Or your storyboard name
+        let appleConnectedVC = storyboard.instantiateViewController(withIdentifier: "AppleConnectedViewController") as! AppleConnectedViewController
+
+        // Set the callback closure
+        appleConnectedVC.onContinueTapped = { [weak self] in
+            // This code will run when the "Continue" button is tapped inside AppleConnectedViewController.
+            
+            // 1. First, dismiss the presented view controller.
+            self?.dismiss(animated: true) {
+                // 2. Then, push the next view controller.
+                let breathingVC = UIStoryboard(name: "Main", bundle: nil).instantiateViewController(withIdentifier: "BreathingViewController") as! BreathingViewController
+                self?.navigationController?.pushViewController(breathingVC, animated: true)
+            }
+        }
+
+        // Present the view controller (e.g., modally)
+        self.present(appleConnectedVC, animated: true)
+    }
     private func showConnectedPopup() {
         let appleConnectedVC = UIStoryboard(name: "Main", bundle: nil).instantiateViewController(identifier: "AppleConnectedViewController") as! AppleConnectedViewController
         appleConnectedVC.modalPresentationStyle = .overFullScreen
@@ -50,6 +69,11 @@ class ConnectViewController: BaseViewController {
     @IBAction func btnSkipTapped(_ sender: UIButton) {
         let breathingVC = UIStoryboard(name: "Main", bundle: nil).instantiateViewController(withIdentifier: "BreathingViewController") as! BreathingViewController
         navigationController?.pushViewController(breathingVC, transitionType: .fade, duration: 0.03)
+    }
+    
+    @IBAction func btnConnectPolarTapped(_ sender: UIButton) {
+        let polarVC = UIStoryboard(name: Constants.Storyboard.Devices, bundle: nil).instantiateViewController(withIdentifier: "PolarConnectionViewController") as! PolarConnectionViewController
+        navigationController?.pushViewController(polarVC, transitionType: .fade, duration: 0.03)
     }
 }
 

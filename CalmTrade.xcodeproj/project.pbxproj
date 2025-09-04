@@ -444,7 +444,7 @@
 				CODE_SIGN_ENTITLEMENTS = CalmTrade/CalmTrade.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = 6FQ7UW27Y5;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				FRAMEWORK_SEARCH_PATHS = (
@@ -477,6 +477,8 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = CalmTrade/Resources/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = CalmTrade;
+				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "This app needs Bluetooth to connect to your Polar device and provide live biometric data.";
+				INFOPLIST_KEY_NSBluetoothPeripheralUsageDescription = "This app uses Bluetooth to discover and connect to your Polar device.";
 				INFOPLIST_KEY_NSHealthShareUsageDescription = "CalmTrade needs to read your heart rate, HRV, and sleep data to calculate your Trading Wellness Score and provide performance insights.";
 				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "CalmTrade needs to save your manually entered sleep sessions to your Health data.";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -512,7 +514,7 @@
 				CODE_SIGN_ENTITLEMENTS = CalmTrade/CalmTrade.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = 6FQ7UW27Y5;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				FRAMEWORK_SEARCH_PATHS = (
@@ -545,6 +547,8 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = CalmTrade/Resources/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = CalmTrade;
+				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "This app needs Bluetooth to connect to your Polar device and provide live biometric data.";
+				INFOPLIST_KEY_NSBluetoothPeripheralUsageDescription = "This app uses Bluetooth to discover and connect to your Polar device.";
 				INFOPLIST_KEY_NSHealthShareUsageDescription = "CalmTrade needs to read your heart rate, HRV, and sleep data to calculate your Trading Wellness Score and provide performance insights.";
 				INFOPLIST_KEY_NSHealthUpdateUsageDescription = "CalmTrade needs to save your manually entered sleep sessions to your Health data.";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;

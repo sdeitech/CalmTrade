@@ -15,6 +15,9 @@ class AppleConnectedViewController: UIViewController {
     // Connect these to your two UIImageViews in the Storyboard
     @IBOutlet weak var waveImageView: UIImageView!
     @IBOutlet weak var heartbeatImageView: UIImageView!
+    
+    // MARK: - Properties
+    var onContinueTapped: (() -> Void)?
 
     // MARK: - View Lifecycle
     
@@ -41,16 +44,15 @@ class AppleConnectedViewController: UIViewController {
     
     private func setupAnimations() {
         // 1. Load the "wave" GIF and set it to loop forever (repeatCount: 0)
-        waveImageView.loadGif(name: "wave animation", repeatCount: 0)
+        waveImageView.loadGifi(name: "wave animation", repeatCount: 0)
         
         // 2. Load the "heartbeat" GIF and set it to loop forever
-        heartbeatImageView.loadGif(name: "heartbeat", repeatCount: 0)
+        heartbeatImageView.loadGifi(name: "heartbeat", repeatCount: 0)
     }
     
     //MARK: - Action
     
     @IBAction func btnContinueTapped(_ sender: Any) {
-        let breathingVC = UIStoryboard(name: "Main", bundle: nil).instantiateViewController(withIdentifier: "BreathingViewController") as! BreathingViewController
-        self.navigationController?.pushViewController(breathingVC, transitionType: .fade)
+        onContinueTapped?()
     }
 }
