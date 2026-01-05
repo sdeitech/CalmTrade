@@ -3,8 +3,7 @@
  *     envoy/service/discovery/v3/ads.proto
  *
  * Do not edit -- your changes will be discarded when the file is
- * regenerated.
- * NO CHECKED-IN PROTOBUF GENCODE */
+ * regenerated. */
 
 #include <stddef.h>
 #include "upb/generated_code_support.h"
@@ -16,17 +15,12 @@
 // Must be last.
 #include "upb/port/def.inc"
 
-extern const struct upb_MiniTable UPB_PRIVATE(_kUpb_MiniTable_StaticallyTreeShaken);
 const upb_MiniTable envoy__service__discovery__v3__AdsDummy_msg_init = {
   NULL,
   NULL,
   8, 0, kUpb_ExtMode_NonExtendable, 0, UPB_FASTTABLE_MASK(255), 0,
-#ifdef UPB_TRACING_ENABLED
-  "envoy.service.discovery.v3.AdsDummy",
-#endif
 };
 
-const upb_MiniTable* envoy__service__discovery__v3__AdsDummy_msg_init_ptr = &envoy__service__discovery__v3__AdsDummy_msg_init;
 static const upb_MiniTable *messages_layout[1] = {
   &envoy__service__discovery__v3__AdsDummy_msg_init,
 };

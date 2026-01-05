@@ -17,9 +17,9 @@
   import Foundation
   import UIKit
   #if COCOAPODS
-    internal import GoogleUtilities
+    @_implementationOnly import GoogleUtilities
   #else
-    internal import GoogleUtilities_Environment
+    @_implementationOnly import GoogleUtilities_Environment
   #endif
 
   /// Class responsible for providing a default AuthUIDelegate.

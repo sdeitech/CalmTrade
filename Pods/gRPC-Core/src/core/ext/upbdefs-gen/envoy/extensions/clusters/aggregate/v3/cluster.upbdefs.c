@@ -3,8 +3,7 @@
  *     envoy/extensions/clusters/aggregate/v3/cluster.proto
  *
  * Do not edit -- your changes will be discarded when the file is
- * regenerated.
- * NO CHECKED-IN PROTOBUF GENCODE */
+ * regenerated. */
 
 #include "upb/reflection/def.h"
 #include "envoy/extensions/clusters/aggregate/v3/cluster.upbdefs.h"

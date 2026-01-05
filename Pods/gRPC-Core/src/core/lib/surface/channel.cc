@@ -16,19 +16,22 @@
 
 #include "src/core/lib/surface/channel.h"
 
+#include "absl/log/check.h"
+
 #include <grpc/compression.h>
 #include <grpc/grpc.h>
 #include <grpc/impl/channel_arg_names.h>
 #include <grpc/support/alloc.h>
+#include <grpc/support/log.h>
 #include <grpc/support/port_platform.h>
 
-#include "absl/log/check.h"
 #include "src/core/channelz/channel_trace.h"
 #include "src/core/channelz/channelz.h"
 #include "src/core/lib/channel/channel_args.h"
 #include "src/core/lib/compression/compression_internal.h"
 #include "src/core/lib/debug/trace.h"
 #include "src/core/lib/iomgr/exec_ctx.h"
+#include "src/core/lib/surface/api_trace.h"
 #include "src/core/telemetry/stats.h"
 #include "src/core/telemetry/stats_data.h"
 
@@ -92,8 +95,7 @@ Channel::RegisteredCall* Channel::RegisterCall(const char* method,
 void grpc_channel_destroy(grpc_channel* channel) {
   grpc_core::ApplicationCallbackExecCtx callback_exec_ctx;
   grpc_core::ExecCtx exec_ctx;
-  GRPC_TRACE_LOG(api, INFO)
-      << "grpc_channel_destroy(channel=" << channel << ")";
+  GRPC_API_TRACE("grpc_channel_destroy(channel=%p)", 1, (channel));
   grpc_channel_destroy_internal(channel);
 }
 
@@ -118,9 +120,9 @@ grpc_call* grpc_channel_create_call(grpc_channel* channel,
 
 void* grpc_channel_register_call(grpc_channel* channel, const char* method,
                                  const char* host, void* reserved) {
-  GRPC_TRACE_LOG(api, INFO) << "grpc_channel_register_call(channel=" << channel
-                            << ", method=" << method << ", host=" << host
-                            << ", reserved=" << reserved << ")";
+  GRPC_API_TRACE(
+      "grpc_channel_register_call(channel=%p, method=%s, host=%s, reserved=%p)",
+      4, (channel, method, host, reserved));
   CHECK(!reserved);
   grpc_core::ApplicationCallbackExecCtx callback_exec_ctx;
   grpc_core::ExecCtx exec_ctx;
@@ -133,16 +135,18 @@ grpc_call* grpc_channel_create_registered_call(
     gpr_timespec deadline, void* reserved) {
   auto* rc =
       static_cast<grpc_core::Channel::RegisteredCall*>(registered_call_handle);
-  GRPC_TRACE_LOG(api, INFO)
-      << "grpc_channel_create_registered_call(channel=" << channel
-      << ", parent_call=" << parent_call
-      << ", propagation_mask=" << (unsigned)propagation_mask
-      << ", completion_queue=" << completion_queue
-      << ", registered_call_handle=" << registered_call_handle
-      << ", deadline=gpr_timespec { tv_sec: " << deadline.tv_sec
-      << ", tv_nsec: " << deadline.tv_nsec
-      << ", clock_type: " << (int)deadline.clock_type
-      << " }, reserved=" << reserved << ")";
+  GRPC_API_TRACE(
+      "grpc_channel_create_registered_call("
+      "channel=%p, parent_call=%p, propagation_mask=%x, completion_queue=%p, "
+      "registered_call_handle=%p, "
+      "deadline=gpr_timespec { tv_sec: %" PRId64
+      ", tv_nsec: %d, clock_type: %d }, "
+      "reserved=%p)",
+      9,
+      (channel, parent_call, (unsigned)propagation_mask, completion_queue,
+       registered_call_handle, deadline.tv_sec, deadline.tv_nsec,
+       (int)deadline.clock_type, reserved));
+  CHECK(!reserved);
   grpc_core::ApplicationCallbackExecCtx callback_exec_ctx;
   grpc_core::ExecCtx exec_ctx;
   return grpc_core::Channel::FromC(channel)->CreateCall(
@@ -155,8 +159,7 @@ grpc_call* grpc_channel_create_registered_call(
 }
 
 char* grpc_channel_get_target(grpc_channel* channel) {
-  GRPC_TRACE_LOG(api, INFO)
-      << "grpc_channel_get_target(channel=" << channel << ")";
+  GRPC_API_TRACE("grpc_channel_get_target(channel=%p)", 1, (channel));
   auto target = grpc_core::Channel::FromC(channel)->target();
   char* buffer = static_cast<char*>(gpr_zalloc(target.size() + 1));
   memcpy(buffer, target.data(), target.size());
@@ -173,8 +176,8 @@ void grpc_channel_get_info(grpc_channel* channel,
 void grpc_channel_reset_connect_backoff(grpc_channel* channel) {
   grpc_core::ApplicationCallbackExecCtx callback_exec_ctx;
   grpc_core::ExecCtx exec_ctx;
-  GRPC_TRACE_LOG(api, INFO)
-      << "grpc_channel_reset_connect_backoff(channel=" << channel << ")";
+  GRPC_API_TRACE("grpc_channel_reset_connect_backoff(channel=%p)", 1,
+                 (channel));
   grpc_core::Channel::FromC(channel)->ResetConnectionBackoff();
 }
 
@@ -186,9 +189,9 @@ grpc_connectivity_state grpc_channel_check_connectivity_state(
     grpc_channel* channel, int try_to_connect) {
   grpc_core::ApplicationCallbackExecCtx callback_exec_ctx;
   grpc_core::ExecCtx exec_ctx;
-  GRPC_TRACE_LOG(api, INFO)
-      << "grpc_channel_check_connectivity_state(channel=" << channel
-      << ", try_to_connect=" << try_to_connect << ")";
+  GRPC_API_TRACE(
+      "grpc_channel_check_connectivity_state(channel=%p, try_to_connect=%d)", 2,
+      (channel, try_to_connect));
   return grpc_core::Channel::FromC(channel)->CheckConnectivityState(
       try_to_connect);
 }
@@ -198,13 +201,15 @@ void grpc_channel_watch_connectivity_state(
     gpr_timespec deadline, grpc_completion_queue* cq, void* tag) {
   grpc_core::ApplicationCallbackExecCtx callback_exec_ctx;
   grpc_core::ExecCtx exec_ctx;
-  GRPC_TRACE_LOG(api, INFO)
-      << "grpc_channel_watch_connectivity_state(channel=" << channel
-      << ", last_observed_state=" << (int)last_observed_state
-      << ", deadline=gpr_timespec { tv_sec: " << deadline.tv_sec
-      << ", tv_nsec: " << deadline.tv_nsec
-      << ", clock_type: " << (int)deadline.clock_type << " }, cq=" << cq
-      << ", tag=" << tag << ")";
+  GRPC_API_TRACE(
+      "grpc_channel_watch_connectivity_state("
+      "channel=%p, last_observed_state=%d, "
+      "deadline=gpr_timespec { tv_sec: %" PRId64
+      ", tv_nsec: %d, clock_type: %d }, "
+      "cq=%p, tag=%p)",
+      7,
+      (channel, (int)last_observed_state, deadline.tv_sec, deadline.tv_nsec,
+       (int)deadline.clock_type, cq, tag));
   return grpc_core::Channel::FromC(channel)->WatchConnectivityState(
       last_observed_state, grpc_core::Timestamp::FromTimespecRoundUp(deadline),
       cq, tag);
@@ -213,9 +218,8 @@ void grpc_channel_watch_connectivity_state(
 void grpc_channel_ping(grpc_channel* channel, grpc_completion_queue* cq,
                        void* tag, void* reserved) {
   grpc_core::ExecCtx exec_ctx;
-  GRPC_TRACE_LOG(api, INFO)
-      << "grpc_channel_ping(channel=" << channel << ", cq=" << cq
-      << ", tag=" << tag << ", reserved=" << reserved << ")";
+  GRPC_API_TRACE("grpc_channel_ping(channel=%p, cq=%p, tag=%p, reserved=%p)", 4,
+                 (channel, cq, tag, reserved));
   CHECK_EQ(reserved, nullptr);
   grpc_core::Channel::FromC(channel)->Ping(cq, tag);
 }

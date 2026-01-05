@@ -28,3 +28,21 @@ extension UIViewController {
         present(alert, animated: true)
     }
 }
+
+// MARK: - Array average helper
+
+extension Array where Element: BinaryFloatingPoint {
+    /// Returns the arithmetic mean of all elements, or nil if the array is empty.
+    func average() -> Element? {
+        guard !isEmpty else { return nil }
+        return reduce(0, +) / Element(count)
+    }
+}
+
+extension Array where Element: BinaryInteger {
+    func average() -> Double? {
+        guard !isEmpty else { return nil }
+        let total = reduce(0, +)
+        return Double(total) / Double(count)
+    }
+}

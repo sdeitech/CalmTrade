@@ -15,8 +15,9 @@
 #ifndef GRPC_SRC_CORE_LIB_TRANSPORT_METADATA_COMPRESSION_TRAITS_H
 #define GRPC_SRC_CORE_LIB_TRANSPORT_METADATA_COMPRESSION_TRAITS_H
 
-#include <grpc/support/port_platform.h>
 #include <stddef.h>
+
+#include <grpc/support/port_platform.h>
 
 namespace grpc_core {
 
@@ -42,7 +43,7 @@ struct StableValueCompressor {};
 template <typename T, T value>
 struct KnownValueCompressor {};
 
-// Values are incompressable, but expect the key to be in most requests and try
+// Values are uncompressible, but expect the key to be in most requests and try
 // and compress that.
 struct FrequentKeyWithNoValueCompressionCompressor {};
 
@@ -56,7 +57,7 @@ struct SmallIntegralValuesCompressor {};
 // Specialty compressor for grpc-timeout metadata.
 struct TimeoutCompressor {};
 
-// Specialty compressors for HTTP/2 pseudo headers.
+// Specialty compressors for HTTP/2 psuedo headers.
 struct HttpSchemeCompressor {};
 struct HttpMethodCompressor {};
 struct HttpStatusCompressor {};

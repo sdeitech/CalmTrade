@@ -1,7 +1,7 @@
 // swift-interface-format-version: 1.0
-// swift-compiler-version: Apple Swift version 6.0.3 effective-5.10 (swiftlang-6.0.3.1.10 clang-1600.0.30.1)
-// swift-module-flags: -target x86_64-apple-ios13.1-macabi -enable-objc-interop -enable-library-evolution -swift-version 5 -enforce-exclusivity=checked -O -enable-bare-slash-regex -module-name FBSDKCoreKit
-// swift-module-flags-ignorable: -no-verify-emitted-module-interface
+// swift-compiler-version: Apple Swift version 6.1.2 effective-5.10 (swiftlang-6.1.2.1.2 clang-1700.0.13.5)
+// swift-module-flags: -target x86_64-apple-ios13.1-macabi -enable-objc-interop -enable-library-evolution -swift-version 5 -enforce-exclusivity=checked -O -enable-experimental-feature DebugDescriptionMacro -enable-bare-slash-regex -module-name FBSDKCoreKit
+// swift-module-flags-ignorable: -no-verify-emitted-module-interface -interface-compiler-version 6.1.2
 import AdSupport
 import AppTrackingTransparency
 import AuthenticationServices
@@ -248,11 +248,11 @@ public enum Permission : Swift.Hashable, Swift.ExpressibleByStringLiteral {
   public var name: Swift.String {
     get
   }
-  public func hash(into hasher: inout Swift.Hasher)
   public static func == (a: FBSDKCoreKit.Permission, b: FBSDKCoreKit.Permission) -> Swift.Bool
   public typealias ExtendedGraphemeClusterLiteralType = Swift.String
   public typealias StringLiteralType = Swift.String
   public typealias UnicodeScalarLiteralType = Swift.String
+  public func hash(into hasher: inout Swift.Hasher)
   public var hashValue: Swift.Int {
     get
   }
@@ -644,16 +644,19 @@ extension FBSDKCoreKit._BridgeAPI : AuthenticationServices.ASWebAuthenticationPr
   @objc override dynamic public init()
   @objc deinit
 }
+@available(iOS, deprecated: 18.0)
 @objc(FBSDKPaymentObserver) final public class _PaymentObserver : ObjectiveC.NSObject, FBSDKCoreKit._PaymentObserving {
   @objc(initWithPaymentQueue:paymentProductRequestorFactory:) public init(paymentQueue: StoreKit.SKPaymentQueue, paymentProductRequestorFactory: any FBSDKCoreKit._PaymentProductRequestorCreating)
   @objc(startObservingTransactions) final public func startObservingTransactions()
   @objc(stopObservingTransactions) final public func stopObservingTransactions()
   @objc deinit
 }
+@available(iOS, deprecated: 18.0)
 extension FBSDKCoreKit._PaymentObserver : StoreKit.SKPaymentTransactionObserver {
   @objc final public func paymentQueue(_ queue: StoreKit.SKPaymentQueue, updatedTransactions transactions: [StoreKit.SKPaymentTransaction])
 }
-@_inheritsConvenienceInitializers @objc(FBSDKPaymentProductRequestorFactory) final public class _PaymentProductRequestorFactory : ObjectiveC.NSObject, FBSDKCoreKit._PaymentProductRequestorCreating {
+@_inheritsConvenienceInitializers @available(iOS, deprecated: 18.0)
+@objc(FBSDKPaymentProductRequestorFactory) final public class _PaymentProductRequestorFactory : ObjectiveC.NSObject, FBSDKCoreKit._PaymentProductRequestorCreating {
   @objc final public func createRequestor(transaction: StoreKit.SKPaymentTransaction) -> FBSDKCoreKit.PaymentProductRequestor
   @objc override dynamic public init()
   @objc deinit

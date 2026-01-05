@@ -56,7 +56,7 @@ extern "C++" {
     return func;                                                \
   }()
 
-BSSL_NAMESPACE_BEGIN
+namespace bssl {
 
 enum class FIPSStatus {
   NOT_APPROVED = 0,
@@ -87,7 +87,7 @@ class FIPSIndicatorHelper {
   const uint64_t before_;
 };
 
-BSSL_NAMESPACE_END
+}  // namespace bssl
 }  // extern "C++"
 
 #endif  // !BORINGSSL_NO_CXX

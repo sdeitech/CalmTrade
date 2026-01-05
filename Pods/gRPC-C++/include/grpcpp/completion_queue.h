@@ -32,8 +32,13 @@
 #ifndef GRPCPP_COMPLETION_QUEUE_H
 #define GRPCPP_COMPLETION_QUEUE_H
 
+#include <list>
+
+#include "absl/log/absl_check.h"
+
 #include <grpc/grpc.h>
 #include <grpc/support/atm.h>
+#include <grpc/support/log.h>
 #include <grpc/support/time.h>
 #include <grpcpp/impl/codegen/rpc_service_method.h>
 #include <grpcpp/impl/codegen/status.h>
@@ -42,10 +47,6 @@
 #include <grpcpp/impl/completion_queue_tag.h>
 #include <grpcpp/impl/grpc_library.h>
 #include <grpcpp/impl/sync.h>
-
-#include <list>
-
-#include "absl/log/absl_check.h"
 
 struct grpc_completion_queue;
 

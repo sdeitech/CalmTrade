@@ -14,19 +14,6 @@
 
 #include "src/core/lib/surface/server_call.h"
 
-#include <grpc/byte_buffer.h>
-#include <grpc/compression.h>
-#include <grpc/event_engine/event_engine.h>
-#include <grpc/grpc.h>
-#include <grpc/impl/call.h>
-#include <grpc/impl/propagation_bits.h>
-#include <grpc/slice.h>
-#include <grpc/slice_buffer.h>
-#include <grpc/status.h>
-#include <grpc/support/alloc.h>
-#include <grpc/support/atm.h>
-#include <grpc/support/port_platform.h>
-#include <grpc/support/string_util.h>
 #include <inttypes.h>
 #include <limits.h>
 #include <stdlib.h>
@@ -38,6 +25,23 @@
 
 #include "absl/log/check.h"
 #include "absl/strings/string_view.h"
+
+#include <grpc/byte_buffer.h>
+#include <grpc/compression.h>
+#include <grpc/event_engine/event_engine.h>
+#include <grpc/grpc.h>
+#include <grpc/impl/call.h>
+#include <grpc/impl/propagation_bits.h>
+#include <grpc/slice.h>
+#include <grpc/slice_buffer.h>
+#include <grpc/status.h>
+#include <grpc/support/alloc.h>
+#include <grpc/support/atm.h>
+#include <grpc/support/log.h>
+#include <grpc/support/port_platform.h>
+#include <grpc/support/string_util.h>
+
+#include "src/core/lib/gprpp/bitset.h"
 #include "src/core/lib/promise/all_ok.h"
 #include "src/core/lib/promise/map.h"
 #include "src/core/lib/promise/poll.h"
@@ -49,8 +53,6 @@
 #include "src/core/lib/transport/metadata.h"
 #include "src/core/lib/transport/metadata_batch.h"
 #include "src/core/server/server_interface.h"
-#include "src/core/util/bitset.h"
-#include "src/core/util/latent_see.h"
 
 namespace grpc_core {
 
@@ -186,26 +188,19 @@ void ServerCall::CommitBatch(const grpc_op* ops, size_t nops, void* notify_tag,
         [this, cancelled = op->data.recv_close_on_server.cancelled]() {
           return Map(call_handler_.WasCancelled(),
                      [cancelled, this](bool result) -> Success {
-                       saw_was_cancelled_.store(true,
-                                                std::memory_order_relaxed);
                        ResetDeadline();
                        *cancelled = result ? 1 : 0;
                        return Success{};
                      });
         });
     call_handler_.SpawnInfallible(
-        "final-batch",
-        GRPC_LATENT_SEE_PROMISE(
-            "ServerCallBatch",
-            InfallibleBatch(std::move(primary_ops),
-                            std::move(recv_trailing_metadata),
-                            is_notify_tag_closure, notify_tag, cq_)));
+        "final-batch", InfallibleBatch(std::move(primary_ops),
+                                       std::move(recv_trailing_metadata),
+                                       is_notify_tag_closure, notify_tag, cq_));
   } else {
     call_handler_.SpawnInfallible(
-        "batch", GRPC_LATENT_SEE_PROMISE(
-                     "ServerCallBatch",
-                     FallibleBatch(std::move(primary_ops),
-                                   is_notify_tag_closure, notify_tag, cq_)));
+        "batch", FallibleBatch(std::move(primary_ops), is_notify_tag_closure,
+                               notify_tag, cq_));
   }
 }
 

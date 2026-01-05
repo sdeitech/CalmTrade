@@ -20,8 +20,9 @@
 
 #ifdef GPR_WINDOWS
 #include <grpc/support/cpu.h>
+#include <grpc/support/log.h>
 
-#include "src/core/util/crash.h"
+#include "src/core/lib/gprpp/crash.h"
 
 unsigned gpr_cpu_num_cores(void) {
   SYSTEM_INFO si;

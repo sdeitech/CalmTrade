@@ -7,112 +7,140 @@
 
 
 import UIKit
-import Charts
+import SwiftUI
+import Combine
 
-class StepsDetailViewController: BaseViewController {
+final class StepsDetailViewController: BaseViewController {
 
-    // MARK: - Outlets
-    @IBOutlet weak var segmentedControl: UISegmentedControl!
-    @IBOutlet weak var lblAverageValue: UILabel!
-    @IBOutlet weak var lblDateRange: UILabel!
-    @IBOutlet weak var barChartView: BarChartView!
-    
-    @IBOutlet weak var lblTrendTitle: UILabel!
-    @IBOutlet weak var lblTrendDescription: UILabel!
+    // MARK: - IBOutlets
+    @IBOutlet private weak var chartContainerView: UIView!
+    @IBOutlet private weak var segmentedControl: UISegmentedControl!
+    @IBOutlet private weak var lblAverage: UILabel!
+    @IBOutlet private weak var lblDateRange: UILabel!
 
-    // MARK: - Properties
+    // MARK: - MVVM
     private let viewModel = StepsDetailViewModel()
-    
-    // MARK: - View Lifecycle
+    private var cancellables = Set<AnyCancellable>()
+
+    // SwiftUI host
+    private var host: UIHostingController<StepsSwiftChartView>?
+    private var currentBars: [StepBar] = []
+
     override func viewDidLoad() {
         super.viewDidLoad()
-        
         setupSegmentedControl()
-        setupChartStyle()
-        setupViewModelBindings()
-        
-        viewModel.fetchData(for: .weekly) // Default to weekly view
+        embedChartIfNeeded()
+        bindViewModel()
+
+        viewModel.fetchInitialData(for: .weekly) // default like Health
     }
     
-    // MARK: - Setup
-    private func setupViewModelBindings() {
-        viewModel.onDataReady = { [weak self] uiData in
-            guard let self = self, let data = uiData else {
-                self?.barChartView.data = nil
-                self?.lblAverageValue.text = "0"
-                self?.lblDateRange.text = "No Data Available"
-                return
-            }
-            
-            self.lblAverageValue.text = data.averageValue
-            self.lblDateRange.text = data.dateRange
-            self.barChartView.data = data.chartData
-            self.updateXAxis(with: data.xAxisLabels)
-            
-            if let firstTrend = data.trends.first {
-                self.lblTrendTitle.text = firstTrend.title
-                self.lblTrendDescription.text = firstTrend.description
-            }
-        }
+    override func motionEnded(_ motion: UIEvent.EventSubtype, with event: UIEvent?) {
+        super.motionEnded(motion, with: event)
+        guard motion == .motionShake else { return }
+        let vc = UIHostingController(rootView: StepsLogView(limit: 1000, newestFirst: true, daysBack: 14))
+        vc.modalPresentationStyle = .formSheet
+        present(vc, animated: true)
     }
-    
+
+    // MARK: - UI
     private func setupSegmentedControl() {
-        let textAttributes = [NSAttributedString.Key.foregroundColor: UIColor.white]
-        segmentedControl.setTitleTextAttributes(textAttributes, for: .normal)
-        segmentedControl.setTitleTextAttributes(textAttributes, for: .selected)
-    }
-
-    @IBAction func segmentedControlChanged(_ sender: UISegmentedControl) {
-        let range: StepsDetailViewModel.ChartTimeRange
-        switch sender.selectedSegmentIndex {
-        case 0: range = .daily
-        case 1: range = .weekly
-        case 2: range = .monthly
-        default: return
+        segmentedControl.removeAllSegments()
+        for (i, r) in StepsDetailViewModel.ChartTimeRange.allCases.enumerated() {
+            let title: String = {
+                switch r {
+                case .daily: return "D"
+                case .weekly: return "W"
+                case .monthly: return "M"
+                }
+            }()
+            segmentedControl.insertSegment(withTitle: title, at: i, animated: false)
         }
-        viewModel.fetchData(for: range)
-    }
-    
-    @IBAction func btnBackTapped(_ sender: UIButton) {
-        self.navigationController?.popViewController()
+        segmentedControl.selectedSegmentIndex = 1 // W
+        let normalAttr: [NSAttributedString.Key: Any] = [.foregroundColor: UIColor.lightGray]
+        let selAttr: [NSAttributedString.Key: Any] = [.foregroundColor: UIColor.white]
+        segmentedControl.setTitleTextAttributes(normalAttr, for: .normal)
+        segmentedControl.setTitleTextAttributes(selAttr, for: .selected)
     }
 
-    // MARK: - Chart Styling
-    private func setupChartStyle() {
-        barChartView.backgroundColor = .black
-        barChartView.legend.enabled = false
-        barChartView.leftAxis.enabled = false
-        
-        let yAxis = barChartView.rightAxis
-        yAxis.enabled = true
-        yAxis.labelTextColor = .gray
-        yAxis.axisLineColor = .clear // No Y-axis line in the design
-        yAxis.gridColor = .darkGray
-        yAxis.gridLineDashLengths = [4, 4]
-        yAxis.axisMinimum = 0
-        // Custom Y-axis labels like "5k", "10k"
-        yAxis.valueFormatter = YAxisValueFormatter()
-        
-        let xAxis = barChartView.xAxis
-        xAxis.labelPosition = .bottom
-        xAxis.labelTextColor = .gray
-        xAxis.axisLineColor = .darkGray
-        xAxis.drawGridLinesEnabled = false // No vertical grid lines
-        xAxis.granularity = 1
+    private func embedChartIfNeeded() {
+        guard host == nil else { return }
+        // placeholder chart until first data arrives
+        let chart = StepsSwiftChartView(
+            bars: [],
+            range: .weekly,
+            xDomain: Date()...Date(),
+            yMax: 0
+        )
+        let hosting = UIHostingController(rootView: chart)
+        hosting.view.backgroundColor = .clear
+        addChild(hosting)
+        chartContainerView.addSubview(hosting.view)
+        hosting.view.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([
+            hosting.view.leadingAnchor.constraint(equalTo: chartContainerView.leadingAnchor),
+            hosting.view.trailingAnchor.constraint(equalTo: chartContainerView.trailingAnchor),
+            hosting.view.topAnchor.constraint(equalTo: chartContainerView.topAnchor),
+            hosting.view.bottomAnchor.constraint(equalTo: chartContainerView.bottomAnchor)
+        ])
+        hosting.didMove(toParent: self)
+        host = hosting
     }
-    
-    private func updateXAxis(with labels: [String]) {
-        let xAxis = barChartView.xAxis
-        xAxis.valueFormatter = IndexAxisValueFormatter(values: labels)
-        xAxis.setLabelCount(labels.count, force: true)
-    }
-}
 
-// Custom formatter for the Y-axis to show "5k", "10k", etc.
-class YAxisValueFormatter: AxisValueFormatter {
-    func stringForValue(_ value: Double, axis: AxisBase?) -> String {
-        if value == 0 { return "0" }
-        if value < 1000 { return "\(Int(value))" }
-        return "\(Int(value / 1000))k"
+    private func updateChart(bars: [StepBar], xDomain: ClosedRange<Date>, yMax: Double, range: StepsChartRange) {
+        host?.rootView = StepsSwiftChartView(
+            bars: bars,
+            range: range,
+            xDomain: xDomain,
+            yMax: yMax
+        )
+    }
+
+    // MARK: - Bindings
+    private func bindViewModel() {
+        // Bars + axes
+        Publishers.CombineLatest3(viewModel.$bars, viewModel.$xDomain, viewModel.$yMax)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] bars, domain, yMax in
+                guard let self = self else { return }
+                let seg = self.segmentedControl.selectedSegmentIndex
+                let range: StepsChartRange = (seg == 0) ? .daily : (seg == 1 ? .weekly : .monthly)
+                self.updateChart(bars: bars, xDomain: domain, yMax: yMax, range: range)
+            }
+            .store(in: &cancellables)
+
+        // Labels
+        viewModel.$averageText
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] in self?.lblAverage.text = $0 }
+            .store(in: &cancellables)
+
+        viewModel.$headerDateText
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] in self?.lblDateRange.text = $0 }
+            .store(in: &cancellables)
+    }
+
+    // MARK: - Actions
+    // Keep your existing method:
+    @IBAction private func segmentedChanged(_ sender: UISegmentedControl) {
+        let range: StepsDetailViewModel.ChartTimeRange = {
+            switch sender.selectedSegmentIndex {
+            case 0: return .daily
+            case 1: return .weekly
+            default: return .monthly
+            }
+        }()
+        viewModel.load(range: range)
+    }
+
+    // Add this bridge so the storyboard's connection resolves:
+    @IBAction private func segmentedControlChanged(_ sender: UISegmentedControl) {
+        segmentedChanged(sender)
+    }
+
+
+    @IBAction private func backTapped(_ sender: Any) {
+        navigationController?.popViewController(animated: true)
     }
 }

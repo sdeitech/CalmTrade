@@ -12,67 +12,49 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import FirebaseCoreInternal
 import Foundation
 
-// TODO(Swift 6 Breaking): Consider breaking up into a checked Sendable Swift
-// type and unchecked Sendable ObjC wrapper class.
-
 /// Used to set and retrieve settings related to handling action codes.
-@objc(FIRActionCodeSettings) open class ActionCodeSettings: NSObject,
-  @unchecked Sendable {
+@objc(FIRActionCodeSettings) open class ActionCodeSettings: NSObject {
   /// This URL represents the state/Continue URL in the form of a universal link.
   ///
   /// This URL can should be constructed as a universal link that would either directly open
   /// the app where the action code would be handled or continue to the app after the action code
   /// is handled by Firebase.
-  @objc(URL) open var url: URL? {
-    get { impl.url.value() }
-    set { impl.url.withLock { $0 = newValue } }
-  }
+  @objc(URL) open var url: URL?
 
   /// Indicates whether the action code link will open the app directly or after being
   /// redirected from a Firebase owned web widget.
-  @objc open var handleCodeInApp: Bool {
-    get { impl.handleCodeInApp.value() }
-    set { impl.handleCodeInApp.withLock { $0 = newValue } }
-  }
+  @objc open var handleCodeInApp: Bool = false
 
   /// The iOS bundle ID, if available. The default value is the current app's bundle ID.
-  @objc open var iOSBundleID: String? {
-    get { impl.iOSBundleID.value() }
-    set { impl.iOSBundleID.withLock { $0 = newValue } }
-  }
+  @objc open var iOSBundleID: String?
 
   /// The Android package name, if available.
-  @objc open var androidPackageName: String? {
-    get { impl.androidPackageName.value() }
-    set { impl.androidPackageName.withLock { $0 = newValue } }
-  }
+  @objc open var androidPackageName: String?
 
   /// The minimum Android version supported, if available.
-  @objc open var androidMinimumVersion: String? {
-    get { impl.androidMinimumVersion.value() }
-    set { impl.androidMinimumVersion.withLock { $0 = newValue } }
-  }
+  @objc open var androidMinimumVersion: String?
 
   /// Indicates whether the Android app should be installed on a device where it is not available.
-  @objc open var androidInstallIfNotAvailable: Bool {
-    get { impl.androidInstallIfNotAvailable.value() }
-    set { impl.androidInstallIfNotAvailable.withLock { $0 = newValue } }
-  }
+  @objc open var androidInstallIfNotAvailable: Bool = false
+
+  /// The Firebase Dynamic Link domain used for out of band code flow.
+  #if !FIREBASE_CI
+    @available(
+      *,
+      deprecated,
+      message: "Firebase Dynamic Links is deprecated. Migrate to use Firebase Hosting link and use `linkDomain` to set a custom domain instead."
+    )
+  #endif // !FIREBASE_CI
+  @objc open var dynamicLinkDomain: String?
 
   /// The out of band custom domain for handling code in app.
-  @objc public var linkDomain: String? {
-    get { impl.linkDomain.value() }
-    set { impl.linkDomain.withLock { $0 = newValue } }
-  }
-
-  private let impl: SendableActionCodeSettings
+  @objc public var linkDomain: String?
 
   /// Sets the iOS bundle ID.
   @objc override public init() {
-    impl = .init()
+    iOSBundleID = Bundle.main.bundleIdentifier
   }
 
   /// Sets the Android package name, the flag to indicate whether or not to install the app,
@@ -88,51 +70,13 @@ import Foundation
   @objc open func setAndroidPackageName(_ androidPackageName: String,
                                         installIfNotAvailable: Bool,
                                         minimumVersion: String?) {
-    impl
-      .setAndroidPackageName(
-        androidPackageName,
-        installIfNotAvailable: installIfNotAvailable,
-        minimumVersion: minimumVersion
-      )
+    self.androidPackageName = androidPackageName
+    androidInstallIfNotAvailable = installIfNotAvailable
+    androidMinimumVersion = minimumVersion
   }
 
   /// Sets the iOS bundle ID.
   open func setIOSBundleID(_ bundleID: String) {
-    impl.setIOSBundleID(bundleID)
-  }
-}
-
-private extension ActionCodeSettings {
-  /// Checked Sendable implementation of `ActionCodeSettings`.
-  final class SendableActionCodeSettings: Sendable {
-    let url = UnfairLock<URL?>(nil)
-
-    let handleCodeInApp = UnfairLock<Bool>(false)
-
-    let iOSBundleID: UnfairLock<String?>
-
-    let androidPackageName = UnfairLock<String?>(nil)
-
-    let androidMinimumVersion = UnfairLock<String?>(nil)
-
-    let androidInstallIfNotAvailable = UnfairLock<Bool>(false)
-
-    let linkDomain = UnfairLock<String?>(nil)
-
-    init() {
-      iOSBundleID = UnfairLock<String?>(Bundle.main.bundleIdentifier)
-    }
-
-    func setAndroidPackageName(_ androidPackageName: String,
-                               installIfNotAvailable: Bool,
-                               minimumVersion: String?) {
-      self.androidPackageName.withLock { $0 = androidPackageName }
-      androidInstallIfNotAvailable.withLock { $0 = installIfNotAvailable }
-      androidMinimumVersion.withLock { $0 = minimumVersion }
-    }
-
-    func setIOSBundleID(_ bundleID: String) {
-      iOSBundleID.withLock { $0 = bundleID }
-    }
+    iOSBundleID = bundleID
   }
 }

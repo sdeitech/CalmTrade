@@ -2,128 +2,140 @@
 //  RestingHeartRateDetailViewModel.swift
 //  CalmTrade
 //
-//  Created by Anas Parekh on 02/09/25.
-//
-
 
 import Foundation
-import Charts
-import HealthKit
+import Combine
 
-class RestingHeartRateDetailViewModel {
-    
-    enum ChartTimeRange { case daily, weekly, monthly }
-    
-    var onDataReady: ((RestingHeartRateUIData?) -> Void)?
-    
-    private let healthKitManager = HealthKitManager.shared
-    private let restingHeartRateType = HKQuantityType.quantityType(forIdentifier: .restingHeartRate)!
-    
-    func fetchData(for range: ChartTimeRange) {
-        healthKitManager.requestAuthorization { [weak self] success, _ in
-            guard success else {
-                self?.onDataReady?(nil)
-                return
-            }
-            self?.fetchDataForRange(range)
-        }
-    }
-    
-    private func fetchDataForRange(_ range: ChartTimeRange) {
-        let calendar = Calendar.current
-        let endDate = Date()
-        let anchorDate: Date
-        let interval: DateComponents
-        
-        switch range {
-        case .daily:
-            anchorDate = calendar.startOfDay(for: endDate)
-            interval = DateComponents(hour: 1)
-        case .weekly:
-            anchorDate = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: endDate))!
-            interval = DateComponents(day: 1)
-        case .monthly:
-            anchorDate = calendar.date(from: calendar.dateComponents([.year, .month], from: endDate))!
-            interval = DateComponents(weekOfYear: 1)
-        }
-        
-        let predicate = HKQuery.predicateForSamples(withStart: anchorDate, end: endDate, options: .strictStartDate)
-        
-        healthKitManager.fetchStatisticsCollection(for: restingHeartRateType, predicate: predicate, options: .discreteAverage, anchorDate: anchorDate, interval: interval) { [weak self] results in
-            self?.process(statsCollection: results, range: range, anchorDate: anchorDate)
-        }
-    }
-    
-    private func process(statsCollection: HKStatisticsCollection?, range: ChartTimeRange, anchorDate: Date) {
-        guard let statsCollection = statsCollection else {
-            onDataReady?(nil)
-            return
-        }
-        
-        var entries: [ChartDataEntry] = []
-        var totalValue: Double = 0
-        var dataPointCount = 0
-        
-        let group = DispatchGroup()
-        group.enter()
-        
-        statsCollection.enumerateStatistics(from: anchorDate, to: Date()) { statistics, _ in
-            if let averageValue = statistics.averageQuantity()?.doubleValue(for: .count().unitDivided(by: .minute())) {
-                // **THE FIX**: Use a sequential index for the x-value.
-                let xValue = Double(entries.count)
-                entries.append(ChartDataEntry(x: xValue, y: averageValue))
-                totalValue += averageValue
-                dataPointCount += 1
-            }
-        }
-        group.leave()
-        
-        group.notify(queue: .main) {
-            let average = dataPointCount > 0 ? Int(totalValue / Double(dataPointCount)) : 0
-            let (dateRange, xAxisLabels) = self.getLabels(for: range)
-            let uiData = self.createUIData(from: entries, average: average, dateRange: dateRange, xAxisLabels: xAxisLabels)
-            self.onDataReady?(uiData)
-        }
+final class RestingHeartRateDetailViewModel: ObservableObject {
+
+    enum ChartTimeRange: Int, CaseIterable { case daily = 0, weekly, monthly }
+
+    // Outputs the VC binds to
+    @Published var points: [RestingHRPoint] = []
+    @Published var xDomain: ClosedRange<Date> = Date()...Date()
+    @Published var yMax: Double = 0
+    @Published var headerDateText: String = ""
+    @Published var averageText: String = "--"
+    @Published var selectedRange: ChartTimeRange = .weekly
+
+    var onIsLoading: ((Bool) -> Void)?
+
+    // Repo
+    private let repo = CTMetricsRepository.shared
+
+    // MARK: - Public
+
+    func fetchInitialData(for range: ChartTimeRange) {
+        selectedRange = range
+        loadForSelectedRange()
     }
 
-    private func createUIData(from entries: [ChartDataEntry], average: Int, dateRange: String, xAxisLabels: [String]) -> RestingHeartRateUIData {
-        let dataSet = LineChartDataSet(entries: entries, label: "Resting Heart Rate")
-        
-        // Style the line and circles to match the design
-        let lineColor = UIColor(red: 0.96, green: 0.51, blue: 0.31, alpha: 1.00) // Orange
-        dataSet.colors = [lineColor]
-        dataSet.lineWidth = 2.0
-        dataSet.circleHoleColor = .black
-        dataSet.circleColors = [lineColor]
-        dataSet.circleHoleRadius = 3.0
-        dataSet.circleRadius = 4.5
-        dataSet.drawValuesEnabled = false
-        dataSet.mode = .cubicBezier
-        
-        let chartData = LineChartData(dataSet: dataSet)
-        
-        return RestingHeartRateUIData(chartData: chartData, averageValue: "\(average)", dateRange: dateRange, xAxisLabels: xAxisLabels)
+    // MARK: - Loading (repo-only)
+
+    private func loadForSelectedRange() {
+        onIsLoading?(true)
+
+        let cal = Calendar.current
+        let end = Date()
+
+        let (anchor, xEnd): (Date, Date) = {
+            switch selectedRange {
+            case .daily:
+                let startOfDay = cal.startOfDay(for: end)
+                let xEnd = cal.date(byAdding: .day, value: 1, to: startOfDay)! // next midnight
+                return (startOfDay, xEnd)
+            case .weekly:
+                let startOfWeek = cal.date(from: cal.dateComponents([.yearForWeekOfYear, .weekOfYear], from: end))!
+                let xEnd = cal.date(byAdding: .day, value: 1, to: cal.startOfDay(for: end))!
+                return (startOfWeek, xEnd)
+            case .monthly:
+                let startOfMonth = cal.date(from: cal.dateComponents([.year, .month], from: end))!
+                let nextMonth = cal.date(byAdding: .month, value: 1, to: startOfMonth)!
+                return (startOfMonth, nextMonth)
+            }
+        }()
+
+        DispatchQueue.global(qos: .userInitiated).async {
+            // Fetch samples from local store (detached structs)
+            let samples = self.repo.series(kind: .restingHeartRate,
+                                           from: anchor,
+                                           to: end,
+                                           source: nil)
+
+            // Bucket by range and compute average per bucket
+            let bucketed = self.bucket(samples: samples, range: self.selectedRange)
+
+            // Compute yMax and average text
+            let maxV = bucketed.map(\.value).max() ?? 0
+            let avgText: String = {
+                guard !bucketed.isEmpty else { return "--" }
+                let mean = bucketed.reduce(0.0, { $0 + $1.value }) / Double(bucketed.count)
+                return "\(Int(round(mean)))"
+            }()
+
+            let header = self.headerString(for: self.selectedRange, start: anchor, end: end)
+
+            DispatchQueue.main.async {
+                self.points = bucketed
+                self.xDomain = anchor ... xEnd
+                self.yMax = maxV
+                self.averageText = avgText
+                self.headerDateText = header
+                self.onIsLoading?(false)
+            }
+        }
     }
-    
-    // MARK: - Formatting Helpers
-    private func getLabels(for range: ChartTimeRange) -> (dateRange: String, xAxisLabels: [String]) {
-        let now = Date()
-        let calendar = Calendar.current
-        let dateFormatter = DateFormatter()
-        
+
+    private func bucket(samples: [CTMetricsRepository.CTBiometricPoint],
+                        range: ChartTimeRange) -> [RestingHRPoint] {
+        guard !samples.isEmpty else { return [] }
+        let cal = Calendar.current
+
+        func bucketStart(for date: Date) -> Date {
+            switch range {
+            case .daily:
+                return cal.dateInterval(of: .hour, for: date)?.start ?? date
+            case .weekly:
+                return cal.startOfDay(for: date)
+            case .monthly:
+                return cal.dateInterval(of: .weekOfYear, for: date)?.start ?? cal.startOfDay(for: date)
+            }
+        }
+
+        // Group by bucket start
+        let grouped = Dictionary(grouping: samples, by: { bucketStart(for: $0.date) })
+
+        // Average per bucket
+        var out: [RestingHRPoint] = []
+        out.reserveCapacity(grouped.count)
+        for (k, arr) in grouped {
+            let vals = arr.map { $0.value }
+            guard !vals.isEmpty else { continue }
+            let mean = vals.reduce(0.0, +) / Double(vals.count)
+            out.append(.init(time: k, value: mean))
+        }
+
+        return out.sorted { $0.time < $1.time }
+    }
+
+    // MARK: - UI helpers
+
+    private func headerString(for range: ChartTimeRange, start: Date, end: Date) -> String {
+        let df = DateFormatter()
+        let cal = Calendar.current
         switch range {
         case .daily:
-            return ("Today", ["12 AM", "6 AM", "12 PM", "6 PM"])
+            df.dateFormat = "MMM d, yyyy"
+            return df.string(from: start)
         case .weekly:
-            dateFormatter.dateFormat = "MMM d"
-            guard let weekStartDate = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: now)) else { return ("-", []) }
-            let weekEndDate = calendar.date(byAdding: .day, value: 6, to: weekStartDate)!
-            let rangeString = "\(dateFormatter.string(from: weekStartDate))-\(dateFormatter.string(from: weekEndDate)), \(calendar.component(.year, from: now))"
-            return (rangeString, ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"])
+            df.dateFormat = "MMM d"
+            let s = df.string(from: start)
+            let e = df.string(from: cal.date(byAdding: .day, value: 6, to: start)!)
+            let y = cal.component(.year, from: end)
+            return "\(s) - \(e), \(y)"
         case .monthly:
-            dateFormatter.dateFormat = "MMMM yyyy"
-            return (dateFormatter.string(from: now), ["Week 1", "Week 2", "Week 3", "Week 4"])
+            df.dateFormat = "MMMM yyyy"
+            return df.string(from: start)
         }
     }
 }
-

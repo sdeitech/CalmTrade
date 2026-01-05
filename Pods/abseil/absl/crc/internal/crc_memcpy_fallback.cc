@@ -12,13 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <cstring>
+#include <cstdint>
 #include <memory>
 
 #include "absl/base/config.h"
 #include "absl/crc/crc32c.h"
 #include "absl/crc/internal/crc_memcpy.h"
-#include "absl/strings/string_view.h"
 
 namespace absl {
 ABSL_NAMESPACE_BEGIN

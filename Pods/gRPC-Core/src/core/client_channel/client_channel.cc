@@ -12,17 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <grpc/support/port_platform.h>
+
 #include "src/core/client_channel/client_channel.h"
 
-#include <grpc/event_engine/event_engine.h>
-#include <grpc/impl/channel_arg_names.h>
-#include <grpc/slice.h>
-#include <grpc/status.h>
-#include <grpc/support/json.h>
-#include <grpc/support/metrics.h>
-#include <grpc/support/port_platform.h>
-#include <grpc/support/string_util.h>
-#include <grpc/support/time.h>
 #include <inttypes.h>
 #include <limits.h>
 
@@ -35,7 +28,6 @@
 #include <vector>
 
 #include "absl/cleanup/cleanup.h"
-#include "absl/log/log.h"
 #include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/cord.h"
@@ -45,6 +37,17 @@
 #include "absl/strings/string_view.h"
 #include "absl/types/optional.h"
 #include "absl/types/variant.h"
+
+#include <grpc/event_engine/event_engine.h>
+#include <grpc/impl/channel_arg_names.h>
+#include <grpc/slice.h>
+#include <grpc/status.h>
+#include <grpc/support/json.h>
+#include <grpc/support/log.h>
+#include <grpc/support/metrics.h>
+#include <grpc/support/string_util.h>
+#include <grpc/support/time.h>
+
 #include "src/core/client_channel/client_channel_internal.h"
 #include "src/core/client_channel/client_channel_service_config.h"
 #include "src/core/client_channel/config_selector.h"
@@ -53,13 +56,15 @@
 #include "src/core/client_channel/local_subchannel_pool.h"
 #include "src/core/client_channel/subchannel.h"
 #include "src/core/client_channel/subchannel_interface_internal.h"
-#include "src/core/config/core_configuration.h"
 #include "src/core/ext/filters/channel_idle/legacy_channel_idle_filter.h"
-#include "src/core/lib/address_utils/sockaddr_utils.h"
 #include "src/core/lib/channel/channel_args.h"
 #include "src/core/lib/channel/status_util.h"
+#include "src/core/lib/config/core_configuration.h"
 #include "src/core/lib/debug/trace.h"
-#include "src/core/lib/event_engine/channel_args_endpoint_config.h"
+#include "src/core/lib/gprpp/crash.h"
+#include "src/core/lib/gprpp/debug_location.h"
+#include "src/core/lib/gprpp/sync.h"
+#include "src/core/lib/gprpp/work_serializer.h"
 #include "src/core/lib/iomgr/resolved_address.h"
 #include "src/core/lib/promise/context.h"
 #include "src/core/lib/promise/exec_ctx_wakeup_scheduler.h"
@@ -68,7 +73,6 @@
 #include "src/core/lib/promise/poll.h"
 #include "src/core/lib/promise/sleep.h"
 #include "src/core/lib/promise/try_seq.h"
-#include "src/core/lib/resource_quota/arena.h"
 #include "src/core/lib/security/credentials/credentials.h"
 #include "src/core/lib/slice/slice.h"
 #include "src/core/lib/slice/slice_internal.h"
@@ -87,12 +91,8 @@
 #include "src/core/resolver/resolver_registry.h"
 #include "src/core/service_config/service_config_impl.h"
 #include "src/core/telemetry/metrics.h"
-#include "src/core/util/crash.h"
-#include "src/core/util/debug_location.h"
 #include "src/core/util/json/json.h"
-#include "src/core/util/sync.h"
 #include "src/core/util/useful.h"
-#include "src/core/util/work_serializer.h"
 
 namespace grpc_core {
 
@@ -165,7 +165,6 @@ class ClientChannel::SubchannelWrapper
   void CancelDataWatcher(DataWatcherInterface* watcher) override
       ABSL_EXCLUSIVE_LOCKS_REQUIRED(*client_channel_->work_serializer_);
   void ThrottleKeepaliveTime(int new_keepalive_time);
-  std::string address() const override { return subchannel_->address(); }
 
  private:
   class WatcherWrapper;
@@ -212,7 +211,7 @@ class ClientChannel::SubchannelWrapper
 //
 // This class handles things like hopping into the WorkSerializer
 // before passing notifications to the LB policy and propagating
-// keepalive information between subchannels.
+// keepalive information betwen subchannels.
 class ClientChannel::SubchannelWrapper::WatcherWrapper
     : public Subchannel::ConnectivityStateWatcherInterface {
  public:
@@ -260,7 +259,7 @@ class ClientChannel::SubchannelWrapper::WatcherWrapper
         << subchannel_wrapper_.get() << " subchannel "
         << subchannel_wrapper_->subchannel_.get()
         << " watcher=" << watcher_.get()
-        << " state=" << ConnectivityStateName(state) << " status=" << status;
+        << "state=" << ConnectivityStateName(state) << " status=" << status;
     absl::optional<absl::Cord> keepalive_throttling =
         status.GetPayload(kKeepaliveThrottlingKey);
     if (keepalive_throttling.has_value()) {
@@ -284,10 +283,10 @@ class ClientChannel::SubchannelWrapper::WatcherWrapper
           }
         }
       } else {
-        LOG(ERROR) << "client_channel="
-                   << subchannel_wrapper_->client_channel_.get()
-                   << ": Illegal keepalive throttling value "
-                   << std::string(keepalive_throttling.value());
+        gpr_log(GPR_ERROR,
+                "client_channel=%p: Illegal keepalive throttling value %s",
+                subchannel_wrapper_->client_channel_.get(),
+                std::string(keepalive_throttling.value()).c_str());
       }
     }
     // Propagate status only in state TF.
@@ -454,10 +453,10 @@ class ClientChannel::ClientChannelControlHelper
       const char* extra = client_channel_->disconnect_error_.ok()
                               ? ""
                               : " (ignoring -- channel shutting down)";
-      LOG(INFO) << "client_channel=" << client_channel_.get()
-                << ": update: state=" << ConnectivityStateName(state)
-                << " status=(" << status << ") picker=" << picker.get()
-                << extra;
+      gpr_log(GPR_INFO,
+              "client_channel=%p: update: state=%s status=(%s) picker=%p%s",
+              client_channel_.get(), ConnectivityStateName(state),
+              status.ToString().c_str(), picker.get(), extra);
     }
     // Do update only if not shutting down.
     if (client_channel_->disconnect_error_.ok()) {
@@ -626,7 +625,6 @@ ClientChannel::ClientChannel(
       work_serializer_(std::make_shared<WorkSerializer>(event_engine_)),
       state_tracker_("client_channel", GRPC_CHANNEL_IDLE),
       subchannel_pool_(GetSubchannelPool(channel_args_)) {
-  CHECK(event_engine_.get() != nullptr);
   GRPC_TRACE_LOG(client_channel, INFO)
       << "client_channel=" << this << ": creating client_channel";
   // Set initial keepalive time.
@@ -637,10 +635,8 @@ ClientChannel::ClientChannel(
     keepalive_time_ = -1;  // unset
   }
   // Get stats plugins for channel.
-  grpc_event_engine::experimental::ChannelArgsEndpointConfig endpoint_config(
-      channel_args_);
-  experimental::StatsPluginChannelScope scope(
-      this->target(), default_authority_, endpoint_config);
+  experimental::StatsPluginChannelScope scope(this->target(),
+                                              default_authority_);
   stats_plugin_group_ =
       GlobalStatsPluginRegistry::GetStatsPluginsForChannel(scope);
 }
@@ -687,93 +683,10 @@ grpc_connectivity_state ClientChannel::CheckConnectivityState(
   return state;
 }
 
-namespace {
-
-// A fire-and-forget object to handle external connectivity state watches.
-class ExternalStateWatcher : public RefCounted<ExternalStateWatcher> {
- public:
-  ExternalStateWatcher(WeakRefCountedPtr<ClientChannel> channel,
-                       grpc_completion_queue* cq, void* tag,
-                       grpc_connectivity_state last_observed_state,
-                       Timestamp deadline)
-      : channel_(std::move(channel)), cq_(cq), tag_(tag) {
-    MutexLock lock(&mu_);
-    // Start watch.  This inherits the ref from creation.
-    auto watcher =
-        MakeOrphanable<Watcher>(RefCountedPtr<ExternalStateWatcher>(this));
-    watcher_ = watcher.get();
-    channel_->AddConnectivityWatcher(last_observed_state, std::move(watcher));
-    // Start timer.  This takes a second ref.
-    const Duration timeout = deadline - Timestamp::Now();
-    timer_handle_ =
-        channel_->event_engine()->RunAfter(timeout, [self = Ref()]() mutable {
-          ApplicationCallbackExecCtx callback_exec_ctx;
-          ExecCtx exec_ctx;
-          self->MaybeStartCompletion(absl::DeadlineExceededError(
-              "Timed out waiting for connection state change"));
-          // ExternalStateWatcher deletion might require an active ExecCtx.
-          self.reset();
-        });
-  }
-
- private:
-  class Watcher : public AsyncConnectivityStateWatcherInterface {
-   public:
-    explicit Watcher(RefCountedPtr<ExternalStateWatcher> external_state_watcher)
-        : external_state_watcher_(std::move(external_state_watcher)) {}
-
-    void OnConnectivityStateChange(grpc_connectivity_state /*new_state*/,
-                                   const absl::Status& /*status*/) override {
-      external_state_watcher_->MaybeStartCompletion(absl::OkStatus());
-    }
-
-   private:
-    RefCountedPtr<ExternalStateWatcher> external_state_watcher_;
-  };
-
-  // This is called both when the watch reports a new connectivity state
-  // and when the timer fires.  It will trigger a CQ notification only
-  // on the first call.  Subsequent calls will be ignored, because
-  // events can come in asynchronously.
-  void MaybeStartCompletion(absl::Status status) {
-    MutexLock lock(&mu_);
-    if (watcher_ == nullptr) return;  // Ignore subsequent notifications.
-    // Cancel watch.
-    channel_->RemoveConnectivityWatcher(watcher_);
-    watcher_ = nullptr;
-    // Cancel timer.
-    channel_->event_engine()->Cancel(timer_handle_);
-    // Send CQ completion.
-    Ref().release();  // Released in FinishedCompletion().
-    grpc_cq_end_op(cq_, tag_, status, FinishedCompletion, this,
-                   &completion_storage_);
-  }
-
-  // Called when the completion is returned to the CQ.
-  static void FinishedCompletion(void* arg, grpc_cq_completion* /*ignored*/) {
-    auto* self = static_cast<ExternalStateWatcher*>(arg);
-    self->Unref();
-  }
-
-  WeakRefCountedPtr<ClientChannel> channel_;
-
-  Mutex mu_;
-  grpc_completion_queue* cq_ ABSL_GUARDED_BY(&mu_);
-  void* tag_ ABSL_GUARDED_BY(&mu_);
-  grpc_cq_completion completion_storage_ ABSL_GUARDED_BY(&mu_);
-  Watcher* watcher_ ABSL_GUARDED_BY(&mu_) = nullptr;
-  grpc_event_engine::experimental::EventEngine::TaskHandle timer_handle_
-      ABSL_GUARDED_BY(&mu_);
-};
-
-}  // namespace
-
-void ClientChannel::WatchConnectivityState(grpc_connectivity_state state,
-                                           Timestamp deadline,
-                                           grpc_completion_queue* cq,
-                                           void* tag) {
-  new ExternalStateWatcher(WeakRefAsSubclass<ClientChannel>(), cq, tag, state,
-                           deadline);
+void ClientChannel::WatchConnectivityState(grpc_connectivity_state, Timestamp,
+                                           grpc_completion_queue*, void*) {
+  // TODO(ctiller): implement
+  Crash("not implemented");
 }
 
 void ClientChannel::AddConnectivityWatcher(
@@ -855,12 +768,10 @@ grpc_call* ClientChannel::CreateCall(
     grpc_call* parent_call, uint32_t propagation_mask,
     grpc_completion_queue* cq, grpc_pollset_set* /*pollset_set_alternative*/,
     Slice path, absl::optional<Slice> authority, Timestamp deadline, bool) {
-  auto arena = call_arena_allocator()->MakeArena();
-  arena->SetContext<grpc_event_engine::experimental::EventEngine>(
-      event_engine());
   return MakeClientCall(parent_call, propagation_mask, cq, std::move(path),
                         std::move(authority), false, deadline,
-                        compression_options(), std::move(arena), Ref());
+                        compression_options(), event_engine_.get(),
+                        call_arena_allocator()->MakeArena(), Ref());
 }
 
 void ClientChannel::StartCall(UnstartedCallHandler unstarted_handler) {
@@ -996,13 +907,15 @@ RefCountedPtr<LoadBalancingPolicy::Config> ChooseLbPolicy(
               .LoadBalancingPolicyExists(*policy_name, &requires_config) ||
          requires_config)) {
       if (requires_config) {
-        LOG(ERROR) << "LB policy: " << *policy_name
-                   << " passed through channel_args must not "
-                      "require a config. Using pick_first instead.";
+        gpr_log(GPR_ERROR,
+                "LB policy: %s passed through channel_args must not "
+                "require a config. Using pick_first instead.",
+                std::string(*policy_name).c_str());
       } else {
-        LOG(ERROR) << "LB policy: " << *policy_name
-                   << " passed through channel_args does not exist. "
-                      "Using pick_first instead.";
+        gpr_log(GPR_ERROR,
+                "LB policy: %s passed through channel_args does not exist. "
+                "Using pick_first instead.",
+                std::string(*policy_name).c_str());
       }
       policy_name = "pick_first";
     }
@@ -1104,10 +1017,6 @@ void ClientChannel::OnResolverResultChangedLocked(Resolver::Result result) {
     service_config = std::move(*result.service_config);
     config_selector = result.args.GetObjectRef<ConfigSelector>();
   }
-  // Remove the config selector from channel args so that we're not holding
-  // unnecessary refs that cause it to be destroyed somewhere other than in
-  // the WorkSerializer.
-  result.args = result.args.Remove(GRPC_ARG_CONFIG_SELECTOR);
   // Note: The only case in which service_config is null here is if the
   // resolver returned a service config error and we don't have a previous
   // service config to fall back to.
@@ -1141,7 +1050,6 @@ void ClientChannel::OnResolverResultChangedLocked(Resolver::Result result) {
           << "client_channel=" << this << ": service config not changed";
     }
     // Create or update LB policy, as needed.
-    ChannelArgs new_args = result.args;
     resolver_result_status = CreateOrUpdateLbPolicyLocked(
         std::move(lb_policy_config),
         parsed_service_config->health_check_service_name(), std::move(result));
@@ -1150,7 +1058,7 @@ void ClientChannel::OnResolverResultChangedLocked(Resolver::Result result) {
     // the ConfigSelector may need the LB policy to know about new
     // destinations before it can send RPCs to those destinations.
     if (service_config_changed || config_selector_changed) {
-      UpdateServiceConfigInDataPlaneLocked(new_args);
+      UpdateServiceConfigInDataPlaneLocked();
     }
   }
   // Invoke resolver callback if needed.
@@ -1200,7 +1108,10 @@ absl::Status ClientChannel::CreateOrUpdateLbPolicyLocked(
   }
   update_args.config = std::move(lb_policy_config);
   update_args.resolution_note = std::move(result.resolution_note);
-  update_args.args = std::move(result.args);
+  // Remove the config selector from channel args so that we're not holding
+  // unnecessary refs that cause it to be destroyed somewhere other than in
+  // the WorkSerializer.
+  update_args.args = result.args.Remove(GRPC_ARG_CONFIG_SELECTOR);
   // Add health check service name to channel args.
   if (health_check_service_name.has_value()) {
     update_args.args = update_args.args.Set(GRPC_ARG_HEALTH_CHECK_SERVICE_NAME,
@@ -1265,8 +1176,7 @@ void ClientChannel::UpdateServiceConfigInControlPlaneLocked(
   }
 }
 
-void ClientChannel::UpdateServiceConfigInDataPlaneLocked(
-    const ChannelArgs& args) {
+void ClientChannel::UpdateServiceConfigInDataPlaneLocked() {
   GRPC_TRACE_LOG(client_channel, INFO)
       << "client_channel=" << this << ": switching to ConfigSelector "
       << saved_config_selector_.get();
@@ -1276,12 +1186,8 @@ void ClientChannel::UpdateServiceConfigInDataPlaneLocked(
     config_selector =
         MakeRefCounted<DefaultConfigSelector>(saved_service_config_);
   }
-  // Modify channel args.
-  ChannelArgs new_args = args.SetObject(this).SetObject(saved_service_config_);
   // Construct filter stack.
-  auto new_blackboard = MakeRefCounted<Blackboard>();
-  InterceptionChainBuilder builder(new_args, blackboard_.get(),
-                                   new_blackboard.get());
+  InterceptionChainBuilder builder(channel_args_.SetObject(this));
   if (idle_timeout_ != Duration::Zero()) {
     builder.AddOnServerTrailingMetadata([this](ServerMetadata&) {
       if (idle_state_.DecreaseCallCount()) StartIdleTimer();
@@ -1289,19 +1195,15 @@ void ClientChannel::UpdateServiceConfigInDataPlaneLocked(
   }
   CoreConfiguration::Get().channel_init().AddToInterceptionChainBuilder(
       GRPC_CLIENT_CHANNEL, builder);
-  // Add filters returned by the config selector (e.g., xDS HTTP filters).
-  config_selector->AddFilters(builder);
-  // TODO(roth, ctiller): When we implement the retry interceptor, that
-  // needs to be added *after* the filters added by the config selector.
+  // TODO(roth): add filters returned by config selector
+  // Create call destination.
   const bool enable_retries =
       !channel_args_.WantMinimalStack() &&
       channel_args_.GetBool(GRPC_ARG_ENABLE_RETRIES).value_or(true);
   if (enable_retries) {
     Crash("call v3 stack does not yet support retries");
   }
-  // Create call destination.
   auto top_of_stack_call_destination = builder.Build(call_destination_);
-  blackboard_ = std::move(new_blackboard);
   // Send result to data plane.
   if (!top_of_stack_call_destination.ok()) {
     resolver_data_for_calls_.Set(MaybeRewriteIllegalStatusCode(
@@ -1352,9 +1254,6 @@ void ClientChannel::StartIdleTimer() {
                     }
                   });
   });
-  auto arena = SimpleArenaAllocator(0)->MakeArena();
-  arena->SetContext<grpc_event_engine::experimental::EventEngine>(
-      event_engine());
   idle_activity_.Set(MakeActivity(
       std::move(promise), ExecCtxWakeupScheduler{},
       [self = std::move(self)](absl::Status status) mutable {
@@ -1366,14 +1265,13 @@ void ClientChannel::StartIdleTimer() {
                     GRPC_CHANNEL_IDLE, absl::OkStatus(),
                     "channel entering IDLE", nullptr);
                 // TODO(roth): In case there's a race condition, we
-                // might need to check for any calls that are
-                // queued waiting for a resolver result or an LB
-                // pick.
+                // might need to check for any calls that are queued
+                // waiting for a resolver result or an LB pick.
               },
               DEBUG_LOCATION);
         }
       },
-      std::move(arena)));
+      GetContext<EventEngine>()));
 }
 
 absl::Status ClientChannel::ApplyServiceConfigToCall(

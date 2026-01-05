@@ -3,8 +3,7 @@
  *     envoy/config/core/v3/substitution_format_string.proto
  *
  * Do not edit -- your changes will be discarded when the file is
- * regenerated.
- * NO CHECKED-IN PROTOBUF GENCODE */
+ * regenerated. */
 
 #include <stddef.h>
 #include "upb/generated_code_support.h"
@@ -19,7 +18,6 @@
 // Must be last.
 #include "upb/port/def.inc"
 
-extern const struct upb_MiniTable UPB_PRIVATE(_kUpb_MiniTable_StaticallyTreeShaken);
 static const upb_MiniTableField envoy_config_core_v3_JsonFormatOptions__fields[1] = {
   {1, 8, 0, kUpb_NoSub, 8, (int)kUpb_FieldMode_Scalar | ((int)kUpb_FieldRep_1Byte << kUpb_FieldRep_Shift)},
 };
@@ -28,21 +26,17 @@ const upb_MiniTable envoy__config__core__v3__JsonFormatOptions_msg_init = {
   NULL,
   &envoy_config_core_v3_JsonFormatOptions__fields[0],
   16, 1, kUpb_ExtMode_NonExtendable, 1, UPB_FASTTABLE_MASK(8), 0,
-#ifdef UPB_TRACING_ENABLED
-  "envoy.config.core.v3.JsonFormatOptions",
-#endif
   UPB_FASTTABLE_INIT({
     {0x0000000000000000, &_upb_FastDecoder_DecodeGeneric},
     {0x000800003f000008, &upb_psb1_1bt},
   })
 };
 
-const upb_MiniTable* envoy__config__core__v3__JsonFormatOptions_msg_init_ptr = &envoy__config__core__v3__JsonFormatOptions_msg_init;
-static const upb_MiniTableSubInternal envoy_config_core_v3_SubstitutionFormatString__submsgs[4] = {
-  {.UPB_PRIVATE(submsg) = &google__protobuf__Struct_msg_init_ptr},
-  {.UPB_PRIVATE(submsg) = &envoy__config__core__v3__DataSource_msg_init_ptr},
-  {.UPB_PRIVATE(submsg) = &envoy__config__core__v3__TypedExtensionConfig_msg_init_ptr},
-  {.UPB_PRIVATE(submsg) = &envoy__config__core__v3__JsonFormatOptions_msg_init_ptr},
+static const upb_MiniTableSub envoy_config_core_v3_SubstitutionFormatString_submsgs[4] = {
+  {.UPB_PRIVATE(submsg) = &google__protobuf__Struct_msg_init},
+  {.UPB_PRIVATE(submsg) = &envoy__config__core__v3__DataSource_msg_init},
+  {.UPB_PRIVATE(submsg) = &envoy__config__core__v3__TypedExtensionConfig_msg_init},
+  {.UPB_PRIVATE(submsg) = &envoy__config__core__v3__JsonFormatOptions_msg_init},
 };
 
 static const upb_MiniTableField envoy_config_core_v3_SubstitutionFormatString__fields[7] = {
@@ -56,12 +50,9 @@ static const upb_MiniTableField envoy_config_core_v3_SubstitutionFormatString__f
 };
 
 const upb_MiniTable envoy__config__core__v3__SubstitutionFormatString_msg_init = {
-  &envoy_config_core_v3_SubstitutionFormatString__submsgs[0],
+  &envoy_config_core_v3_SubstitutionFormatString_submsgs[0],
   &envoy_config_core_v3_SubstitutionFormatString__fields[0],
   UPB_SIZE(40, 64), 7, kUpb_ExtMode_NonExtendable, 7, UPB_FASTTABLE_MASK(56), 0,
-#ifdef UPB_TRACING_ENABLED
-  "envoy.config.core.v3.SubstitutionFormatString",
-#endif
   UPB_FASTTABLE_INIT({
     {0x0000000000000000, &_upb_FastDecoder_DecodeGeneric},
     {0x0010000c0100000a, &upb_pos_1bt},
@@ -74,7 +65,6 @@ const upb_MiniTable envoy__config__core__v3__SubstitutionFormatString_msg_init =
   })
 };
 
-const upb_MiniTable* envoy__config__core__v3__SubstitutionFormatString_msg_init_ptr = &envoy__config__core__v3__SubstitutionFormatString_msg_init;
 static const upb_MiniTable *messages_layout[2] = {
   &envoy__config__core__v3__JsonFormatOptions_msg_init,
   &envoy__config__core__v3__SubstitutionFormatString_msg_init,

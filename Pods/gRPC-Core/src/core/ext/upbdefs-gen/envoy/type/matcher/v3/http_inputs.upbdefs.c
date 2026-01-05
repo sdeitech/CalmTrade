@@ -3,8 +3,7 @@
  *     envoy/type/matcher/v3/http_inputs.proto
  *
  * Do not edit -- your changes will be discarded when the file is
- * regenerated.
- * NO CHECKED-IN PROTOBUF GENCODE */
+ * regenerated. */
 
 #include "upb/reflection/def.h"
 #include "envoy/type/matcher/v3/http_inputs.upbdefs.h"

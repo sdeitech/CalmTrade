@@ -18,13 +18,6 @@
 
 #include "src/core/ext/transport/inproc/legacy_inproc_transport.h"
 
-#include <grpc/grpc.h>
-#include <grpc/impl/channel_arg_names.h>
-#include <grpc/impl/connectivity_state.h>
-#include <grpc/status.h>
-#include <grpc/support/alloc.h>
-#include <grpc/support/port_platform.h>
-#include <grpc/support/sync.h>
 #include <stddef.h>
 #include <stdint.h>
 
@@ -41,10 +34,24 @@
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/optional.h"
+
+#include <grpc/grpc.h>
+#include <grpc/impl/channel_arg_names.h>
+#include <grpc/impl/connectivity_state.h>
+#include <grpc/status.h>
+#include <grpc/support/alloc.h>
+#include <grpc/support/log.h>
+#include <grpc/support/port_platform.h>
+#include <grpc/support/sync.h>
+
 #include "src/core/channelz/channelz.h"
-#include "src/core/config/core_configuration.h"
 #include "src/core/lib/channel/channel_args.h"
 #include "src/core/lib/channel/channel_args_preconditioning.h"
+#include "src/core/lib/config/core_configuration.h"
+#include "src/core/lib/gprpp/debug_location.h"
+#include "src/core/lib/gprpp/ref_counted_ptr.h"
+#include "src/core/lib/gprpp/status_helper.h"
+#include "src/core/lib/gprpp/time.h"
 #include "src/core/lib/iomgr/closure.h"
 #include "src/core/lib/iomgr/endpoint.h"
 #include "src/core/lib/iomgr/error.h"
@@ -53,6 +60,7 @@
 #include "src/core/lib/resource_quota/arena.h"
 #include "src/core/lib/slice/slice.h"
 #include "src/core/lib/slice/slice_buffer.h"
+#include "src/core/lib/surface/api_trace.h"
 #include "src/core/lib/surface/channel.h"
 #include "src/core/lib/surface/channel_create.h"
 #include "src/core/lib/surface/channel_stack_type.h"
@@ -60,10 +68,13 @@
 #include "src/core/lib/transport/metadata_batch.h"
 #include "src/core/lib/transport/transport.h"
 #include "src/core/server/server.h"
-#include "src/core/util/debug_location.h"
-#include "src/core/util/ref_counted_ptr.h"
-#include "src/core/util/status_helper.h"
-#include "src/core/util/time.h"
+
+#define INPROC_LOG(...)                    \
+  do {                                     \
+    if (GRPC_TRACE_FLAG_ENABLED(inproc)) { \
+      gpr_log(__VA_ARGS__);                \
+    }                                      \
+  } while (0)
 
 namespace {
 struct inproc_stream;
@@ -138,16 +149,16 @@ struct inproc_transport final : public grpc_core::FilterStackTransport {
   void Orphan() override;
 
   void ref() {
-    GRPC_TRACE_LOG(inproc, INFO) << "ref_transport " << this;
+    INPROC_LOG(GPR_INFO, "ref_transport %p", this);
     gpr_ref(&refs);
   }
 
   void unref() {
-    GRPC_TRACE_LOG(inproc, INFO) << "unref_transport " << this;
+    INPROC_LOG(GPR_INFO, "unref_transport %p", this);
     if (!gpr_unref(&refs)) {
       return;
     }
-    GRPC_TRACE_LOG(inproc, INFO) << "really_destroy_transport " << this;
+    INPROC_LOG(GPR_INFO, "really_destroy_transport %p", this);
     this->~inproc_transport();
     gpr_free(this);
   }
@@ -191,9 +202,8 @@ struct inproc_stream {
       // Pass the client-side stream address to the server-side for a ref
       ref("inproc_init_stream:clt");  // ref it now on behalf of server
                                       // side to avoid destruction
-      GRPC_TRACE_LOG(inproc, INFO)
-          << "calling accept stream cb " << st->accept_stream_cb << " "
-          << st->accept_stream_data;
+      INPROC_LOG(GPR_INFO, "calling accept stream cb %p %p",
+                 st->accept_stream_cb, st->accept_stream_data);
       (*st->accept_stream_cb)(st->accept_stream_data, t, this);
     } else {
       // This is the server-side and is being called through accept_stream_cb
@@ -242,12 +252,12 @@ struct inproc_stream {
 #define STREAM_UNREF(refs, reason) grpc_stream_unref(refs)
 #endif
   void ref(const char* reason) {
-    GRPC_TRACE_LOG(inproc, INFO) << "ref_stream " << this << " " << reason;
+    INPROC_LOG(GPR_INFO, "ref_stream %p %s", this, reason);
     STREAM_REF(refs, reason);
   }
 
   void unref(const char* reason) {
-    GRPC_TRACE_LOG(inproc, INFO) << "unref_stream " << this << " " << reason;
+    INPROC_LOG(GPR_INFO, "unref_stream %p %s", this, reason);
     STREAM_UNREF(refs, reason);
   }
 #undef STREAM_REF
@@ -363,8 +373,7 @@ void inproc_transport::InitStream(grpc_stream* gs,
                                   grpc_stream_refcount* refcount,
                                   const void* server_data,
                                   grpc_core::Arena* arena) {
-  GRPC_TRACE_LOG(inproc, INFO)
-      << "init_stream " << this << " " << gs << " " << server_data;
+  INPROC_LOG(GPR_INFO, "init_stream %p %p %p", this, gs, server_data);
   new (gs) inproc_stream(this, refcount, server_data, arena);
 }
 
@@ -426,9 +435,8 @@ void complete_if_batch_end_locked(inproc_stream* s, grpc_error_handle error,
   int is_rtm = static_cast<int>(op == s->recv_trailing_md_op);
 
   if ((is_sm + is_stm + is_rim + is_rm + is_rtm) == 1) {
-    GRPC_TRACE_LOG(inproc, INFO)
-        << msg << " " << s << " " << op << " " << op->on_complete << " "
-        << grpc_core::StatusToString(error);
+    INPROC_LOG(GPR_INFO, "%s %p %p %p %s", msg, s, op, op->on_complete,
+               grpc_core::StatusToString(error).c_str());
     grpc_core::ExecCtx::Run(DEBUG_LOCATION, op->on_complete, error);
   }
 }
@@ -441,7 +449,7 @@ void maybe_process_ops_locked(inproc_stream* s, grpc_error_handle error) {
 }
 
 void fail_helper_locked(inproc_stream* s, grpc_error_handle error) {
-  GRPC_TRACE_LOG(inproc, INFO) << "op_state_machine " << s << " fail_helper";
+  INPROC_LOG(GPR_INFO, "op_state_machine %p fail_helper", s);
   // If we're failing this side, we need to make sure that
   // we also send or have already sent trailing metadata
   if (!s->trailing_md_sent) {
@@ -493,10 +501,10 @@ void fail_helper_locked(inproc_stream* s, grpc_error_handle error) {
       *s->recv_initial_md_op->payload->recv_initial_metadata
            .trailing_metadata_available = true;
     }
-    GRPC_TRACE_LOG(inproc, INFO)
-        << "fail_helper " << s << " scheduling initial-metadata-ready "
-        << grpc_core::StatusToString(error) << " "
-        << grpc_core::StatusToString(err);
+    INPROC_LOG(GPR_INFO,
+               "fail_helper %p scheduling initial-metadata-ready %s %s", s,
+               grpc_core::StatusToString(error).c_str(),
+               grpc_core::StatusToString(err).c_str());
     grpc_core::ExecCtx::Run(
         DEBUG_LOCATION,
         s->recv_initial_md_op->payload->recv_initial_metadata
@@ -510,9 +518,8 @@ void fail_helper_locked(inproc_stream* s, grpc_error_handle error) {
     s->recv_initial_md_op = nullptr;
   }
   if (s->recv_message_op) {
-    GRPC_TRACE_LOG(inproc, INFO)
-        << "fail_helper " << s << " scheduling message-ready "
-        << grpc_core::StatusToString(error);
+    INPROC_LOG(GPR_INFO, "fail_helper %p scheduling message-ready %s", s,
+               grpc_core::StatusToString(error).c_str());
     if (s->recv_message_op->payload->recv_message
             .call_failed_before_recv_message != nullptr) {
       *s->recv_message_op->payload->recv_message
@@ -540,17 +547,15 @@ void fail_helper_locked(inproc_stream* s, grpc_error_handle error) {
     s->send_trailing_md_op = nullptr;
   }
   if (s->recv_trailing_md_op) {
-    GRPC_TRACE_LOG(inproc, INFO)
-        << "fail_helper " << s << " scheduling trailing-metadata-ready "
-        << grpc_core::StatusToString(error);
+    INPROC_LOG(GPR_INFO, "fail_helper %p scheduling trailing-metadata-ready %s",
+               s, grpc_core::StatusToString(error).c_str());
     grpc_core::ExecCtx::Run(
         DEBUG_LOCATION,
         s->recv_trailing_md_op->payload->recv_trailing_metadata
             .recv_trailing_metadata_ready,
         error);
-    GRPC_TRACE_LOG(inproc, INFO)
-        << "fail_helper " << s << " scheduling trailing-md-on-complete "
-        << grpc_core::StatusToString(error);
+    INPROC_LOG(GPR_INFO, "fail_helper %p scheduling trailing-md-on-complete %s",
+               s, grpc_core::StatusToString(error).c_str());
     complete_if_batch_end_locked(
         s, error, s->recv_trailing_md_op,
         "fail_helper scheduling recv-trailing-metadata-on-complete");
@@ -574,8 +579,8 @@ void message_transfer_locked(inproc_stream* sender, inproc_stream* receiver) {
   *receiver->recv_message_op->payload->recv_message.flags =
       sender->send_message_op->payload->send_message.flags;
 
-  GRPC_TRACE_LOG(inproc, INFO)
-      << "message_transfer_locked " << receiver << " scheduling message-ready";
+  INPROC_LOG(GPR_INFO, "message_transfer_locked %p scheduling message-ready",
+             receiver);
   grpc_core::ExecCtx::Run(
       DEBUG_LOCATION,
       receiver->recv_message_op->payload->recv_message.recv_message_ready,
@@ -601,7 +606,7 @@ void op_state_machine_locked(inproc_stream* s, grpc_error_handle error) {
 
   bool needs_close = false;
 
-  GRPC_TRACE_LOG(inproc, INFO) << "op_state_machine " << s;
+  INPROC_LOG(GPR_INFO, "op_state_machine %p", s);
   // cancellation takes precedence
   inproc_stream* other = s->other_side;
 
@@ -648,7 +653,7 @@ void op_state_machine_locked(inproc_stream* s, grpc_error_handle error) {
                                           : &other->to_read_trailing_md_filled;
     if (*destfilled || s->trailing_md_sent) {
       // The buffer is already in use; that's an error!
-      GRPC_TRACE_LOG(inproc, INFO) << "Extra trailing metadata " << s;
+      INPROC_LOG(GPR_INFO, "Extra trailing metadata %p", s);
       new_err = GRPC_ERROR_CREATE("Extra trailing metadata");
       fail_helper_locked(s, new_err);
       goto done;
@@ -664,15 +669,15 @@ void op_state_machine_locked(inproc_stream* s, grpc_error_handle error) {
         *s->send_trailing_md_op->payload->send_trailing_metadata.sent = true;
       }
       if (!s->t->is_client && s->trailing_md_recvd && s->recv_trailing_md_op) {
-        GRPC_TRACE_LOG(inproc, INFO) << "op_state_machine " << s
-                                     << " scheduling trailing-metadata-ready";
+        INPROC_LOG(GPR_INFO,
+                   "op_state_machine %p scheduling trailing-metadata-ready", s);
         grpc_core::ExecCtx::Run(
             DEBUG_LOCATION,
             s->recv_trailing_md_op->payload->recv_trailing_metadata
                 .recv_trailing_metadata_ready,
             absl::OkStatus());
-        GRPC_TRACE_LOG(inproc, INFO) << "op_state_machine " << s
-                                     << " scheduling trailing-md-on-complete";
+        INPROC_LOG(GPR_INFO,
+                   "op_state_machine %p scheduling trailing-md-on-complete", s);
         grpc_core::ExecCtx::Run(DEBUG_LOCATION,
                                 s->recv_trailing_md_op->on_complete,
                                 absl::OkStatus());
@@ -689,11 +694,11 @@ void op_state_machine_locked(inproc_stream* s, grpc_error_handle error) {
   if (s->recv_initial_md_op) {
     if (s->initial_md_recvd) {
       new_err = GRPC_ERROR_CREATE("Already recvd initial md");
-      GRPC_TRACE_LOG(inproc, INFO)
-          << "op_state_machine " << s
-          << " scheduling on_complete errors for already "
-             "recvd initial md "
-          << grpc_core::StatusToString(new_err);
+      INPROC_LOG(
+          GPR_INFO,
+          "op_state_machine %p scheduling on_complete errors for already "
+          "recvd initial md %s",
+          s, grpc_core::StatusToString(new_err).c_str());
       fail_helper_locked(s, new_err);
       goto done;
     }
@@ -744,20 +749,20 @@ void op_state_machine_locked(inproc_stream* s, grpc_error_handle error) {
   if (s->to_read_trailing_md_filled) {
     if (s->trailing_md_recvd) {
       if (s->trailing_md_recvd_implicit_only) {
-        GRPC_TRACE_LOG(inproc, INFO)
-            << "op_state_machine " << s
-            << " already implicitly received trailing metadata, so "
-               "ignoring new trailing metadata from client";
+        INPROC_LOG(GPR_INFO,
+                   "op_state_machine %p already implicitly received trailing "
+                   "metadata, so ignoring new trailing metadata from client",
+                   s);
         s->to_read_trailing_md.Clear();
         s->to_read_trailing_md_filled = false;
         s->trailing_md_recvd_implicit_only = false;
       } else {
         new_err = GRPC_ERROR_CREATE("Already recvd trailing md");
-        GRPC_TRACE_LOG(inproc, INFO)
-            << "op_state_machine " << s
-            << " scheduling on_complete errors for already recvd trailing "
-               "md "
-            << grpc_core::StatusToString(new_err);
+        INPROC_LOG(
+            GPR_INFO,
+            "op_state_machine %p scheduling on_complete errors for already "
+            "recvd trailing md %s",
+            s, grpc_core::StatusToString(new_err).c_str());
         fail_helper_locked(s, new_err);
         goto done;
       }
@@ -766,8 +771,7 @@ void op_state_machine_locked(inproc_stream* s, grpc_error_handle error) {
       // This message needs to be wrapped up because it will never be
       // satisfied
       s->recv_message_op->payload->recv_message.recv_message->reset();
-      GRPC_TRACE_LOG(inproc, INFO)
-          << "op_state_machine " << s << " scheduling message-ready";
+      INPROC_LOG(GPR_INFO, "op_state_machine %p scheduling message-ready", s);
       grpc_core::ExecCtx::Run(
           DEBUG_LOCATION,
           s->recv_message_op->payload->recv_message.recv_message_ready,
@@ -818,9 +822,9 @@ void op_state_machine_locked(inproc_stream* s, grpc_error_handle error) {
         needs_close = s->trailing_md_sent;
       }
     } else if (!s->trailing_md_recvd) {
-      GRPC_TRACE_LOG(inproc, INFO)
-          << "op_state_machine " << s
-          << " has trailing md but not yet waiting for it";
+      INPROC_LOG(
+          GPR_INFO,
+          "op_state_machine %p has trailing md but not yet waiting for it", s);
     }
   }
   if (!s->t->is_client && s->trailing_md_sent &&
@@ -828,9 +832,8 @@ void op_state_machine_locked(inproc_stream* s, grpc_error_handle error) {
     // In this case, we don't care to receive the write-close from the client
     // because we have already sent status and the RPC is over as far as we
     // are concerned.
-    GRPC_TRACE_LOG(inproc, INFO)
-        << "op_state_machine " << s << " scheduling trailing-md-ready "
-        << grpc_core::StatusToString(new_err);
+    INPROC_LOG(GPR_INFO, "op_state_machine %p scheduling trailing-md-ready %s",
+               s, grpc_core::StatusToString(new_err).c_str());
     grpc_core::ExecCtx::Run(
         DEBUG_LOCATION,
         s->recv_trailing_md_op->payload->recv_trailing_metadata
@@ -848,8 +851,7 @@ void op_state_machine_locked(inproc_stream* s, grpc_error_handle error) {
   if (s->trailing_md_recvd && s->recv_message_op) {
     // No further message will come on this stream, so finish off the
     // recv_message_op
-    GRPC_TRACE_LOG(inproc, INFO)
-        << "op_state_machine " << s << " scheduling message-ready";
+    INPROC_LOG(GPR_INFO, "op_state_machine %p scheduling message-ready", s);
     s->recv_message_op->payload->recv_message.recv_message->reset();
     grpc_core::ExecCtx::Run(
         DEBUG_LOCATION,
@@ -871,12 +873,12 @@ void op_state_machine_locked(inproc_stream* s, grpc_error_handle error) {
   }
   if (s->send_message_op || s->send_trailing_md_op || s->recv_initial_md_op ||
       s->recv_message_op || s->recv_trailing_md_op) {
-    // Didn't get the item we wanted so we still need to get rescheduled
-    GRPC_TRACE_LOG(inproc, INFO)
-        << "op_state_machine " << s << " still needs closure "
-        << s->send_message_op << " " << s->send_trailing_md_op << " "
-        << s->recv_initial_md_op << " " << s->recv_message_op << " "
-        << s->recv_trailing_md_op;
+    // Didn't get the item we wanted so we still need to get
+    // rescheduled
+    INPROC_LOG(
+        GPR_INFO, "op_state_machine %p still needs closure %p %p %p %p %p", s,
+        s->send_message_op, s->send_trailing_md_op, s->recv_initial_md_op,
+        s->recv_message_op, s->recv_trailing_md_op);
     s->ops_needed = true;
   }
 done:
@@ -888,8 +890,8 @@ done:
 
 bool cancel_stream_locked(inproc_stream* s, grpc_error_handle error) {
   bool ret = false;  // was the cancel accepted
-  GRPC_TRACE_LOG(inproc, INFO)
-      << "cancel_stream " << s << " with " << grpc_core::StatusToString(error);
+  INPROC_LOG(GPR_INFO, "cancel_stream %p with %s", s,
+             grpc_core::StatusToString(error).c_str());
   if (s->cancel_self_error.ok()) {
     ret = true;
     s->cancel_self_error = error;
@@ -942,8 +944,7 @@ bool cancel_stream_locked(inproc_stream* s, grpc_error_handle error) {
 
 void inproc_transport::PerformStreamOp(grpc_stream* gs,
                                        grpc_transport_stream_op_batch* op) {
-  GRPC_TRACE_LOG(inproc, INFO)
-      << "perform_stream_op " << this << " " << gs << " " << op;
+  INPROC_LOG(GPR_INFO, "perform_stream_op %p %p %p", this, gs, op);
   inproc_stream* s = reinterpret_cast<inproc_stream*>(gs);
   gpr_mu* mu = &s->t->mu->mu;  // save aside in case s gets closed
   gpr_mu_lock(mu);
@@ -979,15 +980,14 @@ void inproc_transport::PerformStreamOp(grpc_stream* gs,
     // already self-canceled so still give it an error
     error = s->cancel_self_error;
   } else {
-    GRPC_TRACE_LOG(inproc, INFO)
-        << "perform_stream_op " << s
-        << (s->t->is_client ? " client" : " server")
-        << (op->send_initial_metadata ? " send_initial_metadata" : "")
-        << (op->send_message ? " send_message" : "")
-        << (op->send_trailing_metadata ? " send_trailing_metadata" : "")
-        << (op->recv_initial_metadata ? " recv_initial_metadata" : "")
-        << (op->recv_message ? " recv_message" : "")
-        << (op->recv_trailing_metadata ? " recv_trailing_metadata" : "");
+    INPROC_LOG(GPR_INFO, "perform_stream_op %p %s%s%s%s%s%s%s", s,
+               s->t->is_client ? "client" : "server",
+               op->send_initial_metadata ? " send_initial_metadata" : "",
+               op->send_message ? " send_message" : "",
+               op->send_trailing_metadata ? " send_trailing_metadata" : "",
+               op->recv_initial_metadata ? " recv_initial_metadata" : "",
+               op->recv_message ? " recv_message" : "",
+               op->recv_trailing_metadata ? " recv_trailing_metadata" : "");
   }
 
   inproc_stream* other = s->other_side;
@@ -1003,7 +1003,7 @@ void inproc_transport::PerformStreamOp(grpc_stream* gs,
                                             : &other->to_read_initial_md_filled;
       if (*destfilled || s->initial_md_sent) {
         // The buffer is already in use; that's an error!
-        GRPC_TRACE_LOG(inproc, INFO) << "Extra initial metadata " << s;
+        INPROC_LOG(GPR_INFO, "Extra initial metadata %p", s);
         error = GRPC_ERROR_CREATE("Extra initial metadata");
       } else {
         if (!s->other_side_closed) {
@@ -1081,18 +1081,20 @@ void inproc_transport::PerformStreamOp(grpc_stream* gs,
           *op->payload->recv_initial_metadata.trailing_metadata_available =
               true;
         }
-        GRPC_TRACE_LOG(inproc, INFO) << "perform_stream_op error " << s
-                                     << " scheduling initial-metadata-ready "
-                                     << grpc_core::StatusToString(error);
+        INPROC_LOG(
+            GPR_INFO,
+            "perform_stream_op error %p scheduling initial-metadata-ready %s",
+            s, grpc_core::StatusToString(error).c_str());
         grpc_core::ExecCtx::Run(
             DEBUG_LOCATION,
             op->payload->recv_initial_metadata.recv_initial_metadata_ready,
             error);
       }
       if (op->recv_message) {
-        GRPC_TRACE_LOG(inproc, INFO) << "perform_stream_op error " << s
-                                     << " scheduling recv message-ready "
-                                     << grpc_core::StatusToString(error);
+        INPROC_LOG(
+            GPR_INFO,
+            "perform_stream_op error %p scheduling recv message-ready %s", s,
+            grpc_core::StatusToString(error).c_str());
         if (op->payload->recv_message.call_failed_before_recv_message !=
             nullptr) {
           *op->payload->recv_message.call_failed_before_recv_message = true;
@@ -1102,27 +1104,25 @@ void inproc_transport::PerformStreamOp(grpc_stream* gs,
                                 error);
       }
       if (op->recv_trailing_metadata) {
-        GRPC_TRACE_LOG(inproc, INFO) << "perform_stream_op error " << s
-                                     << " scheduling trailing-metadata-ready "
-                                     << grpc_core::StatusToString(error);
+        INPROC_LOG(GPR_INFO,
+                   "perform_stream_op error %p scheduling "
+                   "trailing-metadata-ready %s",
+                   s, grpc_core::StatusToString(error).c_str());
         grpc_core::ExecCtx::Run(
             DEBUG_LOCATION,
             op->payload->recv_trailing_metadata.recv_trailing_metadata_ready,
             error);
       }
     }
-    GRPC_TRACE_LOG(inproc, INFO)
-        << "perform_stream_op " << s << " scheduling on_complete "
-        << grpc_core::StatusToString(error);
+    INPROC_LOG(GPR_INFO, "perform_stream_op %p scheduling on_complete %s", s,
+               grpc_core::StatusToString(error).c_str());
     grpc_core::ExecCtx::Run(DEBUG_LOCATION, on_complete, error);
   }
   gpr_mu_unlock(mu);
 }
 
 void close_transport_locked(inproc_transport* t) {
-  GRPC_TRACE_LOG(inproc, INFO)
-      << "close_transport " << t << " " << t->is_closed;
-
+  INPROC_LOG(GPR_INFO, "close_transport %p %d", t, t->is_closed);
   t->state_tracker.SetState(GRPC_CHANNEL_SHUTDOWN, absl::Status(),
                             "close transport");
   if (!t->is_closed) {
@@ -1140,7 +1140,7 @@ void close_transport_locked(inproc_transport* t) {
 }
 
 void inproc_transport::PerformOp(grpc_transport_op* op) {
-  GRPC_TRACE_LOG(inproc, INFO) << "perform_transport_op " << this << " " << op;
+  INPROC_LOG(GPR_INFO, "perform_transport_op %p %p", this, op);
   gpr_mu_lock(&mu->mu);
   if (op->start_connectivity_watch != nullptr) {
     state_tracker.AddWatcher(op->start_connectivity_watch_state,
@@ -1174,8 +1174,7 @@ void inproc_transport::PerformOp(grpc_transport_op* op) {
 
 void inproc_transport::DestroyStream(grpc_stream* gs,
                                      grpc_closure* then_schedule_closure) {
-  GRPC_TRACE_LOG(inproc, INFO)
-      << "destroy_stream " << gs << " " << then_schedule_closure;
+  INPROC_LOG(GPR_INFO, "destroy_stream %p %p", gs, then_schedule_closure);
   inproc_stream* s = reinterpret_cast<inproc_stream*>(gs);
   gpr_mu_lock(&mu->mu);
   close_stream_locked(s);
@@ -1186,7 +1185,7 @@ void inproc_transport::DestroyStream(grpc_stream* gs,
 }
 
 void inproc_transport::Orphan() {
-  GRPC_TRACE_LOG(inproc, INFO) << "destroy_transport " << this;
+  INPROC_LOG(GPR_INFO, "destroy_transport %p", this);
   gpr_mu_lock(&mu->mu);
   close_transport_locked(this);
   gpr_mu_unlock(&mu->mu);
@@ -1219,7 +1218,7 @@ void inproc_transport::SetPollsetSet(grpc_stream* /*gs*/,
 //
 void inproc_transports_create(grpc_core::Transport** server_transport,
                               grpc_core::Transport** client_transport) {
-  GRPC_TRACE_LOG(inproc, INFO) << "inproc_transports_create";
+  INPROC_LOG(GPR_INFO, "inproc_transports_create");
   shared_mu* mu = new (gpr_malloc(sizeof(*mu))) shared_mu();
   inproc_transport* st =
       new (gpr_malloc(sizeof(*st))) inproc_transport(mu, /*is_client=*/false);
@@ -1235,8 +1234,8 @@ void inproc_transports_create(grpc_core::Transport** server_transport,
 grpc_channel* grpc_legacy_inproc_channel_create(grpc_server* server,
                                                 const grpc_channel_args* args,
                                                 void* /*reserved*/) {
-  GRPC_TRACE_LOG(api, INFO) << "grpc_inproc_channel_create(server=" << server
-                            << ", args=" << args << ")";
+  GRPC_API_TRACE("grpc_inproc_channel_create(server=%p, args=%p)", 2,
+                 (server, args));
 
   grpc_core::ExecCtx exec_ctx;
 

@@ -20,6 +20,7 @@
 #define GRPC_SRC_CORE_UTIL_TMPFILE_H
 
 #include <grpc/support/port_platform.h>
+
 #include <stdio.h>
 
 // Creates a temporary file from a prefix.

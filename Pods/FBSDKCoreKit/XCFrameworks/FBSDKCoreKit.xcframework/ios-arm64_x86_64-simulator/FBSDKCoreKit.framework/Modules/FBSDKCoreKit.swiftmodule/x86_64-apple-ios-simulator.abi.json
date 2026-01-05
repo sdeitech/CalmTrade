@@ -79489,7 +79489,8 @@
                 "moduleName": "FBSDKCoreKit",
                 "implicit": true,
                 "declAttributes": [
-                  "Final"
+                  "Final",
+                  "Available"
                 ],
                 "accessorKind": "_modify"
               }
@@ -79777,6 +79778,7 @@
           "Final",
           "AccessControl",
           "ObjC",
+          "Available",
           "RawDocComment"
         ],
         "superclassUsr": "c:objc(cs)NSObject",
@@ -80013,7 +80015,8 @@
                     "moduleName": "FBSDKCoreKit",
                     "implicit": true,
                     "declAttributes": [
-                      "Transparent"
+                      "Transparent",
+                      "Available"
                     ],
                     "accessorKind": "_modify"
                   }
@@ -80107,7 +80110,8 @@
                     "moduleName": "FBSDKCoreKit",
                     "implicit": true,
                     "declAttributes": [
-                      "Transparent"
+                      "Transparent",
+                      "Available"
                     ],
                     "accessorKind": "_modify"
                   }
@@ -80222,7 +80226,8 @@
                     "moduleName": "FBSDKCoreKit",
                     "implicit": true,
                     "declAttributes": [
-                      "Transparent"
+                      "Transparent",
+                      "Available"
                     ],
                     "accessorKind": "_modify"
                   }
@@ -80316,7 +80321,8 @@
                     "moduleName": "FBSDKCoreKit",
                     "implicit": true,
                     "declAttributes": [
-                      "Transparent"
+                      "Transparent",
+                      "Available"
                     ],
                     "accessorKind": "_modify"
                   }
@@ -80410,7 +80416,8 @@
                     "moduleName": "FBSDKCoreKit",
                     "implicit": true,
                     "declAttributes": [
-                      "Transparent"
+                      "Transparent",
+                      "Available"
                     ],
                     "accessorKind": "_modify"
                   }
@@ -80504,7 +80511,8 @@
                     "moduleName": "FBSDKCoreKit",
                     "implicit": true,
                     "declAttributes": [
-                      "Transparent"
+                      "Transparent",
+                      "Available"
                     ],
                     "accessorKind": "_modify"
                   }
@@ -80598,7 +80606,8 @@
                     "moduleName": "FBSDKCoreKit",
                     "implicit": true,
                     "declAttributes": [
-                      "Transparent"
+                      "Transparent",
+                      "Available"
                     ],
                     "accessorKind": "_modify"
                   }
@@ -80815,7 +80824,8 @@
                 "static": true,
                 "implicit": true,
                 "declAttributes": [
-                  "Final"
+                  "Final",
+                  "Available"
                 ],
                 "isFromExtension": true,
                 "accessorKind": "_modify"
@@ -80942,7 +80952,8 @@
                 "static": true,
                 "implicit": true,
                 "declAttributes": [
-                  "Final"
+                  "Final",
+                  "Available"
                 ],
                 "isFromExtension": true,
                 "accessorKind": "_modify"
@@ -80959,6 +80970,7 @@
           "Final",
           "AccessControl",
           "ObjC",
+          "Available",
           "RawDocComment"
         ],
         "superclassUsr": "c:objc(cs)NSObject",
@@ -87400,6 +87412,28 @@
           },
           {
             "kind": "Conformance",
+            "name": "_ObjectiveCBridgeable",
+            "printedName": "_ObjectiveCBridgeable",
+            "children": [
+              {
+                "kind": "TypeWitness",
+                "name": "_ObjectiveCType",
+                "printedName": "_ObjectiveCType",
+                "children": [
+                  {
+                    "kind": "TypeNominal",
+                    "name": "NSDecimalNumber",
+                    "printedName": "Foundation.NSDecimalNumber",
+                    "usr": "c:objc(cs)NSDecimalNumber"
+                  }
+                ]
+              }
+            ],
+            "usr": "s:s21_ObjectiveCBridgeableP",
+            "mangledName": "$ss21_ObjectiveCBridgeableP"
+          },
+          {
+            "kind": "Conformance",
             "name": "CustomStringConvertible",
             "printedName": "CustomStringConvertible",
             "usr": "s:s23CustomStringConvertibleP",
@@ -87498,28 +87532,6 @@
             ],
             "usr": "s:Sx",
             "mangledName": "$sSx"
-          },
-          {
-            "kind": "Conformance",
-            "name": "_ObjectiveCBridgeable",
-            "printedName": "_ObjectiveCBridgeable",
-            "children": [
-              {
-                "kind": "TypeWitness",
-                "name": "_ObjectiveCType",
-                "printedName": "_ObjectiveCType",
-                "children": [
-                  {
-                    "kind": "TypeNominal",
-                    "name": "NSDecimalNumber",
-                    "printedName": "Foundation.NSDecimalNumber",
-                    "usr": "c:objc(cs)NSDecimalNumber"
-                  }
-                ]
-              }
-            ],
-            "usr": "s:s21_ObjectiveCBridgeableP",
-            "mangledName": "$ss21_ObjectiveCBridgeableP"
           }
         ]
       },
@@ -91194,7 +91206,7 @@
     {
       "filePath": "\/data\/sandcastle\/boxes\/trunk-git-facebook-ios-sdk\/FBSDKCoreKit\/FBSDKCoreKit\/AppEvents\/Internal\/_PaymentObserver.swift",
       "kind": "BooleanLiteral",
-      "offset": 594,
+      "offset": 629,
       "length": 5,
       "value": "false"
     },

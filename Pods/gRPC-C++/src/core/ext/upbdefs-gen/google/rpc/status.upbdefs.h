@@ -3,11 +3,10 @@
  *     google/rpc/status.proto
  *
  * Do not edit -- your changes will be discarded when the file is
- * regenerated.
- * NO CHECKED-IN PROTOBUF GENCODE */
+ * regenerated. */
 
-#ifndef GOOGLE_RPC_STATUS_PROTO_UPB_H__UPBDEFS_H_
-#define GOOGLE_RPC_STATUS_PROTO_UPB_H__UPBDEFS_H_
+#ifndef GOOGLE_RPC_STATUS_PROTO_UPBDEFS_H_
+#define GOOGLE_RPC_STATUS_PROTO_UPBDEFS_H_
 
 #include "upb/reflection/def.h"
 #include "upb/reflection/internal/def_pool.h"
@@ -30,4 +29,4 @@ UPB_INLINE const upb_MessageDef *google_rpc_Status_getmsgdef(upb_DefPool *s) {
 
 #include "upb/port/undef.inc"
 
-#endif  /* GOOGLE_RPC_STATUS_PROTO_UPB_H__UPBDEFS_H_ */
+#endif  /* GOOGLE_RPC_STATUS_PROTO_UPBDEFS_H_ */

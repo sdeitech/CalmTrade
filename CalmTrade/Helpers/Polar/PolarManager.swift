@@ -1,0 +1,359 @@
+//
+//  PolarManager.swift
+//  CalmTrade
+//
+//  Created by Anas Parekh on 04/09/25.
+//
+
+import Foundation
+import PolarBleSdk
+import CoreBluetooth
+import RxSwift
+import UIKit
+import os.log
+
+// MARK: - Firmware Notifications
+
+extension Notification.Name {
+    static let ctFwCheck = Notification.Name("ct.fw.check")
+    static let ctFwProgress = Notification.Name("ct.fw.progress")
+}
+
+// MARK: - Models
+
+struct ScannedPolarDevice: Hashable {
+    let polarInfo: PolarDeviceInfo
+    var id: String { polarInfo.deviceId }
+    var name: String {
+        polarInfo.name
+            .replacingOccurrences(of: polarInfo.deviceId, with: "")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+    func hash(into hasher: inout Hasher) { hasher.combine(id) }
+    static func == (lhs: ScannedPolarDevice, rhs: ScannedPolarDevice) -> Bool { lhs.id == rhs.id }
+}
+
+struct PolarDeviceSnapshot {
+    let id: String
+    let name: String
+    let firmware: String?
+    let batteryLevel: UInt?
+    let charging: Bool?
+    let timestamp: Date
+}
+
+struct FirmwareProgress {
+    let stage: String
+    let detail: String?
+    let fraction: Double?
+}
+
+// MARK: - Main Manager Class
+
+final class PolarManager: NSObject,
+                          PolarBleApiObserver,
+                          PolarBleApiDeviceInfoObserver,
+                          PolarBleApiDeviceHrObserver,
+                          PolarBleApiDeviceFeaturesObserver {
+
+    // MARK: - Singleton
+
+    static let shared = PolarManager()
+
+    // MARK: - User Defaults (auto reconnect)
+
+    let defaults = UserDefaults.standard
+    let lastDeviceIdKey   = "ct.polar.lastDeviceId"
+    let lastDeviceNameKey = "ct.polar.lastDeviceName"
+
+    var reconnectRetryWork: DispatchWorkItem?
+    var isAutoReconnectInFlight = false
+
+    var lastBatteryLevel: UInt?
+    var lastFirmwareVersion: String?
+    var lastChargingState: BleBasClient.ChargeState?
+
+    // MARK: - Callbacks
+
+    var onDevicesUpdated: (([ScannedPolarDevice]) -> Void)?
+    var onDeviceDiscovered: ((ScannedPolarDevice) -> Void)?
+    var onConnectionStateChanged: ((ConnectionState) -> Void)?
+    var connectionObservers: [UUID: (ConnectionState) -> Void] = [:]
+
+    var onFwCheck: ((CheckFirmwareUpdateStatus) -> Void)?
+    var onFwStatus: ((FirmwareUpdateStatus) -> Void)?
+    var onFwError: ((Error) -> Void)?
+
+    var onHeartRate: ((Double, Date) -> Void)?
+    var onRRIntervals: (([Int], Date) -> Void)?
+
+    var onH10ExerciseEntry: ((PolarExerciseEntry) -> Void)?
+    var onH10ExerciseData: ((PolarExerciseData) -> Void)?
+    var on360OfflineEntry: ((PolarOfflineRecordingEntry) -> Void)?
+    var on360OfflinePpg: ((PolarPpgData, Date) -> Void)?
+
+    var onSnapshot: ((PolarDeviceSnapshot) -> Void)?
+    var onBatteryUpdate: ((String, UInt, Bool?) -> Void)?
+
+    var onRHRComputed: ((Double, CTMetricSource, String) -> Void)?
+    var onOfflinePpgIngested: ((Date, Int) -> Void)?
+
+    var pendingBgCompletion: (() -> Void)?
+    var lastBgAt: Date?
+
+    // MARK: - Public State
+
+    enum ConnectionState {
+        case disconnected
+        case connecting(ScannedPolarDevice)
+        case connected(ScannedPolarDevice)
+    }
+
+    public /*private(set)*/ var discoveredDevices = Set<ScannedPolarDevice>()
+    public /*private(set)*/ var connectionState: ConnectionState = .disconnected {
+        didSet {
+            onConnectionStateChanged?(connectionState)
+            for cb in connectionObservers.values { cb(connectionState) }
+        }
+    }
+    public /*private(set)*/ var connectedDevice: ScannedPolarDevice?
+    public /*private(set)*/ var connectingDevice: ScannedPolarDevice?
+
+    // MARK: - FTU Callbacks
+
+    var onFirstTimeUseNeeded: ((ScannedPolarDevice) -> Void)?
+    var onFtuProgress: ((String) -> Void)?
+    var onFtuCompleted: (() -> Void)?
+    var onFtuError: ((Error) -> Void)?
+
+    var ftuEvalPendingDeviceId: String?
+    var ftuEvalRetryCount = 0
+    let ftuEvalRetryMax = 6
+
+    var currentIdentifier: String? { connectedDevice?.id }
+
+    // MARK: - SDK + Disposables
+
+    var api: PolarBleApi!
+    var searchDisposable: Disposable?
+    var fwDisposable: Disposable?
+    var hrStreamDisposable: Disposable?
+    var ppiStreamDisposable: Disposable?
+    var ecgStreamDisposable: Disposable?
+    var ppgStreamDisposable: Disposable?
+
+    let disposeBag = DisposeBag()
+
+    var fwRetryCount = 0
+    let fwMaxRetries = 3
+
+    var isHrReady = false
+    var hrStartRetry = 0
+
+    let central = CBCentralManager(delegate: nil, queue: nil, options: [
+        CBCentralManagerOptionShowPowerAlertKey: false
+    ])
+
+    var isShowingBluetoothAlert = false
+    var lastBluetoothAlertAt: Date?
+
+    var streamingFeatureArmedAt: Date?
+    var isPpiStarting = false
+    var ppiStartRetry = 0
+    var ppiStartDesired = false
+
+    var offlineStartInFlight = Set<String>()
+    var offlineActive        = Set<String>()
+
+    let firstUseKeyPrefix = "ct.polar.firstUse."
+    var autoOfflineSyncOnConnect: Bool = true
+
+    let fwLog = OSLog(subsystem: "CalmTrade", category: "Firmware")
+    var isFwUpdatingInternal = false
+
+    // MARK: - Init
+
+    private override init() {
+        super.init()
+
+        api = PolarBleApiDefaultImpl.polarImplementation(
+            DispatchQueue.main,
+            features: [
+                .feature_hr,
+                .feature_polar_online_streaming,
+                .feature_battery_info,
+                .feature_device_info,
+                .feature_polar_firmware_update,
+                .feature_polar_features_configuration_service,
+                .feature_polar_sdk_mode,
+                .feature_polar_device_time_setup,
+                .feature_polar_activity_data,
+                .feature_polar_offline_recording,
+                .feature_polar_h10_exercise_recording
+            ]
+        )
+
+        api.observer = self
+        api.deviceInfoObserver = self
+        api.deviceHrObserver = self
+        api.deviceFeaturesObserver = self
+    }
+}
+
+// MARK: - PolarBleApiDeviceListener & Feature Observer
+
+extension PolarManager {
+
+    func deviceConnecting(_ info: PolarDeviceInfo) {
+        isAutoReconnectInFlight = false
+        let dev = ScannedPolarDevice(polarInfo: info)
+        connectingDevice = dev
+        connectionState = .connecting(dev)
+    }
+
+    func deviceConnected(_ info: PolarDeviceInfo) {
+        let dev = ScannedPolarDevice(polarInfo: info)
+        connectedDevice = dev
+        connectingDevice = nil
+        connectionState = .connected(dev)
+        NSLog("[PM] deviceConnected id=\(dev.id) name=\(dev.name)")
+        
+        NSLog("[PM] deviceConnected → arming FTU")
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+            self.probeFtuStatus(reason: "post-connect")
+        }
+        
+        let lowered = dev.name.lowercased()
+        DeviceManager.shared.currentSource = lowered.contains("h10") ? .polarH10 : .polar360
+        
+        // ✅ Ensure Polar 360/OH1/Verity offline PPG recording is active
+        if lowered.contains("360") || lowered.contains("verity") || lowered.contains("oh1") {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { [weak self] in
+                self?.start360OfflinePpg(dev.id)
+            }
+        }
+        
+        //        if lowered.contains("360"), isFirstTimeUse(for: dev) {
+        //            DispatchQueue.main.async { [weak self] in self?.onFirstTimeUseNeeded?(dev) }
+        //        }
+        
+        defaults.set(dev.id,   forKey: lastDeviceIdKey)
+        defaults.set(dev.name, forKey: lastDeviceNameKey)
+        
+        // Kick readiness gate (will also trigger offline sync in waitForConnection)
+        waitForConnection(deviceId: dev.id)
+        
+        isHrReady = false
+        hrStartRetry = 0
+        
+        NSLog("[PM] connected; waiting for DIS callbacks (firmware/software revision)")
+        broadcastSnapshotIfCurrent()
+        
+        Polar360SleepIngestor.shared.syncLastNightsIfNeeded(deviceId: dev.id)
+        PolarDailySyncCoordinator.shared.startWhileConnected(deviceId: dev.id)
+    }
+
+    func deviceDisconnected(_ identifier: PolarDeviceInfo, pairingError: Bool) {
+        isAutoReconnectInFlight = false
+        connectedDevice = nil
+        connectingDevice = nil
+        connectionState = .disconnected
+        DeviceManager.shared.currentSource = .appleHealthKit
+        stopAllStreaming()
+        PolarDailySyncCoordinator.shared.stop()
+        
+        // reset streaming guards
+        streamingFeatureArmedAt = nil
+        isPpiStarting = false
+        ppiStartRetry = 0
+        isHrReady = false
+        hrStartRetry = 0
+    }
+
+    func hrValueReceived(_ identifier: String,
+                         data: (hr: UInt8, rrs: [Int], rrsMs: [Int],
+                                contact: Bool, contactSupported: Bool)) {
+        // Only skip when explicit HR streaming is already active.
+        if hrStreamDisposable != nil { return }
+        if data.contactSupported && !data.contact { return }
+        
+        let ts = Date()
+        onHeartRate?(Double(data.hr), ts)
+        
+        if !data.rrsMs.isEmpty {
+            onRRIntervals?(data.rrsMs.map { Int($0) }, ts)
+        } else if !data.rrs.isEmpty {
+            let rrMs = data.rrs.map { Int((Double($0) / 1024.0) * 1000.0) }
+            onRRIntervals?(rrMs, ts)
+        }
+    }
+
+    func bleSdkFeatureReady(_ identifier: String, feature: PolarBleSdkFeature) {
+        guard identifier == connectedDevice?.id else { return }
+        
+        switch feature {
+        case .feature_polar_online_streaming:
+            let now = Date()
+            if let last = streamingFeatureArmedAt, now.timeIntervalSince(last) < 1.0 { return }
+            streamingFeatureArmedAt = now
+            
+            guard let dev = connectedDevice else { return }
+            // Resume HR if applicable
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+                self.startHrStreamingIfPossible(for: dev)
+            }
+            
+            // Only *request* PPI here; the helper will verify readiness and start once stable
+            let name = dev.name.lowercased()
+            let isOptical = name.contains("360") || name.contains("verity") || name.contains("oh1")
+            if isOptical || self.ppiStartDesired {
+                self.ppiStartDesired = true
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                    self.maybeStartPpiWhenReady(for: dev)
+                }
+            }
+            
+        case .feature_polar_offline_recording:
+            // Don’t call start/list directly; just ensure the ordered pipeline runs
+            ensureOfflinePipeline(for: identifier)
+            
+        case .feature_polar_features_configuration_service:
+            NSLog("[PM][FTU] CFG feature became ready; evaluating FTU now")
+            maybeEvaluateFTU(reason: "feature-ready-callback")
+            
+        case .feature_polar_activity_data:
+                NSLog("[PM][ACT] Activity feature ready — starting minute poller")
+                PolarDailySyncCoordinator.shared.startWhileConnected(deviceId: identifier)
+            
+        default:
+            break
+        }
+        
+        if feature == .feature_polar_online_streaming ||
+            feature == .feature_device_info ||
+            feature == .feature_polar_features_configuration_service {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                self.probeFtuStatus(reason: "feature-ready:\(feature)")
+            }
+        }
+    }
+}
+
+extension Notification.Name {
+    static let ctRequestPolarDailySync = Notification.Name("ct.request.polar.dailySync")
+}
+
+// MARK: - Capability checks
+
+extension PolarManager {
+
+    func supportsDeviceManagement(_ deviceId: String) -> Bool {
+        api.isFeatureReady(deviceId, feature: .feature_polar_features_configuration_service)
+    }
+    
+    /// Whether the connected device supports the BLE "turn-off" command.
+    func supportsTurnOff(_ deviceId: String) -> Bool { supportsDeviceManagement(deviceId) }
+
+    /// Whether the connected device supports factory reset.
+    func supportsFactoryReset(_ deviceId: String) -> Bool { supportsDeviceManagement(deviceId) }
+}

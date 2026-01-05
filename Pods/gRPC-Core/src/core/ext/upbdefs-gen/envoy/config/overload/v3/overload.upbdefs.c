@@ -3,8 +3,7 @@
  *     envoy/config/overload/v3/overload.proto
  *
  * Do not edit -- your changes will be discarded when the file is
- * regenerated.
- * NO CHECKED-IN PROTOBUF GENCODE */
+ * regenerated. */
 
 #include "upb/reflection/def.h"
 #include "envoy/config/overload/v3/overload.upbdefs.h"

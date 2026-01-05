@@ -3,11 +3,10 @@
  *     envoy/type/http/v3/path_transformation.proto
  *
  * Do not edit -- your changes will be discarded when the file is
- * regenerated.
- * NO CHECKED-IN PROTOBUF GENCODE */
+ * regenerated. */
 
-#ifndef ENVOY_TYPE_HTTP_V3_PATH_TRANSFORMATION_PROTO_UPB_H__UPBDEFS_H_
-#define ENVOY_TYPE_HTTP_V3_PATH_TRANSFORMATION_PROTO_UPB_H__UPBDEFS_H_
+#ifndef ENVOY_TYPE_HTTP_V3_PATH_TRANSFORMATION_PROTO_UPBDEFS_H_
+#define ENVOY_TYPE_HTTP_V3_PATH_TRANSFORMATION_PROTO_UPBDEFS_H_
 
 #include "upb/reflection/def.h"
 #include "upb/reflection/internal/def_pool.h"
@@ -45,4 +44,4 @@ UPB_INLINE const upb_MessageDef *envoy_type_http_v3_PathTransformation_Operation
 
 #include "upb/port/undef.inc"
 
-#endif  /* ENVOY_TYPE_HTTP_V3_PATH_TRANSFORMATION_PROTO_UPB_H__UPBDEFS_H_ */
+#endif  /* ENVOY_TYPE_HTTP_V3_PATH_TRANSFORMATION_PROTO_UPBDEFS_H_ */

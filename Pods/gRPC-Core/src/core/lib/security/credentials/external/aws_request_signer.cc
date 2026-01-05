@@ -15,7 +15,9 @@
 //
 #include "src/core/lib/security/credentials/external/aws_request_signer.h"
 
-#include <grpc/support/port_platform.h>
+#include <utility>
+#include <vector>
+
 #if COCOAPODS==1
   #include <openssl_grpc/crypto.h>
 #else
@@ -37,9 +39,6 @@
   #include <openssl/sha.h>
 #endif
 
-#include <utility>
-#include <vector>
-
 #include "absl/status/statusor.h"
 #include "absl/strings/ascii.h"
 #include "absl/strings/escaping.h"
@@ -50,6 +49,8 @@
 #include "absl/strings/string_view.h"
 #include "absl/time/clock.h"
 #include "absl/time/time.h"
+
+#include <grpc/support/port_platform.h>
 
 namespace grpc_core {
 

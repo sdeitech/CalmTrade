@@ -14,9 +14,10 @@
 
 #include "src/core/lib/event_engine/posix_engine/internal_errqueue.h"
 
+#include "absl/log/log.h"
+
 #include <grpc/support/port_platform.h>
 
-#include "absl/log/log.h"
 #include "src/core/lib/iomgr/port.h"
 
 #ifdef GRPC_POSIX_SOCKET_TCP
@@ -29,7 +30,7 @@
 
 #include <cstddef>
 
-#include "src/core/util/strerror.h"
+#include "src/core/lib/gprpp/strerror.h"
 
 namespace grpc_event_engine {
 namespace experimental {

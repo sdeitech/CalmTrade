@@ -16,12 +16,12 @@ import Foundation
 
 /// A class represents a credential that proves the identity of the app.
 @objc(FIRAuthAppCredential) // objc Needed for decoding old versions
-final class AuthAppCredential: NSObject, NSSecureCoding, Sendable {
+class AuthAppCredential: NSObject, NSSecureCoding {
   /// The server acknowledgement of receiving client's claim of identity.
-  let receipt: String
+  var receipt: String
 
   /// The secret that the client received from server via a trusted channel, if ever.
-  let secret: String?
+  var secret: String?
 
   /// Initializes the instance.
   /// - Parameter receipt: The server acknowledgement of receiving client's claim of identity.

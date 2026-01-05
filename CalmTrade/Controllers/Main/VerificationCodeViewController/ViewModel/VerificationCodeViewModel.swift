@@ -5,47 +5,98 @@
 //  Created by Anas Parekh on 26/08/25.
 //
 
-
 import Foundation
 
-class VerificationCodeViewModel: BaseViewModel {
-    
-    // MARK: - Properties
-    
-    // This would be the actual OTP received from your server.
-    // For now, we'll use a placeholder.
-    var correctOTP: String = "1234" // Example OTP
-    
+final class VerificationCodeViewModel: BaseViewModel {
+
+    // MARK: - Events
     var onValidationResult: ((Bool, String?) -> Void)?
     var onResendResult: ((String) -> Void)?
 
-    // MARK: - Public Methods
+    // MARK: - Models
+    private struct VerifyOtpResponse: Decodable {
+        let success: Bool
+        let message: String?
+    }
 
-    /// Validates the OTP entered by the user.
-    /// - Parameter enteredOTP: The 4-digit string entered by the user.
-    func validate(enteredOTP: String) {
-        if enteredOTP.isEmpty {
+    private struct ResendResponse: Decodable {
+        let success: Bool
+        let message: String?
+    }
+
+    // MARK: - Public API
+    func verify(email: String?, enteredOTP: String) {
+        // Validate client-side quickly
+        let trimmed = enteredOTP.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else {
             onValidationResult?(false, "Please enter the code.")
             return
         }
-        
-        if enteredOTP.count < 4 {
-            onValidationResult?(false, "Please enter the complete 4-digit code.")
+        guard trimmed.count >= 4 else {
+            onValidationResult?(false, "Please enter the complete code.")
             return
         }
-        
-        if enteredOTP == correctOTP {
-            onValidationResult?(true, nil)
-        } else {
-            onValidationResult?(false, "The code you entered is incorrect.")
+        guard let email = email?.trimmingCharacters(in: .whitespacesAndNewlines), !email.isEmpty else {
+            onValidationResult?(false, "Missing email address.")
+            return
+        }
+
+        isLoading = true
+        let params: [String: Any] = [
+            "email": email,
+            "otp": trimmed
+        ]
+
+        APIService().startService(with: .POST,
+                                  path: Endpoints.Auth.verifyEmailOtp.rawValue, // <- set your actual path
+                                  parameters: params,
+                                  files: [],
+                                  modelType: VerifyOtpResponse.self) { [weak self] result in
+            DispatchQueue.main.async {
+                guard let self = self else { return }
+                self.isLoading = false
+                switch result {
+                case .Success(let resp):
+                    if resp?.success == true {
+                        self.onValidationResult?(true, nil)
+                    } else {
+                        self.onValidationResult?(false, resp?.message ?? "Verification failed. Please try again.")
+                    }
+                case .Error(let message):
+                    self.onValidationResult?(false, message ?? "Verification failed. Please try again.")
+                }
+            }
         }
     }
-    
-    /// Handles the logic for resending the OTP.
-    func resendCode() {
-        // In a real app, you would make an API call here to resend the code.
-        // For now, we'll simulate it and provide feedback to the user.
-        print("Resend code logic would be triggered here.")
-        onResendResult?("A new code has been sent to your email.")
+
+    func resendCode(to email: String?) {
+        guard let email = email?.trimmingCharacters(in: .whitespacesAndNewlines), !email.isEmpty else {
+            onValidationResult?(false, "Missing email address.")
+            return
+        }
+
+        isLoading = true
+        let params: [String: Any] = ["email": email]
+
+        APIService().startService(with: .POST,
+                                  path: Endpoints.Auth.resendVerification.rawValue, // <- set your actual path if supported
+                                  parameters: params,
+                                  files: [],
+                                  modelType: ResendResponse.self) { [weak self] result in
+            DispatchQueue.main.async {
+                guard let self = self else { return }
+                self.isLoading = false
+                switch result {
+                case .Success(let resp):
+                    if resp?.success == true {
+                        self.onResendResult?(resp?.message ?? "A new code has been sent to your email.")
+                    } else {
+                        self.onValidationResult?(false, resp?.message ?? "Failed to resend code.")
+                    }
+                case .Error(let message):
+                    self.onValidationResult?(false, message ?? "Failed to resend code.")
+                }
+            }
+        }
     }
 }

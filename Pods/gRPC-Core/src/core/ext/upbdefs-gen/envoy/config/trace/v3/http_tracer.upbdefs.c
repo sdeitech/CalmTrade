@@ -3,8 +3,7 @@
  *     envoy/config/trace/v3/http_tracer.proto
  *
  * Do not edit -- your changes will be discarded when the file is
- * regenerated.
- * NO CHECKED-IN PROTOBUF GENCODE */
+ * regenerated. */
 
 #include "upb/reflection/def.h"
 #include "envoy/config/trace/v3/http_tracer.upbdefs.h"

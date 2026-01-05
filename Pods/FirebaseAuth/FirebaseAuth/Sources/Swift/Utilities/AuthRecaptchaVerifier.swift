@@ -71,10 +71,8 @@
     private(set) weak var auth: Auth?
     private(set) var agentConfig: AuthRecaptchaConfig?
     private(set) var tenantConfigs: [String: AuthRecaptchaConfig] = [:]
-    // Only initialized once. Recpatcha SDK does not support multiple clients.
     private(set) var recaptchaClient: RCARecaptchaClientProtocol?
     private static var _shared = AuthRecaptchaVerifier()
-
     private let kRecaptchaVersion = "RECAPTCHA_ENTERPRISE"
     init() {}
 
@@ -91,6 +89,16 @@
     class func setShared(_ instance: AuthRecaptchaVerifier, auth: Auth?) {
       _shared = instance
       _ = shared(auth: auth)
+    }
+
+    func siteKey() -> String? {
+      if let tenantID = auth?.tenantID {
+        if let config = tenantConfigs[tenantID] {
+          return config.siteKey
+        }
+        return nil
+      }
+      return agentConfig?.siteKey
     }
 
     func enablementStatus(forProvider provider: AuthRecaptchaProvider)
@@ -117,32 +125,35 @@
         // No recaptcha on internal build system.
         return actionString
       #else
-
-        let (token, error, linked, actionCreated) = await recaptchaToken(
-          siteKey: siteKey,
-          actionString: actionString,
-          fakeToken: "NO_RECAPTCHA"
-        )
-
-        guard linked else {
-          throw AuthErrorUtils.recaptchaSDKNotLinkedError()
+        return try await withCheckedThrowingContinuation { continuation in
+          FIRRecaptchaGetToken(siteKey, actionString,
+                               "NO_RECAPTCHA") { (token: String, error: Error?,
+                                                  linked: Bool, actionCreated: Bool) in
+              guard linked else {
+                continuation.resume(throwing: AuthErrorUtils.recaptchaSDKNotLinkedError())
+                return
+              }
+              guard actionCreated else {
+                continuation.resume(throwing: AuthErrorUtils.recaptchaActionCreationFailed())
+                return
+              }
+              if let error {
+                continuation.resume(throwing: error)
+                return
+              } else {
+                if token == "NO_RECAPTCHA" {
+                  AuthLog.logInfo(code: "I-AUT000031",
+                                  message: "reCAPTCHA token retrieval failed. NO_RECAPTCHA sent as the fake code.")
+                } else {
+                  AuthLog.logInfo(
+                    code: "I-AUT000030",
+                    message: "reCAPTCHA token retrieval succeeded."
+                  )
+                }
+                continuation.resume(returning: token)
+              }
+          }
         }
-        guard actionCreated else {
-          throw AuthErrorUtils.recaptchaActionCreationFailed()
-        }
-        if let error {
-          throw error
-        }
-        if token == "NO_RECAPTCHA" {
-          AuthLog.logInfo(code: "I-AUT000031",
-                          message: "reCAPTCHA token retrieval failed. NO_RECAPTCHA sent as the fake code.")
-        } else {
-          AuthLog.logInfo(
-            code: "I-AUT000030",
-            message: "reCAPTCHA token retrieval succeeded."
-          )
-        }
-        return token
       #endif // !(COCOAPODS || SWIFT_PACKAGE)
     }
 
@@ -167,79 +178,7 @@
       try await parseRecaptchaConfigFromResponse(response: response)
     }
 
-    private func siteKey() -> String? {
-      if let tenantID = auth?.tenantID {
-        if let config = tenantConfigs[tenantID] {
-          return config.siteKey
-        }
-        return nil
-      }
-      return agentConfig?.siteKey
-    }
-
-    func injectRecaptchaFields(request: any AuthRPCRequest,
-                               provider: AuthRecaptchaProvider,
-                               action: AuthRecaptchaAction) async throws {
-      try await retrieveRecaptchaConfig(forceRefresh: false)
-      if enablementStatus(forProvider: provider) != .off {
-        let token = try await verify(forceRefresh: false, action: action)
-        request.injectRecaptchaFields(recaptchaResponse: token, recaptchaVersion: kRecaptchaVersion)
-      } else {
-        request.injectRecaptchaFields(recaptchaResponse: nil, recaptchaVersion: kRecaptchaVersion)
-      }
-    }
-
-    #if COCOAPODS || SWIFT_PACKAGE // No recaptcha on internal build system.
-      private func recaptchaToken(siteKey: String,
-                                  actionString: String,
-                                  fakeToken: String) async -> (token: String, error: Error?,
-                                                               linked: Bool, actionCreated: Bool) {
-        if let recaptchaClient {
-          return await retrieveToken(
-            actionString: actionString,
-            fakeToken: fakeToken,
-            recaptchaClient: recaptchaClient
-          )
-        }
-
-        if let recaptcha =
-          NSClassFromString("RecaptchaEnterprise.RCARecaptcha") as? RCARecaptchaProtocol.Type {
-          do {
-            let client = try await recaptcha.fetchClient(withSiteKey: siteKey)
-            recaptchaClient = client
-            return await retrieveToken(
-              actionString: actionString,
-              fakeToken: fakeToken,
-              recaptchaClient: client
-            )
-          } catch {
-            return ("", error, true, true)
-          }
-        } else {
-          // RecaptchaEnterprise not linked.
-          return ("", nil, false, false)
-        }
-      }
-    #endif // (COCOAPODS || SWIFT_PACKAGE)
-
-    private func retrieveToken(actionString: String,
-                               fakeToken: String,
-                               recaptchaClient: RCARecaptchaClientProtocol) async -> (token: String,
-                                                                                      error: Error?,
-                                                                                      linked: Bool,
-                                                                                      actionCreated: Bool) {
-      if let recaptchaAction =
-        NSClassFromString("RecaptchaEnterprise.RCAAction") as? RCAActionProtocol.Type {
-        let action = recaptchaAction.init(customAction: actionString)
-        let token = try? await recaptchaClient.execute(withAction: action)
-        return (token ?? "NO_RECAPTCHA", nil, true, true)
-      } else {
-        // RecaptchaEnterprise not linked.
-        return ("", nil, false, false)
-      }
-    }
-
-    private func parseRecaptchaConfigFromResponse(response: GetRecaptchaConfigResponse) async throws {
+    func parseRecaptchaConfigFromResponse(response: GetRecaptchaConfigResponse) async throws {
       var enablementStatus: [AuthRecaptchaProvider: AuthRecaptchaEnablementStatus] = [:]
       var isRecaptchaEnabled = false
       if let enforcementState = response.enforcementState {
@@ -273,6 +212,18 @@
         tenantConfigs[tenantID] = config
       } else {
         agentConfig = config
+      }
+    }
+
+    func injectRecaptchaFields(request: any AuthRPCRequest,
+                               provider: AuthRecaptchaProvider,
+                               action: AuthRecaptchaAction) async throws {
+      try await retrieveRecaptchaConfig(forceRefresh: false)
+      if enablementStatus(forProvider: provider) != .off {
+        let token = try await verify(forceRefresh: false, action: action)
+        request.injectRecaptchaFields(recaptchaResponse: token, recaptchaVersion: kRecaptchaVersion)
+      } else {
+        request.injectRecaptchaFields(recaptchaResponse: nil, recaptchaVersion: kRecaptchaVersion)
       }
     }
   }

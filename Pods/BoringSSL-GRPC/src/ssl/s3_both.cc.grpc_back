@@ -659,60 +659,36 @@ void tls_next_message(SSL *ssl) {
   }
 }
 
-namespace {
-
+// CipherScorer produces a "score" for each possible cipher suite offered by
+// the client.
 class CipherScorer {
  public:
-  using Score = int;
-  static constexpr Score kMinScore = 0;
+  CipherScorer(bool has_aes_hw) : aes_is_fine_(has_aes_hw) {}
 
-  virtual ~CipherScorer() = default;
+  typedef std::tuple<bool, bool> Score;
 
-  virtual Score Evaluate(const SSL_CIPHER *cipher) const = 0;
-};
+  // MinScore returns a |Score| that will compare less than the score of all
+  // cipher suites.
+  Score MinScore() const {
+    return Score(false, false);
+  }
 
-// AesHwCipherScorer scores cipher suites based on whether AES is supported in
-// hardware.
-class AesHwCipherScorer : public CipherScorer {
- public:
-  explicit AesHwCipherScorer(bool has_aes_hw) : aes_is_fine_(has_aes_hw) {}
-
-  virtual ~AesHwCipherScorer() override = default;
-
-  Score Evaluate(const SSL_CIPHER *a) const override {
-    return
+  Score Evaluate(const SSL_CIPHER *a) const {
+    return Score(
         // Something is always preferable to nothing.
-        1 +
+        true,
         // Either AES is fine, or else ChaCha20 is preferred.
-        ((aes_is_fine_ || a->algorithm_enc == SSL_CHACHA20POLY1305) ? 1 : 0);
+        aes_is_fine_ || a->algorithm_enc == SSL_CHACHA20POLY1305);
   }
 
  private:
   const bool aes_is_fine_;
 };
 
-// CNsaCipherScorer prefers AES-256-GCM over AES-128-GCM over anything else.
-class CNsaCipherScorer : public CipherScorer {
- public:
-  virtual ~CNsaCipherScorer() override = default;
-
-  Score Evaluate(const SSL_CIPHER *a) const override {
-    if (a->id == TLS1_3_CK_AES_256_GCM_SHA384) {
-      return 3;
-    } else if (a->id == TLS1_3_CK_AES_128_GCM_SHA256) {
-      return 2;
-    }
-    return 1;
-  }
-};
-
-}
-
 bool ssl_tls13_cipher_meets_policy(uint16_t cipher_id,
                                    enum ssl_compliance_policy_t policy) {
   switch (policy) {
     case ssl_compliance_policy_none:
-    case ssl_compliance_policy_cnsa_202407:
       return true;
 
     case ssl_compliance_policy_fips_202205:
@@ -752,12 +728,8 @@ const SSL_CIPHER *ssl_choose_tls13_cipher(CBS cipher_suites, bool has_aes_hw,
   }
 
   const SSL_CIPHER *best = nullptr;
-  AesHwCipherScorer aes_hw_scorer(has_aes_hw);
-  CNsaCipherScorer cnsa_scorer;
-  CipherScorer *const scorer = (policy == ssl_compliance_policy_cnsa_202407)
-                                   ? static_cast<CipherScorer*>(&cnsa_scorer)
-                                   : static_cast<CipherScorer*>(&aes_hw_scorer);
-  CipherScorer::Score best_score = CipherScorer::kMinScore;
+  CipherScorer scorer(has_aes_hw);
+  CipherScorer::Score best_score = scorer.MinScore();
 
   while (CBS_len(&cipher_suites) > 0) {
     uint16_t cipher_suite;
@@ -778,7 +750,7 @@ const SSL_CIPHER *ssl_choose_tls13_cipher(CBS cipher_suites, bool has_aes_hw,
       continue;
     }
 
-    const CipherScorer::Score candidate_score = scorer->Evaluate(candidate);
+    const CipherScorer::Score candidate_score = scorer.Evaluate(candidate);
     // |candidate_score| must be larger to displace the current choice. That way
     // the client's order controls between ciphers with an equal score.
     if (candidate_score > best_score) {

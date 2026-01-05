@@ -30,7 +30,9 @@ class BreathingViewController: UIViewController {
         
         // When the ViewModel needs to show the user instruction...
         viewModel.showUserInstruction = { [weak self] in
-            self?.presentUserInstructionAlert()
+            DispatchQueue.main.async {
+                self?.presentUserInstructionAlert()
+            }
         }
         
         // When the ViewModel determines we should navigate to the next screen...
@@ -76,6 +78,6 @@ class BreathingViewController: UIViewController {
                                       message: "Please open the Mindfulness app on your Apple Watch and start a breathe session.",
                                       preferredStyle: .alert)
         alert.addAction(UIAlertAction(title: "OK", style: .default))
-        present(alert, animated: true)
+        self.present(alert, animated: true)
     }
 }

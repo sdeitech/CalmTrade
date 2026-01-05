@@ -2,12 +2,21 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>BGTaskSchedulerPermittedIdentifiers</key>
+	<array>
+		<string>com.burnscapital.calmtradeapp.refresh</string>
+		<string>com.burnscapital.calmtradeapp.processing</string>
+	</array>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLName</key>
+			<string>com.burnscapital.calmtradeapp</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>fb3703777379925275</string>
+				<string>CalmTrade</string>
 			</array>
 		</dict>
 		<dict>
@@ -15,20 +24,32 @@
 			<string>Editor</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>com.googleusercontent.apps.897002773112-tao2lmgkqia62vlt448o7fs26d99774r</string>
+				<string>fb1439790770608266</string>
+			</array>
+		</dict>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.206278247451-k3bfkkfp4q2spec80napovapbno0tlih</string>
 			</array>
 		</dict>
 	</array>
 	<key>FacebookAppID</key>
-	<string>3703777379925275</string>
+	<string>1439790770608266</string>
 	<key>FacebookClientToken</key>
-	<string>9081e4ea15f08e7d5e1bf43f65ede4c4</string>
+	<string>893bcbdd5f41249f62748adba97e1687</string>
 	<key>FacebookDisplayName</key>
 	<string>CalmTrade</string>
+	<key>GIDClientID</key>
+	<string>206278247451-k3bfkkfp4q2spec80napovapbno0tlih.apps.googleusercontent.com</string>
 	<key>LSApplicationQueriesSchemes</key>
 	<array>
 		<string>fbapi</string>
+		<string>fb-messenger-api</string>
 		<string>fbauth2</string>
+		<string>fbshareextension</string>
 	</array>
 	<key>NSAppTransportSecurity</key>
 	<dict>
@@ -37,6 +58,8 @@
 			<string>com.googleusercontent.apps</string>
 			<string>com.google.gppconsent.deepLink</string>
 		</array>
+		<key>NSAllowsArbitraryLoads</key>
+		<true/>
 	</dict>
 	<key>UIAppFonts</key>
 	<array>
@@ -49,6 +72,14 @@
 		<string>Outfit-ExtraBold.ttf</string>
 		<string>Outfit-Bold.ttf</string>
 		<string>Outfit-Black.ttf</string>
+	</array>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>bluetooth-peripheral</string>
+		<string>processing</string>
+		<string>fetch</string>
+		<string>bluetooth-central</string>
+		<string>remote-notification</string>
 	</array>
 </dict>
 </plist>

@@ -3,11 +3,10 @@
  *     envoy/config/trace/v3/xray.proto
  *
  * Do not edit -- your changes will be discarded when the file is
- * regenerated.
- * NO CHECKED-IN PROTOBUF GENCODE */
+ * regenerated. */
 
-#ifndef ENVOY_CONFIG_TRACE_V3_XRAY_PROTO_UPB_H__UPB_H_
-#define ENVOY_CONFIG_TRACE_V3_XRAY_PROTO_UPB_H__UPB_H_
+#ifndef ENVOY_CONFIG_TRACE_V3_XRAY_PROTO_UPB_H_
+#define ENVOY_CONFIG_TRACE_V3_XRAY_PROTO_UPB_H_
 
 #include "upb/generated_code_support.h"
 
@@ -80,7 +79,6 @@ UPB_INLINE const struct envoy_config_core_v3_SocketAddress* envoy_config_trace_v
   const struct envoy_config_core_v3_SocketAddress* default_val = NULL;
   const struct envoy_config_core_v3_SocketAddress* ret;
   const upb_MiniTableField field = {1, UPB_SIZE(12, 16), 64, 0, 11, (int)kUpb_FieldMode_Scalar | ((int)UPB_SIZE(kUpb_FieldRep_4Byte, kUpb_FieldRep_8Byte) << kUpb_FieldRep_Shift)};
-  UPB_PRIVATE(_upb_MiniTable_StrongReference)(&envoy__config__core__v3__SocketAddress_msg_init);
   _upb_Message_GetNonExtensionField(UPB_UPCAST(msg), &field,
                                     &default_val, &ret);
   return ret;
@@ -109,7 +107,6 @@ UPB_INLINE const struct envoy_config_core_v3_DataSource* envoy_config_trace_v3_X
   const struct envoy_config_core_v3_DataSource* default_val = NULL;
   const struct envoy_config_core_v3_DataSource* ret;
   const upb_MiniTableField field = {3, UPB_SIZE(16, 40), 65, 1, 11, (int)kUpb_FieldMode_Scalar | ((int)UPB_SIZE(kUpb_FieldRep_4Byte, kUpb_FieldRep_8Byte) << kUpb_FieldRep_Shift)};
-  UPB_PRIVATE(_upb_MiniTable_StrongReference)(&envoy__config__core__v3__DataSource_msg_init);
   _upb_Message_GetNonExtensionField(UPB_UPCAST(msg), &field,
                                     &default_val, &ret);
   return ret;
@@ -126,7 +123,6 @@ UPB_INLINE const envoy_config_trace_v3_XRayConfig_SegmentFields* envoy_config_tr
   const envoy_config_trace_v3_XRayConfig_SegmentFields* default_val = NULL;
   const envoy_config_trace_v3_XRayConfig_SegmentFields* ret;
   const upb_MiniTableField field = {4, UPB_SIZE(20, 48), 66, 2, 11, (int)kUpb_FieldMode_Scalar | ((int)UPB_SIZE(kUpb_FieldRep_4Byte, kUpb_FieldRep_8Byte) << kUpb_FieldRep_Shift)};
-  UPB_PRIVATE(_upb_MiniTable_StrongReference)(&envoy__config__trace__v3__XRayConfig__SegmentFields_msg_init);
   _upb_Message_GetNonExtensionField(UPB_UPCAST(msg), &field,
                                     &default_val, &ret);
   return ret;
@@ -138,8 +134,7 @@ UPB_INLINE bool envoy_config_trace_v3_XRayConfig_has_segment_fields(const envoy_
 
 UPB_INLINE void envoy_config_trace_v3_XRayConfig_set_daemon_endpoint(envoy_config_trace_v3_XRayConfig *msg, struct envoy_config_core_v3_SocketAddress* value) {
   const upb_MiniTableField field = {1, UPB_SIZE(12, 16), 64, 0, 11, (int)kUpb_FieldMode_Scalar | ((int)UPB_SIZE(kUpb_FieldRep_4Byte, kUpb_FieldRep_8Byte) << kUpb_FieldRep_Shift)};
-  UPB_PRIVATE(_upb_MiniTable_StrongReference)(&envoy__config__core__v3__SocketAddress_msg_init);
-  upb_Message_SetBaseField((upb_Message *)msg, &field, &value);
+  _upb_Message_SetNonExtensionField((upb_Message *)msg, &field, &value);
 }
 UPB_INLINE struct envoy_config_core_v3_SocketAddress* envoy_config_trace_v3_XRayConfig_mutable_daemon_endpoint(envoy_config_trace_v3_XRayConfig* msg, upb_Arena* arena) {
   struct envoy_config_core_v3_SocketAddress* sub = (struct envoy_config_core_v3_SocketAddress*)envoy_config_trace_v3_XRayConfig_daemon_endpoint(msg);
@@ -151,12 +146,11 @@ UPB_INLINE struct envoy_config_core_v3_SocketAddress* envoy_config_trace_v3_XRay
 }
 UPB_INLINE void envoy_config_trace_v3_XRayConfig_set_segment_name(envoy_config_trace_v3_XRayConfig *msg, upb_StringView value) {
   const upb_MiniTableField field = {2, 24, 0, kUpb_NoSub, 9, (int)kUpb_FieldMode_Scalar | ((int)kUpb_FieldRep_StringView << kUpb_FieldRep_Shift)};
-  upb_Message_SetBaseField((upb_Message *)msg, &field, &value);
+  _upb_Message_SetNonExtensionField((upb_Message *)msg, &field, &value);
 }
 UPB_INLINE void envoy_config_trace_v3_XRayConfig_set_sampling_rule_manifest(envoy_config_trace_v3_XRayConfig *msg, struct envoy_config_core_v3_DataSource* value) {
   const upb_MiniTableField field = {3, UPB_SIZE(16, 40), 65, 1, 11, (int)kUpb_FieldMode_Scalar | ((int)UPB_SIZE(kUpb_FieldRep_4Byte, kUpb_FieldRep_8Byte) << kUpb_FieldRep_Shift)};
-  UPB_PRIVATE(_upb_MiniTable_StrongReference)(&envoy__config__core__v3__DataSource_msg_init);
-  upb_Message_SetBaseField((upb_Message *)msg, &field, &value);
+  _upb_Message_SetNonExtensionField((upb_Message *)msg, &field, &value);
 }
 UPB_INLINE struct envoy_config_core_v3_DataSource* envoy_config_trace_v3_XRayConfig_mutable_sampling_rule_manifest(envoy_config_trace_v3_XRayConfig* msg, upb_Arena* arena) {
   struct envoy_config_core_v3_DataSource* sub = (struct envoy_config_core_v3_DataSource*)envoy_config_trace_v3_XRayConfig_sampling_rule_manifest(msg);
@@ -168,8 +162,7 @@ UPB_INLINE struct envoy_config_core_v3_DataSource* envoy_config_trace_v3_XRayCon
 }
 UPB_INLINE void envoy_config_trace_v3_XRayConfig_set_segment_fields(envoy_config_trace_v3_XRayConfig *msg, envoy_config_trace_v3_XRayConfig_SegmentFields* value) {
   const upb_MiniTableField field = {4, UPB_SIZE(20, 48), 66, 2, 11, (int)kUpb_FieldMode_Scalar | ((int)UPB_SIZE(kUpb_FieldRep_4Byte, kUpb_FieldRep_8Byte) << kUpb_FieldRep_Shift)};
-  UPB_PRIVATE(_upb_MiniTable_StrongReference)(&envoy__config__trace__v3__XRayConfig__SegmentFields_msg_init);
-  upb_Message_SetBaseField((upb_Message *)msg, &field, &value);
+  _upb_Message_SetNonExtensionField((upb_Message *)msg, &field, &value);
 }
 UPB_INLINE struct envoy_config_trace_v3_XRayConfig_SegmentFields* envoy_config_trace_v3_XRayConfig_mutable_segment_fields(envoy_config_trace_v3_XRayConfig* msg, upb_Arena* arena) {
   struct envoy_config_trace_v3_XRayConfig_SegmentFields* sub = (struct envoy_config_trace_v3_XRayConfig_SegmentFields*)envoy_config_trace_v3_XRayConfig_segment_fields(msg);
@@ -236,7 +229,6 @@ UPB_INLINE const struct google_protobuf_Struct* envoy_config_trace_v3_XRayConfig
   const struct google_protobuf_Struct* default_val = NULL;
   const struct google_protobuf_Struct* ret;
   const upb_MiniTableField field = {2, UPB_SIZE(12, 32), 64, 0, 11, (int)kUpb_FieldMode_Scalar | ((int)UPB_SIZE(kUpb_FieldRep_4Byte, kUpb_FieldRep_8Byte) << kUpb_FieldRep_Shift)};
-  UPB_PRIVATE(_upb_MiniTable_StrongReference)(&google__protobuf__Struct_msg_init);
   _upb_Message_GetNonExtensionField(UPB_UPCAST(msg), &field,
                                     &default_val, &ret);
   return ret;
@@ -248,12 +240,11 @@ UPB_INLINE bool envoy_config_trace_v3_XRayConfig_SegmentFields_has_aws(const env
 
 UPB_INLINE void envoy_config_trace_v3_XRayConfig_SegmentFields_set_origin(envoy_config_trace_v3_XRayConfig_SegmentFields *msg, upb_StringView value) {
   const upb_MiniTableField field = {1, 16, 0, kUpb_NoSub, 9, (int)kUpb_FieldMode_Scalar | ((int)kUpb_FieldRep_StringView << kUpb_FieldRep_Shift)};
-  upb_Message_SetBaseField((upb_Message *)msg, &field, &value);
+  _upb_Message_SetNonExtensionField((upb_Message *)msg, &field, &value);
 }
 UPB_INLINE void envoy_config_trace_v3_XRayConfig_SegmentFields_set_aws(envoy_config_trace_v3_XRayConfig_SegmentFields *msg, struct google_protobuf_Struct* value) {
   const upb_MiniTableField field = {2, UPB_SIZE(12, 32), 64, 0, 11, (int)kUpb_FieldMode_Scalar | ((int)UPB_SIZE(kUpb_FieldRep_4Byte, kUpb_FieldRep_8Byte) << kUpb_FieldRep_Shift)};
-  UPB_PRIVATE(_upb_MiniTable_StrongReference)(&google__protobuf__Struct_msg_init);
-  upb_Message_SetBaseField((upb_Message *)msg, &field, &value);
+  _upb_Message_SetNonExtensionField((upb_Message *)msg, &field, &value);
 }
 UPB_INLINE struct google_protobuf_Struct* envoy_config_trace_v3_XRayConfig_SegmentFields_mutable_aws(envoy_config_trace_v3_XRayConfig_SegmentFields* msg, upb_Arena* arena) {
   struct google_protobuf_Struct* sub = (struct google_protobuf_Struct*)envoy_config_trace_v3_XRayConfig_SegmentFields_aws(msg);
@@ -270,4 +261,4 @@ UPB_INLINE struct google_protobuf_Struct* envoy_config_trace_v3_XRayConfig_Segme
 
 #include "upb/port/undef.inc"
 
-#endif  /* ENVOY_CONFIG_TRACE_V3_XRAY_PROTO_UPB_H__UPB_H_ */
+#endif  /* ENVOY_CONFIG_TRACE_V3_XRAY_PROTO_UPB_H_ */

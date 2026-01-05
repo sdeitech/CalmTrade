@@ -5,7 +5,6 @@
 //  Created by Anas Parekh on 02/09/25.
 //
 
-
 import Foundation
 
 /// A struct to hold the processed and formatted data for display in the BiometricsViewController.
@@ -18,9 +17,14 @@ struct BiometricData {
     var heartRateAverage: String = "--"
     var heartRateLatest: String = "--"
     
-    var hrvAverage: String = "--"
-    var hrvLatest: String = "--"
-    var hrvTimestamp: String = ""
+    // --- HRV split: RMSSD + SDNN ---
+    var rmssdAverage: String = "--"
+    var rmssdLatest: String = "--"
+    var rmssdTimestamp: String = ""
+    
+    var sdnnAverage: String = "--"
+    var sdnnLatest: String = "--"
+    var sdnnTimestamp: String = ""
     
     var restingHeartRateAverage: String = "--"
     var restingHeartRateLatest: String = "--"

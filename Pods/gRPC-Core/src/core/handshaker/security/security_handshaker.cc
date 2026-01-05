@@ -18,13 +18,6 @@
 
 #include "src/core/handshaker/security/security_handshaker.h"
 
-#include <grpc/grpc_security.h>
-#include <grpc/grpc_security_constants.h>
-#include <grpc/impl/channel_arg_names.h>
-#include <grpc/slice.h>
-#include <grpc/slice_buffer.h>
-#include <grpc/support/alloc.h>
-#include <grpc/support/port_platform.h>
 #include <limits.h>
 #include <stdint.h>
 #include <string.h>
@@ -35,19 +28,32 @@
 #include <utility>
 
 #include "absl/base/attributes.h"
-#include "absl/functional/any_invocable.h"
 #include "absl/log/check.h"
 #include "absl/status/status.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/optional.h"
+
+#include <grpc/grpc_security.h>
+#include <grpc/grpc_security_constants.h>
+#include <grpc/impl/channel_arg_names.h>
+#include <grpc/slice.h>
+#include <grpc/slice_buffer.h>
+#include <grpc/support/alloc.h>
+#include <grpc/support/log.h>
+#include <grpc/support/port_platform.h>
+
 #include "src/core/channelz/channelz.h"
-#include "src/core/config/core_configuration.h"
 #include "src/core/handshaker/handshaker.h"
 #include "src/core/handshaker/handshaker_factory.h"
 #include "src/core/handshaker/handshaker_registry.h"
 #include "src/core/handshaker/security/secure_endpoint.h"
 #include "src/core/lib/channel/channel_args.h"
+#include "src/core/lib/config/core_configuration.h"
+#include "src/core/lib/gprpp/debug_location.h"
+#include "src/core/lib/gprpp/ref_counted_ptr.h"
+#include "src/core/lib/gprpp/sync.h"
+#include "src/core/lib/gprpp/unique_type_name.h"
 #include "src/core/lib/iomgr/closure.h"
 #include "src/core/lib/iomgr/endpoint.h"
 #include "src/core/lib/iomgr/error.h"
@@ -60,10 +66,6 @@
 #include "src/core/telemetry/stats.h"
 #include "src/core/telemetry/stats_data.h"
 #include "src/core/tsi/transport_security_grpc.h"
-#include "src/core/util/debug_location.h"
-#include "src/core/util/ref_counted_ptr.h"
-#include "src/core/util/sync.h"
-#include "src/core/util/unique_type_name.h"
 
 #define GRPC_INITIAL_HANDSHAKE_BUFFER_SIZE 256
 
@@ -77,35 +79,36 @@ class SecurityHandshaker : public Handshaker {
                      grpc_security_connector* connector,
                      const ChannelArgs& args);
   ~SecurityHandshaker() override;
-  absl::string_view name() const override { return "security"; }
-  void DoHandshake(
-      HandshakerArgs* args,
-      absl::AnyInvocable<void(absl::Status)> on_handshake_done) override;
-  void Shutdown(absl::Status error) override;
+  void Shutdown(grpc_error_handle why) override;
+  void DoHandshake(grpc_tcp_server_acceptor* acceptor,
+                   grpc_closure* on_handshake_done,
+                   HandshakerArgs* args) override;
+  const char* name() const override { return "security"; }
 
  private:
   grpc_error_handle DoHandshakerNextLocked(const unsigned char* bytes_received,
-                                           size_t bytes_received_size)
-      ABSL_EXCLUSIVE_LOCKS_REQUIRED(mu_);
+                                           size_t bytes_received_size);
 
   grpc_error_handle OnHandshakeNextDoneLocked(
       tsi_result result, const unsigned char* bytes_to_send,
-      size_t bytes_to_send_size, tsi_handshaker_result* handshaker_result)
-      ABSL_EXCLUSIVE_LOCKS_REQUIRED(mu_);
-  void HandshakeFailedLocked(absl::Status error)
-      ABSL_EXCLUSIVE_LOCKS_REQUIRED(mu_);
-  void Finish(absl::Status status);
+      size_t bytes_to_send_size, tsi_handshaker_result* handshaker_result);
+  void HandshakeFailedLocked(grpc_error_handle error);
+  void CleanupArgsForFailureLocked();
 
-  void OnHandshakeDataReceivedFromPeerFn(absl::Status error);
-  void OnHandshakeDataSentToPeerFn(absl::Status error);
-  void OnHandshakeDataReceivedFromPeerFnScheduler(grpc_error_handle error);
-  void OnHandshakeDataSentToPeerFnScheduler(grpc_error_handle error);
+  static void OnHandshakeDataReceivedFromPeerFn(void* arg,
+                                                grpc_error_handle error);
+  static void OnHandshakeDataSentToPeerFn(void* arg, grpc_error_handle error);
+  static void OnHandshakeDataReceivedFromPeerFnScheduler(
+      void* arg, grpc_error_handle error);
+  static void OnHandshakeDataSentToPeerFnScheduler(void* arg,
+                                                   grpc_error_handle error);
   static void OnHandshakeNextDoneGrpcWrapper(
       tsi_result result, void* user_data, const unsigned char* bytes_to_send,
       size_t bytes_to_send_size, tsi_handshaker_result* handshaker_result);
-  void OnPeerCheckedFn(grpc_error_handle error);
+  static void OnPeerCheckedFn(void* arg, grpc_error_handle error);
+  void OnPeerCheckedInner(grpc_error_handle error);
   size_t MoveReadBufferIntoHandshakeBuffer();
-  grpc_error_handle CheckPeerLocked() ABSL_EXCLUSIVE_LOCKS_REQUIRED(mu_);
+  grpc_error_handle CheckPeerLocked();
 
   // State set at creation time.
   tsi_handshaker* handshaker_;
@@ -114,19 +117,23 @@ class SecurityHandshaker : public Handshaker {
   Mutex mu_;
 
   bool is_shutdown_ = false;
+  // Read buffer to destroy after a shutdown.
+  grpc_slice_buffer* read_buffer_to_destroy_ = nullptr;
 
   // State saved while performing the handshake.
   HandshakerArgs* args_ = nullptr;
-  absl::AnyInvocable<void(absl::Status)> on_handshake_done_;
+  grpc_closure* on_handshake_done_ = nullptr;
 
   size_t handshake_buffer_size_;
   unsigned char* handshake_buffer_;
-  SliceBuffer outgoing_;
+  grpc_slice_buffer outgoing_;
+  grpc_closure on_handshake_data_sent_to_peer_;
+  grpc_closure on_handshake_data_received_from_peer_;
+  grpc_closure on_peer_checked_;
   RefCountedPtr<grpc_auth_context> auth_context_;
   tsi_handshaker_result* handshaker_result_ = nullptr;
   size_t max_frame_size_ = 0;
   std::string tsi_handshake_error_;
-  grpc_closure* on_peer_checked_ ABSL_GUARDED_BY(mu_) = nullptr;
 };
 
 SecurityHandshaker::SecurityHandshaker(tsi_handshaker* handshaker,
@@ -138,35 +145,54 @@ SecurityHandshaker::SecurityHandshaker(tsi_handshaker* handshaker,
       handshake_buffer_(
           static_cast<uint8_t*>(gpr_malloc(handshake_buffer_size_))),
       max_frame_size_(
-          std::max(0, args.GetInt(GRPC_ARG_TSI_MAX_FRAME_SIZE).value_or(0))) {}
+          std::max(0, args.GetInt(GRPC_ARG_TSI_MAX_FRAME_SIZE).value_or(0))) {
+  grpc_slice_buffer_init(&outgoing_);
+  GRPC_CLOSURE_INIT(&on_peer_checked_, &SecurityHandshaker::OnPeerCheckedFn,
+                    this, grpc_schedule_on_exec_ctx);
+}
 
 SecurityHandshaker::~SecurityHandshaker() {
   tsi_handshaker_destroy(handshaker_);
   tsi_handshaker_result_destroy(handshaker_result_);
+  if (read_buffer_to_destroy_ != nullptr) {
+    grpc_slice_buffer_destroy(read_buffer_to_destroy_);
+    gpr_free(read_buffer_to_destroy_);
+  }
   gpr_free(handshake_buffer_);
+  grpc_slice_buffer_destroy(&outgoing_);
   auth_context_.reset(DEBUG_LOCATION, "handshake");
   connector_.reset(DEBUG_LOCATION, "handshake");
 }
 
 size_t SecurityHandshaker::MoveReadBufferIntoHandshakeBuffer() {
-  size_t bytes_in_read_buffer = args_->read_buffer.Length();
+  size_t bytes_in_read_buffer = args_->read_buffer->length;
   if (handshake_buffer_size_ < bytes_in_read_buffer) {
     handshake_buffer_ = static_cast<uint8_t*>(
         gpr_realloc(handshake_buffer_, bytes_in_read_buffer));
     handshake_buffer_size_ = bytes_in_read_buffer;
   }
   size_t offset = 0;
-  while (args_->read_buffer.Count() > 0) {
-    Slice slice = args_->read_buffer.TakeFirst();
-    memcpy(handshake_buffer_ + offset, slice.data(), slice.size());
-    offset += slice.size();
+  while (args_->read_buffer->count > 0) {
+    grpc_slice* next_slice = grpc_slice_buffer_peek_first(args_->read_buffer);
+    memcpy(handshake_buffer_ + offset, GRPC_SLICE_START_PTR(*next_slice),
+           GRPC_SLICE_LENGTH(*next_slice));
+    offset += GRPC_SLICE_LENGTH(*next_slice);
+    grpc_slice_buffer_remove_first(args_->read_buffer);
   }
   return bytes_in_read_buffer;
 }
 
+// Set args_ fields to NULL, saving the endpoint and read buffer for
+// later destruction.
+void SecurityHandshaker::CleanupArgsForFailureLocked() {
+  read_buffer_to_destroy_ = args_->read_buffer;
+  args_->read_buffer = nullptr;
+  args_->args = ChannelArgs();
+}
+
 // If the handshake failed or we're shutting down, clean up and invoke the
 // callback with the error.
-void SecurityHandshaker::HandshakeFailedLocked(absl::Status error) {
+void SecurityHandshaker::HandshakeFailedLocked(grpc_error_handle error) {
   if (error.ok()) {
     // If we were shut down after the handshake succeeded but before an
     // endpoint callback was invoked, we need to generate our own error.
@@ -174,17 +200,17 @@ void SecurityHandshaker::HandshakeFailedLocked(absl::Status error) {
   }
   if (!is_shutdown_) {
     tsi_handshaker_shutdown(handshaker_);
+    grpc_endpoint_destroy(args_->endpoint);
+    args_->endpoint = nullptr;
+    // Not shutting down, so the write failed.  Clean up before
+    // invoking the callback.
+    CleanupArgsForFailureLocked();
     // Set shutdown to true so that subsequent calls to
     // security_handshaker_shutdown() do nothing.
     is_shutdown_ = true;
   }
   // Invoke callback.
-  Finish(std::move(error));
-}
-
-void SecurityHandshaker::Finish(absl::Status status) {
-  InvokeOnHandshakeDone(args_, std::move(on_handshake_done_),
-                        std::move(status));
+  ExecCtx::Run(DEBUG_LOCATION, on_handshake_done_, error);
 }
 
 namespace {
@@ -212,9 +238,8 @@ MakeChannelzSecurityFromAuthContext(grpc_auth_context* auth_context) {
 
 }  // namespace
 
-void SecurityHandshaker::OnPeerCheckedFn(grpc_error_handle error) {
+void SecurityHandshaker::OnPeerCheckedInner(grpc_error_handle error) {
   MutexLock lock(&mu_);
-  on_peer_checked_ = nullptr;
   if (!error.ok() || is_shutdown_) {
     HandshakeFailedLocked(error);
     return;
@@ -281,18 +306,19 @@ void SecurityHandshaker::OnPeerCheckedFn(grpc_error_handle error) {
       grpc_slice slice = grpc_slice_from_copied_buffer(
           reinterpret_cast<const char*>(unused_bytes), unused_bytes_size);
       args_->endpoint = grpc_secure_endpoint_create(
-          protector, zero_copy_protector, std::move(args_->endpoint), &slice,
+          protector, zero_copy_protector, args_->endpoint, &slice,
           args_->args.ToC().get(), 1);
       CSliceUnref(slice);
     } else {
       args_->endpoint = grpc_secure_endpoint_create(
-          protector, zero_copy_protector, std::move(args_->endpoint), nullptr,
+          protector, zero_copy_protector, args_->endpoint, nullptr,
           args_->args.ToC().get(), 0);
     }
   } else if (unused_bytes_size > 0) {
     // Not wrapping the endpoint, so just pass along unused bytes.
-    args_->read_buffer.Append(Slice::FromCopiedBuffer(
-        reinterpret_cast<const char*>(unused_bytes), unused_bytes_size));
+    grpc_slice slice = grpc_slice_from_copied_buffer(
+        reinterpret_cast<const char*>(unused_bytes), unused_bytes_size);
+    grpc_slice_buffer_add(args_->read_buffer, slice);
   }
   // Done with handshaker result.
   tsi_handshaker_result_destroy(handshaker_result_);
@@ -303,11 +329,16 @@ void SecurityHandshaker::OnPeerCheckedFn(grpc_error_handle error) {
     args_->args = args_->args.SetObject(
         MakeChannelzSecurityFromAuthContext(auth_context_.get()));
   }
+  // Invoke callback.
+  ExecCtx::Run(DEBUG_LOCATION, on_handshake_done_, absl::OkStatus());
   // Set shutdown to true so that subsequent calls to
   // security_handshaker_shutdown() do nothing.
   is_shutdown_ = true;
-  // Invoke callback.
-  Finish(absl::OkStatus());
+}
+
+void SecurityHandshaker::OnPeerCheckedFn(void* arg, grpc_error_handle error) {
+  RefCountedPtr<SecurityHandshaker>(static_cast<SecurityHandshaker*>(arg))
+      ->OnPeerCheckedInner(error);
 }
 
 grpc_error_handle SecurityHandshaker::CheckPeerLocked() {
@@ -318,12 +349,8 @@ grpc_error_handle SecurityHandshaker::CheckPeerLocked() {
     return GRPC_ERROR_CREATE(absl::StrCat("Peer extraction failed (",
                                           tsi_result_to_string(result), ")"));
   }
-  on_peer_checked_ = NewClosure(
-      [self = RefAsSubclass<SecurityHandshaker>()](absl::Status status) {
-        self->OnPeerCheckedFn(std::move(status));
-      });
-  connector_->check_peer(peer, args_->endpoint.get(), args_->args,
-                         &auth_context_, on_peer_checked_);
+  connector_->check_peer(peer, args_->endpoint, args_->args, &auth_context_,
+                         &on_peer_checked_);
   grpc_auth_property_iterator it = grpc_auth_context_find_properties_by_name(
       auth_context_.get(), GRPC_TRANSPORT_SECURITY_LEVEL_PROPERTY_NAME);
   const grpc_auth_property* prop = grpc_auth_property_iterator_next(&it);
@@ -347,21 +374,23 @@ grpc_error_handle SecurityHandshaker::OnHandshakeNextDoneLocked(
   if (result == TSI_INCOMPLETE_DATA) {
     CHECK_EQ(bytes_to_send_size, 0u);
     grpc_endpoint_read(
-        args_->endpoint.get(), args_->read_buffer.c_slice_buffer(),
-        NewClosure([self = RefAsSubclass<SecurityHandshaker>()](
-                       absl::Status status) {
-          self->OnHandshakeDataReceivedFromPeerFnScheduler(std::move(status));
-        }),
+        args_->endpoint, args_->read_buffer,
+        GRPC_CLOSURE_INIT(
+            &on_handshake_data_received_from_peer_,
+            &SecurityHandshaker::OnHandshakeDataReceivedFromPeerFnScheduler,
+            this, grpc_schedule_on_exec_ctx),
         /*urgent=*/true, /*min_progress_size=*/1);
     return error;
   }
   if (result != TSI_OK) {
-    // TODO(roth): Get a better signal from the TSI layer as to what
-    // status code we should use here.
+    auto* security_connector = args_->args.GetObject<grpc_security_connector>();
+    absl::string_view connector_type = "<unknown>";
+    if (security_connector != nullptr) {
+      connector_type = security_connector->type().name();
+    }
     return GRPC_ERROR_CREATE(absl::StrCat(
-        connector_->type().name(), " handshake failed (",
-        tsi_result_to_string(result), ")",
-        (tsi_handshake_error_.empty() ? "" : ": "), tsi_handshake_error_));
+        connector_type, " handshake failed (", tsi_result_to_string(result),
+        ")", (tsi_handshake_error_.empty() ? "" : ": "), tsi_handshake_error_));
   }
   // Update handshaker result.
   if (handshaker_result != nullptr) {
@@ -370,24 +399,25 @@ grpc_error_handle SecurityHandshaker::OnHandshakeNextDoneLocked(
   }
   if (bytes_to_send_size > 0) {
     // Send data to peer, if needed.
-    outgoing_.Clear();
-    outgoing_.Append(Slice::FromCopiedBuffer(
-        reinterpret_cast<const char*>(bytes_to_send), bytes_to_send_size));
+    grpc_slice to_send = grpc_slice_from_copied_buffer(
+        reinterpret_cast<const char*>(bytes_to_send), bytes_to_send_size);
+    grpc_slice_buffer_reset_and_unref(&outgoing_);
+    grpc_slice_buffer_add(&outgoing_, to_send);
     grpc_endpoint_write(
-        args_->endpoint.get(), outgoing_.c_slice_buffer(),
-        NewClosure(
-            [self = RefAsSubclass<SecurityHandshaker>()](absl::Status status) {
-              self->OnHandshakeDataSentToPeerFnScheduler(std::move(status));
-            }),
+        args_->endpoint, &outgoing_,
+        GRPC_CLOSURE_INIT(
+            &on_handshake_data_sent_to_peer_,
+            &SecurityHandshaker::OnHandshakeDataSentToPeerFnScheduler, this,
+            grpc_schedule_on_exec_ctx),
         nullptr, /*max_frame_size=*/INT_MAX);
   } else if (handshaker_result == nullptr) {
     // There is nothing to send, but need to read from peer.
     grpc_endpoint_read(
-        args_->endpoint.get(), args_->read_buffer.c_slice_buffer(),
-        NewClosure([self = RefAsSubclass<SecurityHandshaker>()](
-                       absl::Status status) {
-          self->OnHandshakeDataReceivedFromPeerFnScheduler(std::move(status));
-        }),
+        args_->endpoint, args_->read_buffer,
+        GRPC_CLOSURE_INIT(
+            &on_handshake_data_received_from_peer_,
+            &SecurityHandshaker::OnHandshakeDataReceivedFromPeerFnScheduler,
+            this, grpc_schedule_on_exec_ctx),
         /*urgent=*/true, /*min_progress_size=*/1);
   } else {
     // Handshake has finished, check peer and so on.
@@ -405,7 +435,9 @@ void SecurityHandshaker::OnHandshakeNextDoneGrpcWrapper(
   grpc_error_handle error = h->OnHandshakeNextDoneLocked(
       result, bytes_to_send, bytes_to_send_size, handshaker_result);
   if (!error.ok()) {
-    h->HandshakeFailedLocked(std::move(error));
+    h->HandshakeFailedLocked(error);
+  } else {
+    h.release();  // Avoid unref
   }
 }
 
@@ -415,15 +447,13 @@ grpc_error_handle SecurityHandshaker::DoHandshakerNextLocked(
   const unsigned char* bytes_to_send = nullptr;
   size_t bytes_to_send_size = 0;
   tsi_handshaker_result* hs_result = nullptr;
-  auto self = RefAsSubclass<SecurityHandshaker>();
   tsi_result result = tsi_handshaker_next(
       handshaker_, bytes_received, bytes_received_size, &bytes_to_send,
-      &bytes_to_send_size, &hs_result, &OnHandshakeNextDoneGrpcWrapper,
-      self.get(), &tsi_handshake_error_);
+      &bytes_to_send_size, &hs_result, &OnHandshakeNextDoneGrpcWrapper, this,
+      &tsi_handshake_error_);
   if (result == TSI_ASYNC) {
-    // Handshaker operating asynchronously. Callback will be invoked in a TSI
-    // thread. We no longer own the ref held in self.
-    self.release();
+    // Handshaker operating asynchronously. Nothing else to do here;
+    // callback will be invoked in a TSI thread.
     return absl::OkStatus();
   }
   // Handshaker returned synchronously. Invoke callback directly in
@@ -433,103 +463,109 @@ grpc_error_handle SecurityHandshaker::DoHandshakerNextLocked(
 }
 
 // This callback might be run inline while we are still holding on to the mutex,
-// so run OnHandshakeDataReceivedFromPeerFn asynchronously to avoid a deadlock.
-// TODO(roth): This will no longer be necessary once we migrate to the
-// EventEngine endpoint API.
+// so schedule OnHandshakeDataReceivedFromPeerFn on ExecCtx to avoid a deadlock.
 void SecurityHandshaker::OnHandshakeDataReceivedFromPeerFnScheduler(
-    grpc_error_handle error) {
-  args_->event_engine->Run([self = RefAsSubclass<SecurityHandshaker>(),
-                            error = std::move(error)]() mutable {
-    ApplicationCallbackExecCtx callback_exec_ctx;
-    ExecCtx exec_ctx;
-    self->OnHandshakeDataReceivedFromPeerFn(std::move(error));
-    // Avoid destruction outside of an ExecCtx (since this is non-cancelable).
-    self.reset();
-  });
+    void* arg, grpc_error_handle error) {
+  SecurityHandshaker* h = static_cast<SecurityHandshaker*>(arg);
+  ExecCtx::Run(
+      DEBUG_LOCATION,
+      GRPC_CLOSURE_INIT(&h->on_handshake_data_received_from_peer_,
+                        &SecurityHandshaker::OnHandshakeDataReceivedFromPeerFn,
+                        h, grpc_schedule_on_exec_ctx),
+      error);
 }
 
-void SecurityHandshaker::OnHandshakeDataReceivedFromPeerFn(absl::Status error) {
-  MutexLock lock(&mu_);
-  if (!error.ok() || is_shutdown_) {
-    HandshakeFailedLocked(
+void SecurityHandshaker::OnHandshakeDataReceivedFromPeerFn(
+    void* arg, grpc_error_handle error) {
+  RefCountedPtr<SecurityHandshaker> h(static_cast<SecurityHandshaker*>(arg));
+  MutexLock lock(&h->mu_);
+  if (!error.ok() || h->is_shutdown_) {
+    h->HandshakeFailedLocked(
         GRPC_ERROR_CREATE_REFERENCING("Handshake read failed", &error, 1));
     return;
   }
   // Copy all slices received.
-  size_t bytes_received_size = MoveReadBufferIntoHandshakeBuffer();
+  size_t bytes_received_size = h->MoveReadBufferIntoHandshakeBuffer();
   // Call TSI handshaker.
-  error = DoHandshakerNextLocked(handshake_buffer_, bytes_received_size);
+  error = h->DoHandshakerNextLocked(h->handshake_buffer_, bytes_received_size);
   if (!error.ok()) {
-    HandshakeFailedLocked(std::move(error));
+    h->HandshakeFailedLocked(error);
+  } else {
+    h.release();  // Avoid unref
   }
 }
 
 // This callback might be run inline while we are still holding on to the mutex,
-// so run OnHandshakeDataSentToPeerFn asynchronously to avoid a deadlock.
-// TODO(roth): This will no longer be necessary once we migrate to the
-// EventEngine endpoint API.
+// so schedule OnHandshakeDataSentToPeerFn on ExecCtx to avoid a deadlock.
 void SecurityHandshaker::OnHandshakeDataSentToPeerFnScheduler(
-    grpc_error_handle error) {
-  args_->event_engine->Run([self = RefAsSubclass<SecurityHandshaker>(),
-                            error = std::move(error)]() mutable {
-    ApplicationCallbackExecCtx callback_exec_ctx;
-    ExecCtx exec_ctx;
-    self->OnHandshakeDataSentToPeerFn(std::move(error));
-    // Avoid destruction outside of an ExecCtx (since this is non-cancelable).
-    self.reset();
-  });
+    void* arg, grpc_error_handle error) {
+  SecurityHandshaker* h = static_cast<SecurityHandshaker*>(arg);
+  ExecCtx::Run(
+      DEBUG_LOCATION,
+      GRPC_CLOSURE_INIT(&h->on_handshake_data_sent_to_peer_,
+                        &SecurityHandshaker::OnHandshakeDataSentToPeerFn, h,
+                        grpc_schedule_on_exec_ctx),
+      error);
 }
 
-void SecurityHandshaker::OnHandshakeDataSentToPeerFn(absl::Status error) {
-  MutexLock lock(&mu_);
-  if (!error.ok() || is_shutdown_) {
-    HandshakeFailedLocked(
+void SecurityHandshaker::OnHandshakeDataSentToPeerFn(void* arg,
+                                                     grpc_error_handle error) {
+  RefCountedPtr<SecurityHandshaker> h(static_cast<SecurityHandshaker*>(arg));
+  MutexLock lock(&h->mu_);
+  if (!error.ok() || h->is_shutdown_) {
+    h->HandshakeFailedLocked(
         GRPC_ERROR_CREATE_REFERENCING("Handshake write failed", &error, 1));
     return;
   }
   // We may be done.
-  if (handshaker_result_ == nullptr) {
+  if (h->handshaker_result_ == nullptr) {
     grpc_endpoint_read(
-        args_->endpoint.get(), args_->read_buffer.c_slice_buffer(),
-        NewClosure([self = RefAsSubclass<SecurityHandshaker>()](
-                       absl::Status status) {
-          self->OnHandshakeDataReceivedFromPeerFnScheduler(std::move(status));
-        }),
+        h->args_->endpoint, h->args_->read_buffer,
+        GRPC_CLOSURE_INIT(
+            &h->on_handshake_data_received_from_peer_,
+            &SecurityHandshaker::OnHandshakeDataReceivedFromPeerFnScheduler,
+            h.get(), grpc_schedule_on_exec_ctx),
         /*urgent=*/true, /*min_progress_size=*/1);
   } else {
-    error = CheckPeerLocked();
+    error = h->CheckPeerLocked();
     if (!error.ok()) {
-      HandshakeFailedLocked(error);
+      h->HandshakeFailedLocked(error);
       return;
     }
   }
+  h.release();  // Avoid unref
 }
 
 //
 // public handshaker API
 //
 
-void SecurityHandshaker::Shutdown(grpc_error_handle error) {
+void SecurityHandshaker::Shutdown(grpc_error_handle why) {
   MutexLock lock(&mu_);
   if (!is_shutdown_) {
     is_shutdown_ = true;
-    connector_->cancel_check_peer(on_peer_checked_, std::move(error));
+    connector_->cancel_check_peer(&on_peer_checked_, why);
     tsi_handshaker_shutdown(handshaker_);
-    args_->endpoint.reset();
+    grpc_endpoint_destroy(args_->endpoint);
+    args_->endpoint = nullptr;
+    CleanupArgsForFailureLocked();
   }
 }
 
-void SecurityHandshaker::DoHandshake(
-    HandshakerArgs* args,
-    absl::AnyInvocable<void(absl::Status)> on_handshake_done) {
+void SecurityHandshaker::DoHandshake(grpc_tcp_server_acceptor* /*acceptor*/,
+                                     grpc_closure* on_handshake_done,
+                                     HandshakerArgs* args) {
+  auto ref = Ref();
   MutexLock lock(&mu_);
   args_ = args;
-  on_handshake_done_ = std::move(on_handshake_done);
+  on_handshake_done_ = on_handshake_done;
   size_t bytes_received_size = MoveReadBufferIntoHandshakeBuffer();
   grpc_error_handle error =
       DoHandshakerNextLocked(handshake_buffer_, bytes_received_size);
   if (!error.ok()) {
     HandshakeFailedLocked(error);
+  } else {
+    ref.release();  // Avoid unref
   }
 }
 
@@ -540,13 +576,19 @@ void SecurityHandshaker::DoHandshake(
 class FailHandshaker : public Handshaker {
  public:
   explicit FailHandshaker(absl::Status status) : status_(std::move(status)) {}
-  absl::string_view name() const override { return "security_fail"; }
-  void DoHandshake(
-      HandshakerArgs* args,
-      absl::AnyInvocable<void(absl::Status)> on_handshake_done) override {
-    InvokeOnHandshakeDone(args, std::move(on_handshake_done), status_);
+  const char* name() const override { return "security_fail"; }
+  void Shutdown(grpc_error_handle /*why*/) override {}
+  void DoHandshake(grpc_tcp_server_acceptor* /*acceptor*/,
+                   grpc_closure* on_handshake_done,
+                   HandshakerArgs* args) override {
+    grpc_endpoint_destroy(args->endpoint);
+    args->endpoint = nullptr;
+    args->args = ChannelArgs();
+    grpc_slice_buffer_destroy(args->read_buffer);
+    gpr_free(args->read_buffer);
+    args->read_buffer = nullptr;
+    ExecCtx::Run(DEBUG_LOCATION, on_handshake_done, status_);
   }
-  void Shutdown(absl::Status /*error*/) override {}
 
  private:
   ~FailHandshaker() override = default;

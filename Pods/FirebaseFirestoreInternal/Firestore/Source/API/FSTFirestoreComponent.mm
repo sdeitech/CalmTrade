@@ -17,7 +17,6 @@
 #import "Firestore/Source/API/FSTFirestoreComponent.h"
 
 #import <FirebaseAppCheckInterop/FirebaseAppCheckInterop.h>
-#import <FirebaseCore/FIROptions.h>
 
 #include <memory>
 #include <string>
@@ -29,6 +28,7 @@
 #import "FirebaseCore/Extension/FIRComponentContainer.h"
 #import "FirebaseCore/Extension/FIRComponentType.h"
 #import "FirebaseCore/Extension/FIRLibrary.h"
+#import "FirebaseCore/Sources/FIROptionsInternal.h"
 #import "Firestore/Source/API/FIRFirestore+Internal.h"
 
 #include "Firestore/core/include/firebase/firestore/firestore_version.h"

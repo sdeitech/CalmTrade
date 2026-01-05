@@ -59,8 +59,6 @@ final class EmotionTagCell: UICollectionViewCell {
         if newWindow != nil, isTagSelected {
             setNeedsLayout()
             layoutIfNeeded()
-            removeMovingBorder()     // reset old
-            addMovingBorder()        // restart with correct width
         }
     }
 
@@ -91,11 +89,6 @@ final class EmotionTagCell: UICollectionViewCell {
         movingLayer.lineCap = .round
         movingLayer.fillColor = UIColor.clear.cgColor
         movingLayer.strokeColor = selectionColor.cgColor
-
-        // If selected and animation not running, start now (layout is ready)
-        if isTagSelected && !animationRunning {
-            addMovingBorder()
-        }
     }
 
     func configure(with title: String, color: UIColor) {
@@ -127,12 +120,9 @@ final class EmotionTagCell: UICollectionViewCell {
             // make sure layout is refreshed and animation starts after layout pass
             setNeedsLayout()
             layoutIfNeeded()
-            DispatchQueue.main.async { [weak self] in
-                guard let self = self else { return }
-                self.addMovingBorder()
-            }
 
             // shadow
+            mainView.backgroundColor = selectionColor.withAlphaComponent(0.6)
             mainView.layer.shadowColor = selectionColor.cgColor
             mainView.layer.shadowOpacity = 0.35
             mainView.layer.shadowOffset = .zero
@@ -143,9 +133,8 @@ final class EmotionTagCell: UICollectionViewCell {
             mainView.layer.shadowOpacity = 0
             mainView.layer.borderWidth = baseBorderWidth
             mainView.layer.borderColor = UIColor(hex: "313131").cgColor
+            mainView.backgroundColor = .clear
 
-            // remove gradient and animation
-            removeMovingBorder()
             gradientLayer.removeFromSuperlayer()
             gradientLayer.mask = nil
         }
@@ -268,19 +257,6 @@ final class EmotionTagCell: UICollectionViewCell {
         animationRunning = false
         movingLayer.removeAllAnimations()
         movingLayer.removeFromSuperlayer()
-    }
-}
-
-// MARK: - Small helper
-private extension UIColor {
-    convenience init(hex: String) {
-        var s = hex.replacingOccurrences(of: "#", with: "")
-        if s.count == 3 { s = s.map { "\($0)\($0)" }.joined() }
-        var v: UInt64 = 0; Scanner(string: s).scanHexInt64(&v)
-        let r = CGFloat((v >> 16) & 0xFF) / 255
-        let g = CGFloat((v >>  8) & 0xFF) / 255
-        let b = CGFloat( v        & 0xFF) / 255
-        self.init(red: r, green: g, blue: b, alpha: 1)
     }
 }
 

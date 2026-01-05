@@ -1,173 +1,309 @@
 //
-//  SocialLoginResult.swift
+//  SocialLoginHandler.swift
 //  CalmTrade
 //
-//  Created by Anas Parekh on 25/08/25.
+//  Firebase-free social sign-in façade for Google, Facebook, and Apple.
+//  Safe for newer SDKs (GoogleSignIn, FBSDK) and avoids version-specific calls.
 //
 
 import UIKit
 import GoogleSignIn
-import FirebaseAuth
-import FirebaseCore
 import FBSDKLoginKit
+import FBSDKCoreKit
 import AuthenticationServices
+import CryptoKit
 
-// MARK: - SocialLoginHandler Class
+// MARK: - Lightweight Auth Credential
 
-/// A centralized handler for managing different social login providers, using the latest Google Sign-In SDK.
-class SocialLoginHandler: NSObject {
-    
-    // This will hold the controller to prevent it from being deallocated.
-    private var authorizationController: ASAuthorizationController?
-    
-    private var presentingVC: UIViewController?
-    private var appleSignInCompletion: ((Swift.Result<AuthCredential, Error>) -> Void)?
-    
-    // MARK: - Google Sign-In
-    
-    /// Initiates the Google Sign-In flow and creates a Firebase credential.
-    /// This implementation is based on the latest Firebase documentation.
-    /// - Parameters:
-    ///   - presentingVC: The view controller that will present the Google Sign-In screen.
-    ///   - completion: A closure that returns an AuthCredential on success or an Error on failure.
-    func signInWithGoogle(presentingVC: UIViewController, completion: @escaping (Swift.Result<AuthCredential, Error>) -> Void) {
-        
-        // 1. Get the Client ID from the Firebase App. This is the recommended modern approach.
-        guard let clientID = FirebaseApp.app()?.options.clientID else {
-            let customError = NSError(domain: "SocialLoginHandler", code: -1, userInfo: [NSLocalizedDescriptionKey: "Could not find Firebase ClientID."])
-            completion(.failure(customError))
-            return
-        }
-        
-        // 2. Create Google Sign In configuration object.
-        let config = GIDConfiguration(clientID: clientID)
-        GIDSignIn.sharedInstance.configuration = config
-        
-        // 3. Start the sign in flow!
-        GIDSignIn.sharedInstance.signIn(withPresenting: presentingVC) { result, error in
-            
-            if let error = error {
-                completion(.failure(error))
-                return
-            }
-            
-            guard let user = result?.user,
-                  let idToken = user.idToken?.tokenString
-            else {
-                let customError = NSError(domain: "SocialLoginHandler", code: -2, userInfo: [NSLocalizedDescriptionKey: "Google sign-in returned no user or ID token."])
-                completion(.failure(customError))
-                return
-            }
-            
-            // 4. Create the Firebase credential.
-            let credential = GoogleAuthProvider.credential(withIDToken: idToken,
-                                                           accessToken: user.accessToken.tokenString)
-            
-            // 5. Return the successful credential.
-            completion(.success(credential))
-        }
-    }
-    
-    
-    // MARK: - Facebook Sign-In
-    
-    /// Initiates the Facebook Sign-In flow.
-    /// - Parameters:
-    ///   - presentingVC: The view controller that will present the Facebook Sign-In screen.
-    ///   - completion: A closure that returns an AuthCredential on success or an Error on failure.
-    func signInWithFacebook(presentingVC: UIViewController, completion: @escaping (Swift.Result<AuthCredential, Error>) -> Void) {
-        let loginManager = LoginManager()
-        
-        // 1. Start the login flow with the required permissions.
-        loginManager.logIn(permissions: ["public_profile", "email"], from: presentingVC) { result, error in
-            
-            // 2. Handle any errors from the login manager.
-            if let error = error {
-                completion(.failure(error))
-                return
-            }
-            
-            guard let result = result, !result.isCancelled else {
-                let customError = NSError(domain: "SocialLoginHandler", code: -3, userInfo: [NSLocalizedDescriptionKey: "Facebook login was cancelled by the user."])
-                completion(.failure(customError))
-                return
-            }
-            
-            // 3. Get the access token.
-            guard let accessToken = result.token?.tokenString else {
-                let customError = NSError(domain: "SocialLoginHandler", code: -4, userInfo: [NSLocalizedDescriptionKey: "Could not get access token from Facebook."])
-                completion(.failure(customError))
-                return
-            }
-            
-            // 4. Create the Firebase credential.
-            let credential = FacebookAuthProvider.credential(withAccessToken: accessToken)
-            
-            // 5. Return the successful credential.
-            completion(.success(credential))
-        }
-    }
-    
-    // MARK: - Apple Sign-In
+public struct AuthCredential {
+    public enum Provider: String { case google, facebook, apple }
 
-    /// Initiates a simplified Sign in with Apple flow (without nonce for development).
-    @available(iOS 13.0, *)
-    func signInWithApple(presentingVC: UIViewController, completion: @escaping (Swift.Result<AuthCredential, Error>) -> Void) {
-        self.presentingVC = presentingVC
-        self.appleSignInCompletion = completion
-        
-        let appleIDProvider = ASAuthorizationAppleIDProvider()
-        let request = appleIDProvider.createRequest()
-        request.requestedScopes = [.fullName, .email]
-        // The nonce is omitted in this simplified version.
-        
-        // Assign the controller to the class property to keep it in memory.
-        self.authorizationController = ASAuthorizationController(authorizationRequests: [request])
-        self.authorizationController?.delegate = self
-        self.authorizationController?.presentationContextProvider = self
-        self.authorizationController?.performRequests()
+    public let provider: Provider
+    public let userID: String?
+    public let email: String?
+    public let fullName: String?
+    public let givenName: String?
+    public let familyName: String?
+    public let accessToken: String?
+    public let idToken: String?
+    public let authorizationCode: String? // Google serverAuthCode or Apple authorizationCode
+    public let avatarURL: String?
+    public let raw: Any?
+}
+
+// MARK: - Internal Errors
+
+private enum SocialAuthError: LocalizedError {
+    case cancelled
+    case configuration(String)
+    case sdk(String)
+    case noCredentials(String)
+    case internalState(String)
+
+    var errorDescription: String? {
+        switch self {
+        case .cancelled: return "Sign-in was cancelled by the user."
+        case .configuration(let m): return "Configuration error: \(m)"
+        case .sdk(let m): return "Provider SDK error: \(m)"
+        case .noCredentials(let m): return "Missing credentials: \(m)"
+        case .internalState(let m): return "Internal state error: \(m)"
+        }
     }
 }
 
-// MARK: - Apple Sign-In Delegate Conformance
+// MARK: - Handler
+
+final class SocialLoginHandler: NSObject {
+
+    // Optional override if you don’t want to keep the client ID in Info.plist.
+    static var googleClientIDOverride: String?
+
+    private weak var presentingVC: UIViewController?
+    private var appleSignInCompletion: ((Swift.Result<AuthCredential, Error>) -> Void)?
+    private var authorizationController: ASAuthorizationController?
+
+    private(set) var lastGoogleIDToken: String?
+
+    // MARK: Google
+
+    func signInWithGoogle(
+        presentingVC: UIViewController,
+        completion: @escaping (Swift.Result<AuthCredential, Error>) -> Void
+    ) {
+        // Prefer override, else Info.plist keys (both supported).
+        guard let clientID =
+                Self.googleClientIDOverride ??
+                (Bundle.main.object(forInfoDictionaryKey: "GIDClientID") as? String) ??
+                (Bundle.main.object(forInfoDictionaryKey: "GoogleClientID") as? String)
+        else {
+            completion(.failure(SocialAuthError.configuration("Missing Google Client ID. Add 'GIDClientID' to Info.plist or set SocialLoginHandler.googleClientIDOverride.")))
+            return
+        }
+
+        let config = GIDConfiguration(clientID: clientID)
+        GIDSignIn.sharedInstance.configuration = config
+
+        GIDSignIn.sharedInstance.signIn(withPresenting: presentingVC) { result, error in
+            if let error = error as NSError? {
+                // Cross-version safe cancel detection.
+                if error.domain == "com.google.GIDSignIn", error.code == -5 {
+                    completion(.failure(SocialAuthError.cancelled))
+                } else {
+                    completion(.failure(SocialAuthError.sdk(error.localizedDescription)))
+                }
+                return
+            }
+
+            guard let user = result?.user else {
+                completion(.failure(SocialAuthError.noCredentials("Google returned no user.")))
+                return
+            }
+
+            let idToken = user.idToken?.tokenString
+            let accessToken = user.accessToken.tokenString
+            self.lastGoogleIDToken = idToken
+
+            let email = user.profile?.email
+            let name = [user.profile?.givenName, user.profile?.familyName]
+                .compactMap { $0 }
+                .joined(separator: " ")
+            let fullName = name.isEmpty ? nil : name
+            let userID = user.userID
+            let serverCode = result?.serverAuthCode
+
+            let cred = AuthCredential(
+                provider: .google,
+                userID: userID,
+                email: email,
+                fullName: fullName,
+                givenName: "",
+                familyName: "",
+                accessToken: accessToken,
+                idToken: idToken,
+                authorizationCode: serverCode,
+                avatarURL: nil,
+                raw: user
+            )
+            completion(.success(cred))
+        }
+    }
+
+    // MARK: Facebook
+
+    func signInWithFacebook(
+        presentingVC: UIViewController,
+        completion: @escaping (Swift.Result<AuthCredential, Error>) -> Void
+    ) {
+        let loginManager = LoginManager()
+        loginManager.logOut()
+
+        loginManager.logIn(permissions: ["public_profile", "email"], from: presentingVC) { result, error in
+            if let error = error {
+                completion(.failure(SocialAuthError.sdk(error.localizedDescription)))
+                return
+            }
+
+            guard let result = result else {
+                completion(.failure(SocialAuthError.noCredentials("Facebook result is nil.")))
+                return
+            }
+            guard !result.isCancelled else {
+                completion(.failure(SocialAuthError.cancelled))
+                return
+            }
+
+            let tokenString = result.token?.tokenString ?? AccessToken.current?.tokenString
+            guard let accessToken = tokenString else {
+                completion(.failure(SocialAuthError.noCredentials("No Facebook access token.")))
+                return
+            }
+
+            // Ask for id, name, email, and a high-res profile picture URL.
+            // public_profile covers picture; email requires the "email" permission (already requested above).
+            let request = GraphRequest(
+                graphPath: "me",
+                parameters: ["fields": "id,name,email,picture.width(512).height(512)"],
+                httpMethod: .get
+            )
+
+            request.start { _, response, graphError in
+                if let graphError = graphError {
+                    // Even if Graph call fails, return a credential with at least the access token.
+                    let cred = AuthCredential(
+                        provider: .facebook,
+                        userID: nil,
+                        email: nil,
+                        fullName: nil,
+                        givenName: "",
+                        familyName: "",
+                        accessToken: accessToken,
+                        idToken: nil,
+                        authorizationCode: nil,
+                        avatarURL: nil,
+                        raw: ["graphError": graphError.localizedDescription]
+                    )
+                    completion(.success(cred))
+                    return
+                }
+
+                let dict = response as? [String: Any]
+                let userID = dict?["id"] as? String
+                let name = dict?["name"] as? String
+                let email = dict?["email"] as? String
+
+                // picture → { data: { url: "...", is_silhouette: false } }
+                var avatarURL: String? = nil
+                if
+                    let picture = dict?["picture"] as? [String: Any],
+                    let data = picture["data"] as? [String: Any],
+                    let url = data["url"] as? String
+                {
+                    avatarURL = url
+                } else if let id = userID {
+                    // Fallback: build a large picture URL manually.
+                    avatarURL = "https://graph.facebook.com/\(id)/picture?type=large"
+                }
+
+                let cred = AuthCredential(
+                    provider: .facebook,
+                    userID: userID,
+                    email: email,
+                    fullName: name,
+                    givenName: "",
+                    familyName: "",
+                    accessToken: accessToken,
+                    idToken: nil,
+                    authorizationCode: nil,
+                    avatarURL: avatarURL,
+                    raw: dict as Any
+                )
+                completion(.success(cred))
+            }
+        }
+    }
+
+
+    // MARK: Apple
+
+    @available(iOS 13.0, *)
+    func signInWithApple(
+        presentingVC: UIViewController,
+        completion: @escaping (Swift.Result<AuthCredential, Error>) -> Void
+    ) {
+        self.presentingVC = presentingVC
+        self.appleSignInCompletion = completion
+
+        let provider = ASAuthorizationAppleIDProvider()
+        let request = provider.createRequest()
+        request.requestedScopes = [.fullName, .email]
+
+        let controller = ASAuthorizationController(authorizationRequests: [request])
+        authorizationController = controller
+        controller.delegate = self
+        controller.presentationContextProvider = self
+        controller.performRequests()
+    }
+}
+
+// MARK: - Apple Delegates
 
 @available(iOS 13.0, *)
 extension SocialLoginHandler: ASAuthorizationControllerDelegate, ASAuthorizationControllerPresentationContextProviding {
-    
+
     func presentationAnchor(for controller: ASAuthorizationController) -> ASPresentationAnchor {
-        return self.presentingVC!.view.window!
+        presentingVC?.view.window ?? ASPresentationAnchor()
     }
-    
-    func authorizationController(controller: ASAuthorizationController, didCompleteWithAuthorization authorization: ASAuthorization) {
-        guard let appleIDCredential = authorization.credential as? ASAuthorizationAppleIDCredential else {
-            let error = NSError(domain: "SocialLoginHandler", code: -5, userInfo: [NSLocalizedDescriptionKey: "Apple Sign-In credential is not of the expected type."])
-            appleSignInCompletion?(.failure(error))
+
+    func authorizationController(controller: ASAuthorizationController,
+                                 didCompleteWithAuthorization authorization: ASAuthorization) {
+        guard let credential = authorization.credential as? ASAuthorizationAppleIDCredential else {
+            appleSignInCompletion?(.failure(SocialAuthError.noCredentials("Unexpected Apple credential type.")))
+            appleSignInCompletion = nil
+            authorizationController = nil
             return
         }
-        
-        guard let appleIDToken = appleIDCredential.identityToken,
-              let idTokenString = String(data: appleIDToken, encoding: .utf8) else {
-            let error = NSError(domain: "SocialLoginHandler", code: -7, userInfo: [NSLocalizedDescriptionKey: "Unable to fetch or serialize identity token."])
-            appleSignInCompletion?(.failure(error))
-            return
-        }
-        
-        // In SocialLoginHandler.swift, inside the didCompleteWithAuthorization method...
 
-        // This is the most compatible method and has no nonce parameter.
-        let credential = OAuthProvider.credential(providerID: AuthProviderID.apple, idToken: idTokenString)
-//        let credential = OAuthProvider.credential(withProviderID: "apple.com",
-//                                                  idToken: idTokenString,
-//                                                  accessToken: nil)
+        let userID = credential.user
+        let email = credential.email // First auth only
+        let givenName = credential.fullName?.givenName
+        let familyName = credential.fullName?.familyName
+        let fullName: String? = {
+            guard let name = credential.fullName else { return nil }
+            let composite = PersonNameComponentsFormatter().string(from: name).trimmingCharacters(in: .whitespaces)
+            return composite.isEmpty ? nil : composite
+        }()
 
-        appleSignInCompletion?(.success(credential))
+        let idToken = credential.identityToken.flatMap { String(data: $0, encoding: .utf8) }
+        let authCode = credential.authorizationCode.flatMap { String(data: $0, encoding: .utf8) }
+
+        let cred = AuthCredential(
+            provider: .apple,
+            userID: userID,
+            email: email,
+            fullName: fullName,
+            givenName: givenName,
+            familyName: familyName,
+            accessToken: nil,
+            idToken: idToken,
+            authorizationCode: authCode,
+            avatarURL: nil,
+            raw: credential
+        )
+
+        appleSignInCompletion?(.success(cred))
+        appleSignInCompletion = nil
+        authorizationController = nil
     }
-    
+
     func authorizationController(controller: ASAuthorizationController, didCompleteWithError error: Error) {
-        // Handle user cancellation separately if needed.
-        if (error as NSError).code == ASAuthorizationError.canceled.rawValue {
-            print("Apple Sign-In was cancelled by the user.")
+        let ns = error as NSError
+        if ns.domain == ASAuthorizationError.errorDomain,
+           ns.code == ASAuthorizationError.canceled.rawValue {
+            appleSignInCompletion?(.failure(SocialAuthError.cancelled))
+        } else {
+            appleSignInCompletion?(.failure(SocialAuthError.sdk(error.localizedDescription)))
         }
-        appleSignInCompletion?(.failure(error))
+        appleSignInCompletion = nil
+        authorizationController = nil
     }
 }

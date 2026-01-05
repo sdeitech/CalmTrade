@@ -14,8 +14,6 @@
 
 #include "absl/strings/internal/cordz_info.h"
 
-#include <cstdint>
-
 #include "absl/base/config.h"
 #include "absl/base/internal/spinlock.h"
 #include "absl/container/inlined_vector.h"
@@ -249,12 +247,10 @@ CordzInfo* CordzInfo::Next(const CordzSnapshot& snapshot) const {
   return next;
 }
 
-void CordzInfo::TrackCord(InlineData& cord, MethodIdentifier method,
-                          int64_t sampling_stride) {
+void CordzInfo::TrackCord(InlineData& cord, MethodIdentifier method) {
   assert(cord.is_tree());
   assert(!cord.is_profiled());
-  CordzInfo* cordz_info =
-      new CordzInfo(cord.as_tree(), nullptr, method, sampling_stride);
+  CordzInfo* cordz_info = new CordzInfo(cord.as_tree(), nullptr, method);
   cord.set_cordz_info(cordz_info);
   cordz_info->Track();
 }
@@ -270,8 +266,7 @@ void CordzInfo::TrackCord(InlineData& cord, const InlineData& src,
   if (cordz_info != nullptr) cordz_info->Untrack();
 
   // Start new cord sample
-  cordz_info = new CordzInfo(cord.as_tree(), src.cordz_info(), method,
-                             src.cordz_info()->sampling_stride());
+  cordz_info = new CordzInfo(cord.as_tree(), src.cordz_info(), method);
   cord.set_cordz_info(cordz_info);
   cordz_info->Track();
 }
@@ -303,8 +298,9 @@ size_t CordzInfo::FillParentStack(const CordzInfo* src, void** stack) {
   return src->stack_depth_;
 }
 
-CordzInfo::CordzInfo(CordRep* rep, const CordzInfo* src,
-                     MethodIdentifier method, int64_t sampling_stride)
+CordzInfo::CordzInfo(CordRep* rep,
+                     const CordzInfo* src,
+                     MethodIdentifier method)
     : rep_(rep),
       stack_depth_(
           static_cast<size_t>(absl::GetStackTrace(stack_,
@@ -313,8 +309,7 @@ CordzInfo::CordzInfo(CordRep* rep, const CordzInfo* src,
       parent_stack_depth_(FillParentStack(src, parent_stack_)),
       method_(method),
       parent_method_(GetParentMethod(src)),
-      create_time_(absl::Now()),
-      sampling_stride_(sampling_stride) {
+      create_time_(absl::Now()) {
   update_tracker_.LossyAdd(method);
   if (src) {
     // Copy parent counters.

@@ -15,13 +15,11 @@
 import FirebaseCore
 import Foundation
 
-// TODO(Swift 6 Breaking): Make checked Sendable.
-
 /// A concrete implementation of `AuthProvider` for phone auth providers.
 ///
 /// This class is available on iOS only.
 @available(iOS 13, tvOS 13, macOS 10.15, macCatalyst 13, watchOS 7, *)
-@objc(FIRPhoneAuthProvider) open class PhoneAuthProvider: NSObject, @unchecked Sendable {
+@objc(FIRPhoneAuthProvider) open class PhoneAuthProvider: NSObject {
   /// A string constant identifying the phone identity provider.
   @objc public static let id = "phone"
   private static let recaptchaVersion = "RECAPTCHA_ENTERPRISE"
@@ -58,7 +56,7 @@ import Foundation
     @objc(verifyPhoneNumber:UIDelegate:completion:)
     open func verifyPhoneNumber(_ phoneNumber: String,
                                 uiDelegate: AuthUIDelegate? = nil,
-                                completion: (@MainActor (String?, Error?) -> Void)?) {
+                                completion: ((_: String?, _: Error?) -> Void)?) {
       verifyPhoneNumber(phoneNumber,
                         uiDelegate: uiDelegate,
                         multiFactorSession: nil,
@@ -77,7 +75,7 @@ import Foundation
     open func verifyPhoneNumber(_ phoneNumber: String,
                                 uiDelegate: AuthUIDelegate? = nil,
                                 multiFactorSession: MultiFactorSession? = nil,
-                                completion: (@MainActor (String?, Error?) -> Void)?) {
+                                completion: ((_: String?, _: Error?) -> Void)?) {
       Task {
         do {
           let verificationID = try await verifyPhoneNumber(
@@ -85,9 +83,13 @@ import Foundation
             uiDelegate: uiDelegate,
             multiFactorSession: multiFactorSession
           )
-          await completion?(verificationID, nil)
+          await MainActor.run {
+            completion?(verificationID, nil)
+          }
         } catch {
-          await completion?(nil, error)
+          await MainActor.run {
+            completion?(nil, error)
+          }
         }
       }
     }
@@ -133,7 +135,7 @@ import Foundation
     open func verifyPhoneNumber(with multiFactorInfo: PhoneMultiFactorInfo,
                                 uiDelegate: AuthUIDelegate? = nil,
                                 multiFactorSession: MultiFactorSession?,
-                                completion: ((String?, Error?) -> Void)?) {
+                                completion: ((_: String?, _: Error?) -> Void)?) {
       Task {
         do {
           let verificationID = try await verifyPhoneNumber(
@@ -639,6 +641,7 @@ import Foundation
     private let auth: Auth
     private let callbackScheme: String
     private let usingClientIDScheme: Bool
+    private var recaptchaVerifier: AuthRecaptchaVerifier?
 
     init(auth: Auth) {
       self.auth = auth
@@ -659,6 +662,7 @@ import Foundation
         return
       }
       callbackScheme = ""
+      recaptchaVerifier = AuthRecaptchaVerifier.shared(auth: auth)
     }
 
     private let kAuthTypeVerifyApp = "verifyApp"

@@ -78,10 +78,7 @@ class AuthComponent: NSObject, Library, ComponentLifecycleMaintainer {
       // This doesn't stop any request already issued, see b/27704535
 
       if let keychainServiceName = Auth.deleteKeychainServiceNameForAppName(app.name) {
-        let keychain = AuthKeychainServices(
-          service: keychainServiceName,
-          storage: AuthKeychainStorageReal.shared
-        )
+        let keychain = AuthKeychainServices(service: keychainServiceName)
         let userKey = "\(app.name)_firebase_user"
         try? keychain.removeData(forKey: userKey)
       }

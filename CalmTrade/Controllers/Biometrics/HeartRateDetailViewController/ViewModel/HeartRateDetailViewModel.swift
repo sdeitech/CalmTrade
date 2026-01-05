@@ -2,204 +2,353 @@
 //  HeartRateDetailViewModel.swift
 //  CalmTrade
 //
-//  Created by Anas Parekh on 02/09/25.
+//  Repo-only (no HealthKit). Buckets local HR samples for CalmScore-style SwiftUI chart.
+//  - Yearly tab
+//  - Centered paging per mode
+//  - Explicit domains & ticks for stable X-axis labeling
 //
 
-
 import Foundation
-import Charts
-import HealthKit
+import Combine
 
-class HeartRateDetailViewModel {
-    
-    enum ChartTimeRange { case daily, weekly, monthly }
-    
-    var onDataReady: ((HeartRateUIData?) -> Void)?
-    
-    private let healthKitManager = HealthKitManager.shared
-    private let heartRateType = HKQuantityType.quantityType(forIdentifier: .heartRate)!
-    
-    func fetchData(for range: ChartTimeRange) {
-        healthKitManager.requestAuthorization { [weak self] success, _ in
-            guard success else { self?.onDataReady?(nil); return }
-            self?.fetchHeartRateData(for: range)
+// MARK: - Point model for the SwiftUI chart (internal)
+struct HeartPoint: Identifiable, Hashable {
+    var id: Double { time.timeIntervalSince1970 }  // stable id per bucket
+    let time: Date                                 // bucket start time
+    let min: Double                                // min BPM in bucket
+    let max: Double                                // max BPM in bucket
+    var med: Double { (min + max) / 2.0 }
+}
+
+// MARK: - ViewModel
+final class HeartRateDetailViewModel: ObservableObject {
+
+    // MARK: - Time Ranges (segments)
+    enum ChartTimeRange: Int, CaseIterable {
+        case hourly = 0, daily, weekly, monthly, yearly
+        var title: String {
+            switch self {
+            case .hourly:  return "Hourly"
+            case .daily:   return "Daily"
+            case .weekly:  return "Weekly"
+            case .monthly: return "Monthly"
+            case .yearly:  return "Yearly"
+            }
         }
     }
+
+    // MARK: - Outputs (bind to labels / chart)
+    @Published var points: [HeartPoint] = []          // feed into SwiftUI chart
+    @Published var headerDateText: String = ""        // e.g. “Sep 11, 2025” or a range
+    @Published var rangeText: String = "--"           // e.g. “52 – 89 BPM”
+    @Published var latestTimeText: String = "--"      // e.g. “6:04 AM”
+    @Published var latestValueText: String = "--"     // e.g. “67”
+    var onIsLoading: ((Bool) -> Void)?
     
-    private func fetchHeartRateData(for range: ChartTimeRange) {
-        let calendar = Calendar.current
-        let endDate = Date()
-        let anchorDate: Date
-        let interval: DateComponents
-        
-        switch range {
-        case .daily:
-            anchorDate = calendar.startOfDay(for: endDate)
-            interval = DateComponents(hour: 1)
-        case .weekly:
-            anchorDate = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: endDate))!
-            interval = DateComponents(day: 1)
-        case .monthly:
-            anchorDate = calendar.date(from: calendar.dateComponents([.year, .month], from: endDate))!
-            interval = DateComponents(weekOfYear: 1)
-        }
-        
-        let predicate = HKQuery.predicateForSamples(withStart: anchorDate, end: endDate, options: .strictStartDate)
-        let options: HKStatisticsOptions = [.discreteMin, .discreteMax]
-        
-        healthKitManager.fetchStatisticsCollection(for: heartRateType, predicate: predicate, options: options, anchorDate: anchorDate, interval: interval) { [weak self] results in
-            self?.process(statsCollection: results, range: range, anchorDate: anchorDate)
-        }
+    // MARK: - Private
+    private let repo = CTMetricsRepository.shared
+    private(set) var selectedRange: ChartTimeRange = .hourly
+    private(set) var centerDate: Date = Date()        // time we try to keep centered per window
+    private var isLoadingData = false { didSet { onIsLoading?(isLoadingData) } }
+    private var liveHubToken: UUID?
+
+    // MARK: - Derived axis inputs (consumed by VC/SwiftUI)
+    var xDomain: ClosedRange<Date> { makeXDomain(for: selectedRange, center: centerDate) }
+    var xAxisTicks: [Date] { makeXTicks(for: selectedRange, domain: xDomain) }
+
+    // MARK: - Public API
+
+    /// Call when the screen appears or the segment changes.
+    func fetchInitialData(for range: ChartTimeRange) {
+        selectedRange = range
+        centerDate = Date()
+        let domain = xDomain
+        loadData(for: range, startDate: domain.lowerBound, endDate: domain.upperBound)
     }
-    
-    private func process(statsCollection: HKStatisticsCollection?, range: ChartTimeRange, anchorDate: Date) {
-        guard let statsCollection = statsCollection else {
-            onDataReady?(nil)
-            return
-        }
-        
-        var entries: [CandleChartDataEntry] = []
-        var allValues: [Double] = []
-        
-        let group = DispatchGroup()
-        group.enter()
-        
-        statsCollection.enumerateStatistics(from: anchorDate, to: Date()) { statistics, stop in
-            let min = statistics.minimumQuantity()?.doubleValue(for: .count().unitDivided(by: .minute()))
-            let max = statistics.maximumQuantity()?.doubleValue(for: .count().unitDivided(by: .minute()))
+
+    /// Page to the previous period (keeps window size, shifts center left).
+    func loadPreviousPeriod() {
+        guard !isLoadingData else { return }
+        centerDate = shift(center: centerDate, for: selectedRange, direction: -1)
+        let domain = xDomain
+        loadData(for: selectedRange, startDate: domain.lowerBound, endDate: domain.upperBound)
+    }
+
+    /// Page to the next period (capped at now).
+    func loadNextPeriod() {
+        guard !isLoadingData else { return }
+        let shifted = shift(center: centerDate, for: selectedRange, direction: +1)
+        centerDate = min(shifted, Date())
+        let domain = xDomain
+        loadData(for: selectedRange, startDate: domain.lowerBound, endDate: domain.upperBound)
+    }
+
+    // MARK: - Core loading (repo-only)
+
+    private func loadData(for range: ChartTimeRange, startDate: Date, endDate: Date) {
+        isLoadingData = true
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            guard let self else { return }
+            let cal = Calendar.current
             
-            if let min = min, let max = max, min > 0, max > 0 {
-                // **THE FIX**: Use a sequential index for the x-value.
-                let xValue = Double(entries.count)
-                
-                entries.append(CandleChartDataEntry(x: xValue, shadowH: max, shadowL: min, open: min, close: max))
-                allValues.append(contentsOf: [min, max])
-            }
-        }
-        group.leave()
-        
-        group.notify(queue: .main) {
-            self.fetchHighlightsAndFinalize(entries: entries, allValues: allValues, range: range)
-        }
-    }
-    
-    /// This function chains the remaining async calls after the main chart data is processed.
-    private func fetchHighlightsAndFinalize(entries: [CandleChartDataEntry], allValues: [Double], range: ChartTimeRange) {
-        fetchSleepHeartRateHighlight { [weak self] highlight in
-            self?.healthKitManager.fetchMostRecentSample(for: (self?.heartRateType)!) { [weak self] latestSample in
-                guard let self = self else { return }
-                
-                var highlights: [Highlight] = []
-                if let highlight = highlight {
-                    highlights.append(highlight)
+            // 1) Fetch samples for the requested window (safe, detached structs)
+            var samples = self.repo.series(kind: .heartRate,
+                                           from: startDate,
+                                           to: endDate,
+                                           source: nil)
+            
+            // 2) Snap center to a natural anchor inside the *actual data* if present
+            if let lastDate = samples.last?.date {
+                switch range {
+                case .hourly:
+                    if let hourStart = cal.dateInterval(of: .hour, for: lastDate)?.start {
+                        self.centerDate = hourStart
+                    }
+                case .daily:
+                    // keep the centered 7-day window; no snap required
+                    break
+                case .weekly:
+                    if let weekStart = cal.dateInterval(of: .weekOfYear, for: lastDate)?.start {
+                        self.centerDate = weekStart
+                    }
+                case .monthly:
+                    if let monthStart = cal.dateInterval(of: .month, for: lastDate)?.start {
+                        self.centerDate = monthStart
+                    }
+                case .yearly:
+                    if let yearStart = cal.dateInterval(of: .year, for: lastDate)?.start {
+                        self.centerDate = yearStart
+                    }
                 }
-
-                let (dateRange, xAxisLabels) = self.getLabels(for: range)
-                let uiData = self.createUIData(
-                    from: entries,
-                    allValues: allValues,
-                    latestSample: latestSample as? HKQuantitySample,
-                    dateRange: dateRange,
-                    xAxisLabels: xAxisLabels,
-                    highlights: highlights
-                )
-                self.onDataReady?(uiData)
-            }
-        }
-    }
-
-    private func createUIData(from entries: [CandleChartDataEntry], allValues: [Double], latestSample: HKQuantitySample?, dateRange: String, xAxisLabels: [String], highlights: [Highlight]) -> HeartRateUIData {
-        let dataSet = CandleChartDataSet(entries: entries, label: "Heart Rate")
-        
-        // Styling for the Floating Bar/Capsule Look
-        let barColor = UIColor.systemRed
-        dataSet.shadowColor = barColor
-        dataSet.shadowWidth = 2.5
-        dataSet.decreasingColor = barColor // Helps rendering consistency
-        dataSet.increasingColor = barColor // Helps rendering consistency
-        dataSet.drawValuesEnabled = false
-        dataSet.showCandleBar = false
-        
-        let chartData = CandleChartData(dataSet: dataSet)
-        
-        let minBPM = Int(allValues.min() ?? 0)
-        let maxBPM = Int(allValues.max() ?? 0)
-        let latestBPM = Int(latestSample?.quantity.doubleValue(for: .count().unitDivided(by: .minute())) ?? 0)
-        
-        return HeartRateUIData(
-            chartData: chartData,
-            range: "\(minBPM)-\(maxBPM)",
-            dateRange: dateRange,
-            latestTime: formatTime(latestSample?.endDate ?? Date()),
-            latestValue: "\(latestBPM)",
-            xAxisLabels: xAxisLabels,
-            highlights: highlights
-        )
-    }
-    
-    // MARK: - Dynamic Highlights
-    
-    private func fetchSleepHeartRateHighlight(completion: @escaping (Highlight?) -> Void) {
-        let sleepType = HKObjectType.categoryType(forIdentifier: .sleepAnalysis)!
-        let sortDescriptor = NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: false)
-        let predicate = HKQuery.predicateForSamples(withStart: Date().addingTimeInterval(-86400), end: Date(), options: .strictEndDate)
-        
-        let query = HKSampleQuery(sampleType: sleepType, predicate: predicate, limit: HKObjectQueryNoLimit, sortDescriptors: [sortDescriptor]) { [weak self] _, samples, _ in
-            guard let self = self,
-                  let lastSleep = samples?.first(where: { ($0 as? HKCategorySample)?.value == HKCategoryValueSleepAnalysis.asleep.rawValue }) as? HKCategorySample
-            else {
-                DispatchQueue.main.async { completion(nil) }
-                return
             }
             
-            let hrPredicate = HKQuery.predicateForSamples(withStart: lastSleep.startDate, end: lastSleep.endDate, options: .strictStartDate)
-            let hrQuery = HKSampleQuery(sampleType: self.heartRateType, predicate: hrPredicate, limit: HKObjectQueryNoLimit, sortDescriptors: nil) { _, hrSamples, _ in
-                guard let samples = hrSamples as? [HKQuantitySample], !samples.isEmpty else {
-                    DispatchQueue.main.async { completion(nil) }
-                    return
-                }
-                
-                let bpmUnit = HKUnit.count().unitDivided(by: .minute())
-                let rates = samples.map { $0.quantity.doubleValue(for: bpmUnit) }
-                let minRate = Int(rates.min() ?? 0)
-                let maxRate = Int(rates.max() ?? 0)
-                
-                let highlight = Highlight(
-                    title: "Heart Rate: Sleep",
-                    description: "While you were sleeping, your heart rate ranged from \(minRate) to \(maxRate) beats per minute."
-                )
-                DispatchQueue.main.async { completion(highlight) }
+            // 3) Recompute domain after any snap AND RE-FETCH for that domain
+            let domain = self.makeXDomain(for: range, center: self.centerDate)
+            samples = self.repo.series(kind: .heartRate,
+                                       from: domain.lowerBound,
+                                       to: domain.upperBound,
+                                       source: nil)
+            
+            // 4) Bucket → sort → publish
+            let bucketed = self.bucket(samples: samples, for: range)
+            let sorted = bucketed.sorted(by: { $0.time < $1.time })
+            
+            DispatchQueue.main.async {
+                self.finishUpdate(with: sorted, domain: domain)
             }
-            self.healthKitManager.healthStore.execute(hrQuery)
         }
-        healthKitManager.healthStore.execute(query)
     }
-    
-    // MARK: - Formatting Helpers
-    
-    private func getLabels(for range: ChartTimeRange) -> (dateRange: String, xAxisLabels: [String]) {
-        let now = Date()
-        let calendar = Calendar.current
-        let dateFormatter = DateFormatter()
-        
+
+
+    // MARK: - Bucketing
+
+    private func bucket(samples: [CTMetricsRepository.CTBiometricPoint], for range: ChartTimeRange) -> [HeartPoint] {
+        guard !samples.isEmpty else { return [] }
+        let cal = Calendar.current
+
+        // Group by bucket start date
+        let grouped = Dictionary(grouping: samples) { s -> Date in
+            bucketStart(for: s.date, range: range, calendar: cal)
+        }
+
+        // Compute min/max BPM for each bucket
+        var pts: [HeartPoint] = []
+        pts.reserveCapacity(grouped.count)
+        for (bucketStart, items) in grouped {
+            let bpms = items.map { $0.value }
+            guard let min = bpms.min(), let max = bpms.max() else { continue }
+            pts.append(HeartPoint(time: bucketStart, min: min, max: max))
+        }
+        return pts
+    }
+
+    private func bucketStart(for date: Date, range: ChartTimeRange, calendar cal: Calendar) -> Date {
         switch range {
+        case .hourly:
+            // 3-minute buckets within the hour that 'date' falls in
+            let hourStart = cal.dateInterval(of: .hour, for: date)?.start ?? cal.startOfDay(for: date)
+            let minute = cal.component(.minute, from: date)
+            let index = minute / 3                    // 0…19
+            return cal.date(byAdding: .minute, value: index * 3, to: hourStart) ?? hourStart
+
         case .daily:
-            return ("Today", ["12 AM", "6 AM", "12 PM", "6 PM"])
+            return cal.startOfDay(for: date)
+
         case .weekly:
-            dateFormatter.dateFormat = "MMM d"
-            guard let weekStartDate = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: now)) else { return ("-", []) }
-            let weekEndDate = calendar.date(byAdding: .day, value: 6, to: weekStartDate)!
-            let rangeString = "\(dateFormatter.string(from: weekStartDate))-\(dateFormatter.string(from: weekEndDate)), \(calendar.component(.year, from: now))"
-            return (rangeString, ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"])
+            // Daily buckets for Weekly view (7 columns like CalmScore)
+            return cal.startOfDay(for: date)
+
         case .monthly:
-            dateFormatter.dateFormat = "MMMM yyyy"
-            return (dateFormatter.string(from: now), ["Week 1", "Week 2", "Week 3", "Week 4"])
+            // Daily buckets across the month
+            return cal.startOfDay(for: date)
+
+        case .yearly:
+            // Yearly view uses monthly buckets (12 per year)
+            return cal.dateInterval(of: .month, for: date)?.start ?? cal.startOfDay(for: date)
+        }
+    }
+
+    // MARK: - Finish / UI mapping
+
+    private func finishUpdate(with newPoints: [HeartPoint], domain: ClosedRange<Date>) {
+        // Only update chart + range labels here.
+        // Latest HR/time are driven live via startLiveHR() so they stay independent of timeframe.
+        let all = newPoints.flatMap { [$0.min, $0.max] }
+        let minVal = Int(all.min() ?? 0)
+        let maxVal = Int(all.max() ?? 0)
+        let header = formatDateRangeHeader(for: selectedRange, domain: domain)
+
+        DispatchQueue.main.async {
+            self.points = newPoints
+            self.rangeText = (minVal == 0 && maxVal == 0) ? "--" : "\(minVal) – \(maxVal) BPM"
+            self.headerDateText = header
+            self.isLoadingData = false
         }
     }
     
-    private func formatTime(_ date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "h:mm a"
-        return formatter.string(from: date)
+    func startLiveHR() {
+        // Prevent duplicate listeners
+        if liveHubToken != nil { return }
+
+        liveHubToken = CalmScoreHub.shared.addListener { [weak self] _, _, props in
+            guard let self else { return }
+            let bpm = Int(round(props.trend.hrBpm))
+            let ts = props.lastUpdate
+            DispatchQueue.main.async {
+                self.latestValueText = bpm > 0 ? "\(bpm)" : "--"
+                self.latestTimeText = self.formatTime(ts)
+            }
+        }
+    }
+
+    func stopLiveHR() {
+        if let t = liveHubToken {
+            CalmScoreHub.shared.removeListener(t)
+            liveHubToken = nil
+        }
+    }
+
+    // MARK: - Domains & Ticks
+
+    private func makeXDomain(for range: ChartTimeRange, center: Date) -> ClosedRange<Date> {
+        let cal = Calendar.current
+        switch range {
+        case .hourly:
+            let startOfHour = cal.dateInterval(of: .hour, for: center)?.start ?? center
+            let endOfHour = cal.date(byAdding: .minute, value: 60, to: startOfHour)!
+            return startOfHour...min(endOfHour, Date())
+
+        case .daily:
+            // 7-day window centered on center's day
+            let s = cal.startOfDay(for: cal.date(byAdding: .day, value: -3, to: center)!)
+            let e = cal.startOfDay(for: cal.date(byAdding: .day, value: +4, to: center)!)
+            return s...min(e, Date())
+
+        case .weekly:
+            // 1-week window (Sun–Sat) containing center
+            let week = cal.dateInterval(of: .weekOfYear, for: center)!
+            let s = week.start
+            let e = cal.date(byAdding: .day, value: 7, to: s)!
+            return s...min(e, Date())
+
+        case .monthly:
+            // 1-month window (calendar month of center)
+            let month = cal.dateInterval(of: .month, for: center)!
+            let s = month.start
+            let e = cal.date(byAdding: .month, value: 1, to: s)!
+            return s...min(e, Date())
+
+        case .yearly:
+            // 1-year window (calendar year of center)
+            let year = cal.dateInterval(of: .year, for: center)!
+            let s = year.start
+            let e = cal.date(byAdding: .year, value: 1, to: s)!
+            return s...min(e, Date())
+        }
+    }
+
+    private func makeXTicks(for range: ChartTimeRange, domain: ClosedRange<Date>) -> [Date] {
+        let cal = Calendar.current
+        var ticks: [Date] = []
+
+        func stride(_ comp: Calendar.Component, step: Int) {
+            var t = cal.dateInterval(of: comp, for: domain.lowerBound)?.start ?? domain.lowerBound
+            while t <= domain.upperBound {
+                ticks.append(t)
+                t = cal.date(byAdding: comp, value: step, to: t) ?? domain.upperBound.addingTimeInterval(1)
+            }
+        }
+
+        switch range {
+        case .hourly:  stride(.hour, step: 1)         // each hour
+        case .daily:   stride(.day, step: 1)          // each day
+        case .weekly:  stride(.weekOfYear, step: 1)   // each week
+        case .monthly: stride(.month, step: 1)        // each month
+        case .yearly:  stride(.year, step: 1)         // each year (even though we bucket monthly)
+        }
+        return ticks
+    }
+
+    private func shift(center: Date, for range: ChartTimeRange, direction: Int) -> Date {
+        let cal = Calendar.current
+        switch range {
+        case .hourly:
+            return cal.date(byAdding: .hour, value: direction, to: center)!
+        case .daily:
+            return cal.date(byAdding: .weekOfYear, value: direction, to: center)!
+        case .weekly:
+            return cal.date(byAdding: .weekOfYear, value: direction, to: center)!
+        case .monthly:
+            return cal.date(byAdding: .month, value: direction, to: center)!
+        case .yearly:
+            return cal.date(byAdding: .year, value: direction, to: center)!
+        }
+    }
+
+    // MARK: - Headers & Formatting
+
+    private func formatDateRangeHeader(for range: ChartTimeRange, domain: ClosedRange<Date>) -> String {
+        let fmt = DateFormatter()
+        let s = domain.lowerBound
+        let e = domain.upperBound
+        switch range {
+        case .hourly:
+            fmt.dateFormat = "MMMM d, yyyy"
+            return fmt.string(from: centerDate)
+        case .daily:
+            fmt.dateFormat = "MMM d"
+            return "\(fmt.string(from: s)) - \(fmt.string(from: e))"
+        case .weekly:
+            fmt.dateFormat = "MMMM yyyy"
+            return fmt.string(from: centerDate)
+        case .monthly:
+            fmt.dateFormat = "yyyy"
+            return fmt.string(from: centerDate)
+        case .yearly:
+            let y = Calendar.current
+            let yStart = y.component(.year, from: s)
+            let yEnd = y.component(.year, from: e)
+            return yStart == yEnd ? "\(yStart)" : "\(yStart) - \(yEnd)"
+        }
+    }
+
+    private func formatTime(_ date: Date?) -> String {
+        guard let date else { return "--" }
+        let fmt = DateFormatter()
+        fmt.dateFormat = "h:mm a"
+        return fmt.string(from: date)
+    }
+}
+
+// MARK: - X-axis label format for SwiftUI Chart (internal)
+extension HeartRateDetailViewModel.ChartTimeRange {
+    var xLabelFormat: Date.FormatStyle {
+        switch self {
+        case .hourly:  return .dateTime.hour()
+        case .daily:   return .dateTime.day()
+        case .weekly:  return .dateTime.weekday(.abbreviated)
+        case .monthly: return .dateTime.month(.abbreviated)
+        case .yearly:  return .dateTime.year()
+        }
     }
 }

@@ -3,11 +3,10 @@
  *     envoy/type/matcher/v3/status_code_input.proto
  *
  * Do not edit -- your changes will be discarded when the file is
- * regenerated.
- * NO CHECKED-IN PROTOBUF GENCODE */
+ * regenerated. */
 
-#ifndef ENVOY_TYPE_MATCHER_V3_STATUS_CODE_INPUT_PROTO_UPB_H__UPB_H_
-#define ENVOY_TYPE_MATCHER_V3_STATUS_CODE_INPUT_PROTO_UPB_H__UPB_H_
+#ifndef ENVOY_TYPE_MATCHER_V3_STATUS_CODE_INPUT_PROTO_UPB_H_
+#define ENVOY_TYPE_MATCHER_V3_STATUS_CODE_INPUT_PROTO_UPB_H_
 
 #include "upb/generated_code_support.h"
 
@@ -109,4 +108,4 @@ UPB_INLINE char* envoy_type_matcher_v3_HttpResponseStatusCodeClassMatchInput_ser
 
 #include "upb/port/undef.inc"
 
-#endif  /* ENVOY_TYPE_MATCHER_V3_STATUS_CODE_INPUT_PROTO_UPB_H__UPB_H_ */
+#endif  /* ENVOY_TYPE_MATCHER_V3_STATUS_CODE_INPUT_PROTO_UPB_H_ */

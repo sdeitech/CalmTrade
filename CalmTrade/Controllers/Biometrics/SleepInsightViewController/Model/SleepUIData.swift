@@ -6,15 +6,14 @@
 //
 
 
-import UIKit
-import Charts
+import Foundation
+import SwiftUI
 
 /// A struct to hold all the processed and formatted data for the Sleep Insight screen.
 struct SleepUIData {
-    let chartData: BarChartData
     let timeAsleepAttributedText: NSAttributedString
     let sleepDate: String
-    let xAxisLabels: [String]
-    let xAxisValues: [Double]
+    let sleepSegments: [SleepSegment]
+    let chartStartDate: Date?
+    let chartEndDate: Date?
 }
-

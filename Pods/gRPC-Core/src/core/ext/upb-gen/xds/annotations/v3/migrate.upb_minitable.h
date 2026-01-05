@@ -3,11 +3,10 @@
  *     xds/annotations/v3/migrate.proto
  *
  * Do not edit -- your changes will be discarded when the file is
- * regenerated.
- * NO CHECKED-IN PROTOBUF GENCODE */
+ * regenerated. */
 
-#ifndef XDS_ANNOTATIONS_V3_MIGRATE_PROTO_UPB_H__UPB_MINITABLE_H_
-#define XDS_ANNOTATIONS_V3_MIGRATE_PROTO_UPB_H__UPB_MINITABLE_H_
+#ifndef XDS_ANNOTATIONS_V3_MIGRATE_PROTO_UPB_MINITABLE_H_
+#define XDS_ANNOTATIONS_V3_MIGRATE_PROTO_UPB_MINITABLE_H_
 
 #include "upb/generated_code_support.h"
 
@@ -19,11 +18,8 @@ extern "C" {
 #endif
 
 extern const upb_MiniTable xds__annotations__v3__MigrateAnnotation_msg_init;
-extern const upb_MiniTable* xds__annotations__v3__MigrateAnnotation_msg_init_ptr;
 extern const upb_MiniTable xds__annotations__v3__FieldMigrateAnnotation_msg_init;
-extern const upb_MiniTable* xds__annotations__v3__FieldMigrateAnnotation_msg_init_ptr;
 extern const upb_MiniTable xds__annotations__v3__FileMigrateAnnotation_msg_init;
-extern const upb_MiniTable* xds__annotations__v3__FileMigrateAnnotation_msg_init_ptr;
 extern const upb_MiniTableExtension xds_annotations_v3_message_migrate_ext;
 extern const upb_MiniTableExtension xds_annotations_v3_field_migrate_ext;
 extern const upb_MiniTableExtension xds_annotations_v3_enum_migrate_ext;
@@ -38,4 +34,4 @@ extern const upb_MiniTableFile xds_annotations_v3_migrate_proto_upb_file_layout;
 
 #include "upb/port/undef.inc"
 
-#endif  /* XDS_ANNOTATIONS_V3_MIGRATE_PROTO_UPB_H__UPB_MINITABLE_H_ */
+#endif  /* XDS_ANNOTATIONS_V3_MIGRATE_PROTO_UPB_MINITABLE_H_ */

@@ -23,7 +23,6 @@
 
 // IWYU pragma: no_include <ares_build.h>
 
-#include <ares.h>
 #include <sys/ioctl.h>
 #include <sys/socket.h>
 #include <sys/uio.h>
@@ -34,9 +33,15 @@
 #include <unordered_set>
 #include <utility>
 
+#include <ares.h>
+
 #include "absl/base/thread_annotations.h"
 #include "absl/log/check.h"
 #include "absl/strings/str_cat.h"
+
+#include <grpc/support/log.h>
+
+#include "src/core/lib/gprpp/sync.h"
 #include "src/core/lib/iomgr/closure.h"
 #include "src/core/lib/iomgr/error.h"
 #include "src/core/lib/iomgr/ev_posix.h"
@@ -44,7 +49,6 @@
 #include "src/core/lib/iomgr/socket_utils_posix.h"
 #include "src/core/resolver/dns/c_ares/grpc_ares_ev_driver.h"
 #include "src/core/resolver/dns/c_ares/grpc_ares_wrapper.h"
-#include "src/core/util/sync.h"
 
 namespace grpc_core {
 

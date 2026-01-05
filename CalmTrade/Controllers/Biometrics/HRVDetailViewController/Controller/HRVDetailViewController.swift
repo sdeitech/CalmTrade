@@ -6,114 +6,111 @@
 //
 
 
-import UIKit
-import Charts
+// HRVDetailViewController.swift
 
-class HRVDetailViewController: BaseViewController {
-    
+import UIKit
+import SwiftUI
+import Combine
+
+final class HRVDetailViewController: BaseViewController {
+
+    // MARK: - Inputs
+    var metric: HRVMetricType = .rmssd   // set by caller (Biometrics VC)
+
     // MARK: - Outlets
-    
-    @IBOutlet weak var segmentedControl: UISegmentedControl!
-    @IBOutlet weak var lblAverageValue: UILabel!
-    @IBOutlet weak var lblDateRange: UILabel!
-    @IBOutlet weak var hrvLineChartView: LineChartView!
-    
-    // MARK: - Properties
+    @IBOutlet private weak var segmentedControl: UISegmentedControl!
+    @IBOutlet private weak var lblAverageValue: UILabel!
+    @IBOutlet private weak var lblDateRange: UILabel!
+    @IBOutlet private weak var chartContainerView: UIView!
+    @IBOutlet private weak var lblHrvDetail: UILabel!
+    @IBOutlet private weak var lblTitle: UILabel!
+
+    // MARK: - State
     private let viewModel = HRVDetailViewModel()
-    
-    
-    // MARK: - View Lifecycle
-    
+    private var cancellables = Set<AnyCancellable>()
+    private var host: UIHostingController<HRVRangeCalmChartView>?
+
     override func viewDidLoad() {
         super.viewDidLoad()
-        
-        setupChartStyle()
-        setupViewModelBindings()
-        setupSegmentedControl()
-        
-        // Start the data fetch
-        viewModel.fetchData(for: .weekly)
+        viewModel.set(metric: metric)
+        setupSegmented()
+        bindViewModel()
+        embedChartIfNeeded()
+        viewModel.fetch(for: .hourly) // align with HR screens; pick your default
+        lblTitle.text = (metric == .rmssd) ? "HRV • RMSSD" : "HRV • SDNN"
+        lblHrvDetail.text = viewModel.hrvDetailText
     }
-    
-    // MARK: - Setup
-    private func setupViewModelBindings() {
-        viewModel.onDataReady = { [weak self] uiData in
-            // This block is called by the ViewModel when new data is ready.
-            // It updates all relevant UI components.
-            self?.lblAverageValue.text = uiData?.averageValue
-            self?.lblDateRange.text = uiData?.dateRange
-            self?.hrvLineChartView.data = uiData?.chartData
-            self?.updateXAxis(with: uiData?.xAxisLabels ?? [])
-        }
-    }
-    
-    private func setupSegmentedControl() {
-        let textAttributes = [NSAttributedString.Key.foregroundColor: UIColor.white]
-        segmentedControl.setTitleTextAttributes(textAttributes, for: .normal)
-        segmentedControl.setTitleTextAttributes(textAttributes, for: .selected)
-    }
-    
-    private func setupChartStyle() {
-        // --- General Styling ---
-        hrvLineChartView.backgroundColor = .black
-        hrvLineChartView.legend.enabled = false
-        hrvLineChartView.leftAxis.enabled = false // Y-Axis on the left is disabled
-        
-        hrvLineChartView.legend.form = .square
-        
-//        hrvLineChartView.legend.
-        
-        // --- Y-Axis (Right/Trailing) Styling ---
-        let yAxis = hrvLineChartView.rightAxis
-        yAxis.enabled = true
-        yAxis.labelPosition = .outsideChart
-        yAxis.labelTextColor = .init("#7D7779")
-        yAxis.axisLineColor = .init("#313131")
-        yAxis.gridColor = UIColor.init("#2D2D2D")
-        
-        yAxis.gridLineDashLengths = [2, 2]
-        
-        yAxis.axisMinimum = 0
-        yAxis.axisMaximum = 300
-        yAxis.granularity = 100
-        
-        // --- X-Axis (Bottom) Styling ---
-        // General styling is set here. The specific labels are set dynamically.
-        let xAxis = hrvLineChartView.xAxis
-        xAxis.labelPosition = .bottom
-        xAxis.labelTextColor = .init("#7D7779")
-        xAxis.axisLineColor = .init("#313131")
-        xAxis.drawGridLinesEnabled = false
-        xAxis.granularity = 1
-    }
-    
-    private func updateXAxis(with labels: [String]) {
-        let xAxis = hrvLineChartView.xAxis
-        xAxis.valueFormatter = IndexAxisValueFormatter(values: labels)
-        
-        // Adjust label count based on the number of labels to prevent crowding
-        xAxis.setLabelCount(labels.count, force: false)
-    }
-    
-    // MARK: - Actions
-    
-    @IBAction func btnBackTapped(_ sender: Any) {
-        navigationController?.popViewController(transitionType: .fade, duration: 0.003)
-    }
-    
-    @IBAction func segmentedControlChanged(_ sender: UISegmentedControl) {
-            let selectedRange: HRVDetailViewModel.ChartTimeRange
-            switch sender.selectedSegmentIndex {
-            case 0:
-                selectedRange = .daily
-            case 1:
-                selectedRange = .weekly
-            case 2:
-                selectedRange = .monthly
-            default:
-                return
-            }
-            viewModel.fetchData(for: selectedRange)
-        }
-}
 
+    private func setupSegmented() {
+        segmentedControl.removeAllSegments()
+        for (i, r) in HRVDetailViewModel.ChartTimeRange.allCases.enumerated() {
+            segmentedControl.insertSegment(withTitle: r.title, at: i, animated: false)
+        }
+        segmentedControl.selectedSegmentIndex = HRVDetailViewModel.ChartTimeRange.hourly.rawValue
+        let attrs: [NSAttributedString.Key: Any] = [.foregroundColor: UIColor.white]
+        segmentedControl.setTitleTextAttributes(attrs, for: .normal)
+        segmentedControl.setTitleTextAttributes(attrs, for: .selected)
+    }
+
+    private func embedChartIfNeeded() {
+        guard host == nil else { return }
+        let chart = HRVRangeCalmChartView(points: [], range: .hourly)
+        let hosting = UIHostingController(rootView: chart)
+        hosting.view.backgroundColor = .clear
+        addChild(hosting)
+        chartContainerView.addSubview(hosting.view)
+        hosting.view.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([
+            hosting.view.leadingAnchor.constraint(equalTo: chartContainerView.leadingAnchor),
+            hosting.view.trailingAnchor.constraint(equalTo: chartContainerView.trailingAnchor),
+            hosting.view.topAnchor.constraint(equalTo: chartContainerView.topAnchor),
+            hosting.view.bottomAnchor.constraint(equalTo: chartContainerView.bottomAnchor)
+        ])
+        hosting.didMove(toParent: self)
+        host = hosting
+    }
+
+    private func bindViewModel() {
+        // labels
+        viewModel.$averageText
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] in self?.lblAverageValue.text = $0 }
+            .store(in: &cancellables)
+
+        viewModel.$dateRangeText
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] in self?.lblDateRange.text = $0 }
+            .store(in: &cancellables)
+
+        // chart updates
+        Publishers.CombineLatest3(viewModel.$points, viewModel.$yMax, viewModel.$currentChartRange)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] pts, yMax, chartRange in
+                guard let self, let host = self.host else { return }
+                host.rootView = HRVRangeCalmChartView(
+                    points: pts,
+                    range: {
+                        switch chartRange {
+                        case .hourly:  return .hourly
+                        case .daily:   return .daily
+                        case .weekly:  return .weekly
+                        case .monthly: return .monthly
+                        case .yearly:  return .yearly
+                        }
+                    }()
+                )
+            }
+            .store(in: &cancellables)
+    }
+
+    // MARK: - Actions
+
+    @IBAction private func segmentedControlChanged(_ sender: UISegmentedControl) {
+        guard let r = HRVDetailViewModel.ChartTimeRange(rawValue: sender.selectedSegmentIndex) else { return }
+        viewModel.fetch(for: r)
+    }
+
+    @IBAction private func btnBackTapped(_ sender: Any) {
+        navigationController?.popViewController(animated: true)
+    }
+}

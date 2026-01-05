@@ -58,8 +58,6 @@
 #ifndef OPENSSL_HEADER_RSA_EXTRA_INTERNAL_H
 #define OPENSSL_HEADER_RSA_EXTRA_INTERNAL_H
 
-#include <openssl_grpc/base.h>
-
 #if defined(__cplusplus)
 extern "C" {
 #endif

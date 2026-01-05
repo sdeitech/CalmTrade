@@ -3,11 +3,10 @@
  *     envoy/type/matcher/v3/http_inputs.proto
  *
  * Do not edit -- your changes will be discarded when the file is
- * regenerated.
- * NO CHECKED-IN PROTOBUF GENCODE */
+ * regenerated. */
 
-#ifndef ENVOY_TYPE_MATCHER_V3_HTTP_INPUTS_PROTO_UPB_H__UPB_H_
-#define ENVOY_TYPE_MATCHER_V3_HTTP_INPUTS_PROTO_UPB_H__UPB_H_
+#ifndef ENVOY_TYPE_MATCHER_V3_HTTP_INPUTS_PROTO_UPB_H_
+#define ENVOY_TYPE_MATCHER_V3_HTTP_INPUTS_PROTO_UPB_H_
 
 #include "upb/generated_code_support.h"
 
@@ -82,7 +81,7 @@ UPB_INLINE upb_StringView envoy_type_matcher_v3_HttpRequestHeaderMatchInput_head
 
 UPB_INLINE void envoy_type_matcher_v3_HttpRequestHeaderMatchInput_set_header_name(envoy_type_matcher_v3_HttpRequestHeaderMatchInput *msg, upb_StringView value) {
   const upb_MiniTableField field = {1, 8, 0, kUpb_NoSub, 9, (int)kUpb_FieldMode_Scalar | ((int)kUpb_FieldRep_StringView << kUpb_FieldRep_Shift)};
-  upb_Message_SetBaseField((upb_Message *)msg, &field, &value);
+  _upb_Message_SetNonExtensionField((upb_Message *)msg, &field, &value);
 }
 
 /* envoy.type.matcher.v3.HttpRequestTrailerMatchInput */
@@ -136,7 +135,7 @@ UPB_INLINE upb_StringView envoy_type_matcher_v3_HttpRequestTrailerMatchInput_hea
 
 UPB_INLINE void envoy_type_matcher_v3_HttpRequestTrailerMatchInput_set_header_name(envoy_type_matcher_v3_HttpRequestTrailerMatchInput *msg, upb_StringView value) {
   const upb_MiniTableField field = {1, 8, 0, kUpb_NoSub, 9, (int)kUpb_FieldMode_Scalar | ((int)kUpb_FieldRep_StringView << kUpb_FieldRep_Shift)};
-  upb_Message_SetBaseField((upb_Message *)msg, &field, &value);
+  _upb_Message_SetNonExtensionField((upb_Message *)msg, &field, &value);
 }
 
 /* envoy.type.matcher.v3.HttpResponseHeaderMatchInput */
@@ -190,7 +189,7 @@ UPB_INLINE upb_StringView envoy_type_matcher_v3_HttpResponseHeaderMatchInput_hea
 
 UPB_INLINE void envoy_type_matcher_v3_HttpResponseHeaderMatchInput_set_header_name(envoy_type_matcher_v3_HttpResponseHeaderMatchInput *msg, upb_StringView value) {
   const upb_MiniTableField field = {1, 8, 0, kUpb_NoSub, 9, (int)kUpb_FieldMode_Scalar | ((int)kUpb_FieldRep_StringView << kUpb_FieldRep_Shift)};
-  upb_Message_SetBaseField((upb_Message *)msg, &field, &value);
+  _upb_Message_SetNonExtensionField((upb_Message *)msg, &field, &value);
 }
 
 /* envoy.type.matcher.v3.HttpResponseTrailerMatchInput */
@@ -244,7 +243,7 @@ UPB_INLINE upb_StringView envoy_type_matcher_v3_HttpResponseTrailerMatchInput_he
 
 UPB_INLINE void envoy_type_matcher_v3_HttpResponseTrailerMatchInput_set_header_name(envoy_type_matcher_v3_HttpResponseTrailerMatchInput *msg, upb_StringView value) {
   const upb_MiniTableField field = {1, 8, 0, kUpb_NoSub, 9, (int)kUpb_FieldMode_Scalar | ((int)kUpb_FieldRep_StringView << kUpb_FieldRep_Shift)};
-  upb_Message_SetBaseField((upb_Message *)msg, &field, &value);
+  _upb_Message_SetNonExtensionField((upb_Message *)msg, &field, &value);
 }
 
 /* envoy.type.matcher.v3.HttpRequestQueryParamMatchInput */
@@ -298,7 +297,7 @@ UPB_INLINE upb_StringView envoy_type_matcher_v3_HttpRequestQueryParamMatchInput_
 
 UPB_INLINE void envoy_type_matcher_v3_HttpRequestQueryParamMatchInput_set_query_param(envoy_type_matcher_v3_HttpRequestQueryParamMatchInput *msg, upb_StringView value) {
   const upb_MiniTableField field = {1, 8, 0, kUpb_NoSub, 9, (int)kUpb_FieldMode_Scalar | ((int)kUpb_FieldRep_StringView << kUpb_FieldRep_Shift)};
-  upb_Message_SetBaseField((upb_Message *)msg, &field, &value);
+  _upb_Message_SetNonExtensionField((upb_Message *)msg, &field, &value);
 }
 
 #ifdef __cplusplus
@@ -307,4 +306,4 @@ UPB_INLINE void envoy_type_matcher_v3_HttpRequestQueryParamMatchInput_set_query_
 
 #include "upb/port/undef.inc"
 
-#endif  /* ENVOY_TYPE_MATCHER_V3_HTTP_INPUTS_PROTO_UPB_H__UPB_H_ */
+#endif  /* ENVOY_TYPE_MATCHER_V3_HTTP_INPUTS_PROTO_UPB_H_ */

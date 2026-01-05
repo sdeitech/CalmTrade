@@ -3,11 +3,10 @@
  *     xds/type/matcher/v3/http_inputs.proto
  *
  * Do not edit -- your changes will be discarded when the file is
- * regenerated.
- * NO CHECKED-IN PROTOBUF GENCODE */
+ * regenerated. */
 
-#ifndef XDS_TYPE_MATCHER_V3_HTTP_INPUTS_PROTO_UPB_H__UPB_H_
-#define XDS_TYPE_MATCHER_V3_HTTP_INPUTS_PROTO_UPB_H__UPB_H_
+#ifndef XDS_TYPE_MATCHER_V3_HTTP_INPUTS_PROTO_UPB_H_
+#define XDS_TYPE_MATCHER_V3_HTTP_INPUTS_PROTO_UPB_H_
 
 #include "upb/generated_code_support.h"
 
@@ -70,4 +69,4 @@ UPB_INLINE char* xds_type_matcher_v3_HttpAttributesCelMatchInput_serialize_ex(co
 
 #include "upb/port/undef.inc"
 
-#endif  /* XDS_TYPE_MATCHER_V3_HTTP_INPUTS_PROTO_UPB_H__UPB_H_ */
+#endif  /* XDS_TYPE_MATCHER_V3_HTTP_INPUTS_PROTO_UPB_H_ */

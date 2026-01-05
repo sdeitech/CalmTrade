@@ -3,8 +3,7 @@
  *     envoy/config/core/v3/event_service_config.proto
  *
  * Do not edit -- your changes will be discarded when the file is
- * regenerated.
- * NO CHECKED-IN PROTOBUF GENCODE */
+ * regenerated. */
 
 #include <stddef.h>
 #include "upb/generated_code_support.h"
@@ -17,9 +16,8 @@
 // Must be last.
 #include "upb/port/def.inc"
 
-extern const struct upb_MiniTable UPB_PRIVATE(_kUpb_MiniTable_StaticallyTreeShaken);
-static const upb_MiniTableSubInternal envoy_config_core_v3_EventServiceConfig__submsgs[1] = {
-  {.UPB_PRIVATE(submsg) = &envoy__config__core__v3__GrpcService_msg_init_ptr},
+static const upb_MiniTableSub envoy_config_core_v3_EventServiceConfig_submsgs[1] = {
+  {.UPB_PRIVATE(submsg) = &envoy__config__core__v3__GrpcService_msg_init},
 };
 
 static const upb_MiniTableField envoy_config_core_v3_EventServiceConfig__fields[1] = {
@@ -27,19 +25,15 @@ static const upb_MiniTableField envoy_config_core_v3_EventServiceConfig__fields[
 };
 
 const upb_MiniTable envoy__config__core__v3__EventServiceConfig_msg_init = {
-  &envoy_config_core_v3_EventServiceConfig__submsgs[0],
+  &envoy_config_core_v3_EventServiceConfig_submsgs[0],
   &envoy_config_core_v3_EventServiceConfig__fields[0],
   UPB_SIZE(16, 24), 1, kUpb_ExtMode_NonExtendable, 1, UPB_FASTTABLE_MASK(8), 0,
-#ifdef UPB_TRACING_ENABLED
-  "envoy.config.core.v3.EventServiceConfig",
-#endif
   UPB_FASTTABLE_INIT({
     {0x0000000000000000, &_upb_FastDecoder_DecodeGeneric},
     {0x001000080100000a, &upb_pom_1bt_maxmaxb},
   })
 };
 
-const upb_MiniTable* envoy__config__core__v3__EventServiceConfig_msg_init_ptr = &envoy__config__core__v3__EventServiceConfig_msg_init;
 static const upb_MiniTable *messages_layout[1] = {
   &envoy__config__core__v3__EventServiceConfig_msg_init,
 };

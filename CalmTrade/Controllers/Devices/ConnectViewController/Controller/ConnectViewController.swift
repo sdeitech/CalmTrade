@@ -26,7 +26,9 @@ class ConnectViewController: BaseViewController {
                 // --- SUCCESS ---
                 print("Successfully connected to HealthKit!")
                 // You can now show the "You're Connected" pop-up.
-                self?.showAppleConnectedScreen()
+                DispatchQueue.main.async {
+                    self?.showAppleConnectedScreen()
+                }
             } else {
                 // --- FAILURE ---
                 // Show an alert with the error message.
@@ -36,7 +38,7 @@ class ConnectViewController: BaseViewController {
     }
     
     func showAppleConnectedScreen() {
-        let storyboard = UIStoryboard(name: "Main", bundle: nil) // Or your storyboard name
+        let storyboard = UIStoryboard(name: Constants.Storyboard.Devices, bundle: nil) // Or your storyboard name
         let appleConnectedVC = storyboard.instantiateViewController(withIdentifier: "AppleConnectedViewController") as! AppleConnectedViewController
 
         // Set the callback closure

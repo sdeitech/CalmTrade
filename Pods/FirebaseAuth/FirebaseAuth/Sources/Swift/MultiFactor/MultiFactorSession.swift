@@ -27,46 +27,33 @@ import Foundation
   @available(iOS 13, tvOS 13, macOS 10.15, macCatalyst 13, watchOS 7, *)
   @objc(FIRMultiFactorSession) open class MultiFactorSession: NSObject {
     /// The ID token for an enroll flow. This has to be retrieved after recent authentication.
-    let idToken: String?
+    var idToken: String?
 
     /// The pending credential after an enrolled second factor user signs in successfully with the
     /// first factor.
-    let mfaPendingCredential: String?
-
-    /// Current user object.
-    let currentUser: User?
+    var mfaPendingCredential: String?
 
     /// Multi factor info for the current user.
     var multiFactorInfo: MultiFactorInfo?
+
+    /// Current user object.
+    var currentUser: User?
 
     class func session(for user: User?) -> MultiFactorSession {
       let currentUser = user ?? Auth.auth().currentUser
       guard let currentUser else {
         fatalError("Internal Auth Error: missing user for multifactor auth")
       }
-      return .init(
-        idToken: currentUser.tokenService.accessToken,
-        mfaPendingCredential: nil,
-        multiFactorInfo: nil,
-        currentUser: currentUser
-      )
+      return .init(idToken: currentUser.tokenService.accessToken, currentUser: currentUser)
     }
 
-    convenience init(mfaCredential: String?) {
-      self.init(
-        idToken: nil,
-        mfaPendingCredential: mfaCredential,
-        multiFactorInfo: nil,
-        currentUser: nil
-      )
-    }
-
-    private init(idToken: String?, mfaPendingCredential: String?, multiFactorInfo: MultiFactorInfo?,
-                 currentUser: User?) {
+    init(idToken: String?, currentUser: User) {
       self.idToken = idToken
-      self.mfaPendingCredential = mfaPendingCredential
-      self.multiFactorInfo = multiFactorInfo
       self.currentUser = currentUser
+    }
+
+    init(mfaCredential: String?) {
+      mfaPendingCredential = mfaCredential
     }
   }
 

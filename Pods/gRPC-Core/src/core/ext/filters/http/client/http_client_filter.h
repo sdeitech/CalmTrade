@@ -21,6 +21,7 @@
 #include <grpc/support/port_platform.h>
 
 #include "absl/status/statusor.h"
+
 #include "src/core/lib/channel/channel_args.h"
 #include "src/core/lib/channel/channel_fwd.h"
 #include "src/core/lib/channel/promise_based_filter.h"
@@ -33,8 +34,6 @@ namespace grpc_core {
 class HttpClientFilter : public ImplementChannelFilter<HttpClientFilter> {
  public:
   static const grpc_channel_filter kFilter;
-
-  static absl::string_view TypeName() { return "http-client"; }
 
   static absl::StatusOr<std::unique_ptr<HttpClientFilter>> Create(
       const ChannelArgs& args, ChannelFilter::Args filter_args);

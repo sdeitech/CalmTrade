@@ -3,11 +3,10 @@
  *     udpa/annotations/versioning.proto
  *
  * Do not edit -- your changes will be discarded when the file is
- * regenerated.
- * NO CHECKED-IN PROTOBUF GENCODE */
+ * regenerated. */
 
-#ifndef UDPA_ANNOTATIONS_VERSIONING_PROTO_UPB_H__UPB_H_
-#define UDPA_ANNOTATIONS_VERSIONING_PROTO_UPB_H__UPB_H_
+#ifndef UDPA_ANNOTATIONS_VERSIONING_PROTO_UPB_H_
+#define UDPA_ANNOTATIONS_VERSIONING_PROTO_UPB_H_
 
 #include "upb/generated_code_support.h"
 
@@ -78,7 +77,7 @@ UPB_INLINE upb_StringView udpa_annotations_VersioningAnnotation_previous_message
 
 UPB_INLINE void udpa_annotations_VersioningAnnotation_set_previous_message_type(udpa_annotations_VersioningAnnotation *msg, upb_StringView value) {
   const upb_MiniTableField field = {1, 8, 0, kUpb_NoSub, 9, (int)kUpb_FieldMode_Scalar | ((int)kUpb_FieldRep_StringView << kUpb_FieldRep_Shift)};
-  upb_Message_SetBaseField((upb_Message *)msg, &field, &value);
+  _upb_Message_SetNonExtensionField((upb_Message *)msg, &field, &value);
 }
 
 UPB_INLINE bool udpa_annotations_has_versioning(const struct google_protobuf_MessageOptions* msg) {
@@ -91,7 +90,7 @@ UPB_INLINE const udpa_annotations_VersioningAnnotation* udpa_annotations_version
   const upb_MiniTableExtension* ext = &udpa_annotations_versioning_ext;
   UPB_ASSUME(upb_MiniTableField_IsScalar(&ext->UPB_PRIVATE(field)));
   UPB_ASSUME(UPB_PRIVATE(_upb_MiniTableField_GetRep)(
-                 &ext->UPB_PRIVATE(field)) == UPB_SIZE(kUpb_FieldRep_4Byte, kUpb_FieldRep_8Byte));
+                 &ext->UPB_PRIVATE(field)) == kUpb_FieldRep_8Byte);
   const udpa_annotations_VersioningAnnotation* default_val = NULL;
   const udpa_annotations_VersioningAnnotation* ret;
   _upb_Message_GetExtensionField((upb_Message*)msg, ext, &default_val, &ret);
@@ -101,18 +100,9 @@ UPB_INLINE void udpa_annotations_set_versioning(struct google_protobuf_MessageOp
   const upb_MiniTableExtension* ext = &udpa_annotations_versioning_ext;
   UPB_ASSUME(upb_MiniTableField_IsScalar(&ext->UPB_PRIVATE(field)));
   UPB_ASSUME(UPB_PRIVATE(_upb_MiniTableField_GetRep)(
-                 &ext->UPB_PRIVATE(field)) == UPB_SIZE(kUpb_FieldRep_4Byte, kUpb_FieldRep_8Byte));
-  bool ok = upb_Message_SetExtension((upb_Message*)msg, ext, &val, arena);
+                 &ext->UPB_PRIVATE(field)) == kUpb_FieldRep_8Byte);
+  bool ok = _upb_Message_SetExtensionField((upb_Message*)msg, ext, &val, arena);
   UPB_ASSERT(ok);
-}
-UPB_INLINE struct udpa_annotations_VersioningAnnotation* udpa_annotations_mutable_versioning(struct google_protobuf_MessageOptions* msg,
-                                    upb_Arena* arena) {
-  struct udpa_annotations_VersioningAnnotation* sub = (struct udpa_annotations_VersioningAnnotation*)udpa_annotations_versioning(msg);
-  if (sub == NULL) {
-    sub = (struct udpa_annotations_VersioningAnnotation*)_upb_Message_New(&udpa__annotations__VersioningAnnotation_msg_init, arena);
-    if (sub) udpa_annotations_set_versioning(msg, sub, arena);
-  }
-  return sub;
 }
 #ifdef __cplusplus
 }  /* extern "C" */
@@ -120,4 +110,4 @@ UPB_INLINE struct udpa_annotations_VersioningAnnotation* udpa_annotations_mutabl
 
 #include "upb/port/undef.inc"
 
-#endif  /* UDPA_ANNOTATIONS_VERSIONING_PROTO_UPB_H__UPB_H_ */
+#endif  /* UDPA_ANNOTATIONS_VERSIONING_PROTO_UPB_H_ */

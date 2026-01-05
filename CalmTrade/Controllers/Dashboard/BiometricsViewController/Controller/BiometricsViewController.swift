@@ -2,129 +2,326 @@
 //  BiometricsViewController.swift
 //  CalmTrade
 //
-//  Created by Anas Parekh on 02/09/25.
+//  Hosts SwiftUI CalmScoreBarTile + Sleep Score tile (attributed "88/100").
 //
 
-
 import UIKit
+import SwiftUI
+import Combine
 
-class BiometricsViewController: UIViewController {
+final class BiometricsViewController: UIViewController {
 
     // MARK: - Outlets
-    
-    // CalmScore Gauge
-    @IBOutlet weak var calmScoreGauge: CalmScoreGaugeView!
-    @IBOutlet weak var lblLastUpdate: UILabel!
-    @IBOutlet weak var lblCalmScore: UILabel!
-    
-    // Heart Rate Card
+    /// SwiftUI CalmScore gauge container (existing)
+    @IBOutlet weak var calmScoreGauge: UIView!
+
+    // Sleep Score tile
+    @IBOutlet weak var sleepScoreContainer: UIView!
+    @IBOutlet weak var sleepScoreLabel: UILabel!      // shows "88/100" as attributed text
+    @IBOutlet weak var sleepScoreDateLabel: UILabel!  // "Today", "Yesterday", or formatted date
+
     @IBOutlet weak var lblHeartRateAverage: UILabel!
     @IBOutlet weak var lblHeartRateLatest: UILabel!
-    
-    // HRV Card
-    @IBOutlet weak var lblHrvAverage: UILabel!
-    @IBOutlet weak var lblHrvLatest: UILabel!
-    @IBOutlet weak var lblHrvTimestamp: UILabel!
-    
-    // Resting HR Card
+
+    // --- HRV split: RMSSD + SDNN (replace old lblHrv* outlets) ---
+    @IBOutlet weak var lblRmssdAverage: UILabel!
+    @IBOutlet weak var lblRmssdLatest: UILabel!
+    @IBOutlet weak var lblRmssdTimestamp: UILabel!
+
+    @IBOutlet weak var lblSdnnAverage: UILabel!
+    @IBOutlet weak var lblSdnnLatest: UILabel!
+//    @IBOutlet weak var lblSdnnTimestamp: UILabel!
+
     @IBOutlet weak var lblRestingHrAverage: UILabel!
     @IBOutlet weak var lblRestingHrLatest: UILabel!
     @IBOutlet weak var lblRestingHrTimestamp: UILabel!
 
-    // Sleep Card
+    // Existing sleep duration + steps tiles
     @IBOutlet weak var lblSleepTotal: UILabel!
     @IBOutlet weak var lblSleepDate: UILabel!
-    
-    // Steps Card
-    @IBOutlet weak var lblStepsAverage: UILabel! // Note: Weekly avg is not yet implemented
+
+    @IBOutlet weak var lblStepsAverage: UILabel!
     @IBOutlet weak var lblStepsToday: UILabel!
     @IBOutlet weak var lblStepsDate: UILabel!
-    
-    // MARK: - Properties
-    private let viewModel = BiometricsViewModel()
 
-    // MARK: - View Lifecycle
+    // MARK: - ViewModel
+    private let viewModel = BiometricsViewModel()
+    private var bag = Set<AnyCancellable>()
+
+    // MARK: - SwiftUI hosting
+    private var calmScoreTileController: UIHostingController<CalmScoreBarTile>?
+
+    // MARK: - Formatters
+    private lazy var dayFormatter: DateFormatter = {
+        let df = DateFormatter()
+        df.dateFormat = "EEE d MMM yyyy" // “Thu 6 Jun 2025”
+        return df
+    }()
+
+    // MARK: - Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
-        setupBindings()
-        
-        // Set initial gauge value
-        calmScoreGauge.needleValue = 80 // or a default starting value
-    }
-    
-    override func viewWillAppear(_ animated: Bool) {
-        super.viewWillAppear(animated)
-        // Fetch fresh data every time the screen appears
-        viewModel.fetchAllBiometrics()
+        setupSwiftUIGauge()
+        setupSleepScoreTileAccessibility()
+        bindViewModel()
+        viewModel.start()
     }
 
-    // MARK: - Setup
-    
-    private func setupBindings() {
-        // This is where the magic happens. When the ViewModel's data changes, this block is called.
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        viewModel.startLiveUpdates()
+    }
+
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        viewModel.stopLiveUpdates()
+    }
+
+    override func motionEnded(_ motion: UIEvent.EventSubtype, with event: UIEvent?) {
+        guard motion == .motionShake else { return }
+        let vc = UIHostingController(rootView: DiagnosticsView())
+        present(vc, animated: true)
+    }
+
+    // MARK: - SwiftUI Gauge embedding
+    private func setupSwiftUIGauge() {
+        // Initial empty props; ViewModel will push real values via onPropsUpdate
+        let initialProps = CalmScoreTileProps(
+            score: 0,
+            lastUpdate: Date(),
+            deviceSource: .appleHK,
+            isStreaming: false,
+            trend: TrendData(hrvMs: 0, hrvIsUp: true, hrBpm: 0, hrIsDown: true, sleepHours: 0, sleepIsUp: true)
+        )
+        let swiftUIView = CalmScoreBarTile(props: initialProps)
+
+        let host = UIHostingController(rootView: swiftUIView)
+        host.view.backgroundColor = .clear
+
+        addChild(host)
+        host.view.translatesAutoresizingMaskIntoConstraints = false
+        calmScoreGauge.addSubview(host.view)
+        NSLayoutConstraint.activate([
+            host.view.leadingAnchor.constraint(equalTo: calmScoreGauge.leadingAnchor),
+            host.view.trailingAnchor.constraint(equalTo: calmScoreGauge.trailingAnchor),
+            host.view.topAnchor.constraint(equalTo: calmScoreGauge.topAnchor),
+            host.view.bottomAnchor.constraint(equalTo: calmScoreGauge.bottomAnchor)
+        ])
+        host.didMove(toParent: self)
+        calmScoreTileController = host
+    }
+
+    // MARK: - Sleep Score tile (accessibility & defaults)
+    private func setupSleepScoreTileAccessibility() {
+        sleepScoreLabel.adjustsFontForContentSizeCategory = true
+        sleepScoreDateLabel.adjustsFontForContentSizeCategory = true
+
+        sleepScoreLabel.attributedText = placeholderSleepScore()
+        sleepScoreDateLabel.text = "No data"
+        sleepScoreContainer.alpha = 0.7
+    }
+
+    // MARK: - Bindings
+    private func bindViewModel() {
+        // If you want label-by-label Combine bindings, add here
+
+        // SwiftUI gauge props
+        viewModel.onPropsUpdate = { [weak self] props in
+            self?.calmScoreTileController?.rootView = CalmScoreBarTile(props: props)
+        }
+
+        // Legacy labels
         viewModel.onDataUpdated = { [weak self] data in
             self?.updateUI(with: data)
         }
-    }
-    
-    // MARK: - UI Update
-    
-    private func updateUI(with data: BiometricData) {
-//        lblLastUpdate.text = data.lastUpdateTimestamp
-        lblCalmScore.text = data.calmScore
-        
-        if let score = Int(data.calmScore) {
-            calmScoreGauge.needleValue = CGFloat(score)
+
+        // Sleep Score tile
+        viewModel.onSleepScoreDidUpdate = { [weak self] tile in
+            guard let self = self else { return }
+            DispatchQueue.main.async { self.renderSleepScore(tile) }
         }
-        
+    }
+
+    // MARK: - UI update for legacy labels
+    private func updateUI(with data: BiometricData) {
         lblHeartRateAverage.text = data.heartRateAverage
         lblHeartRateLatest.text = data.heartRateLatest
-        
-        lblHrvAverage.text = data.hrvAverage
-        lblHrvLatest.text = data.hrvLatest
-        lblHrvTimestamp.text = data.hrvTimestamp
-        
+
+        // HRV split
+        lblRmssdAverage.text = data.rmssdAverage
+        lblRmssdLatest.text = data.rmssdLatest
+        lblRmssdTimestamp.text = data.rmssdTimestamp
+
+        lblSdnnAverage.text = data.sdnnAverage
+        lblSdnnLatest.text = data.sdnnLatest
+//        lblSdnnTimestamp.text = data.sdnnTimestamp
+
         lblRestingHrAverage.text = data.restingHeartRateAverage
         lblRestingHrLatest.text = data.restingHeartRateLatest
         lblRestingHrTimestamp.text = data.restingHeartRateTimestamp
-        
+
         lblSleepTotal.text = data.sleepTotal
         lblSleepDate.text = data.sleepDate
-        
+
         lblStepsAverage.text = data.stepsWeeklyAverage
         lblStepsToday.text = data.stepsToday
         lblStepsDate.text = data.stepsDate
     }
-    
-    //MARK: - Actions
-    
-    @IBAction func btnHRVTapped(_ sender: Any) {
-        let hrvDetailVC = UIStoryboard(name: Constants.Storyboard.Biometrics, bundle: nil).instantiateViewController(withIdentifier: "HRVDetailViewController") as! HRVDetailViewController
-        self.navigationController?.pushViewController(hrvDetailVC,transitionType: .fade)
+
+    // MARK: - Sleep Score rendering (single attributed label)
+    private func renderSleepScore(_ tile: SleepScoreTile?) {
+        guard let tile = tile else {
+            sleepScoreLabel.attributedText = placeholderSleepScore()
+            sleepScoreDateLabel.text = "No data"
+            sleepScoreContainer.alpha = 0.7
+            return
+        }
+
+        sleepScoreLabel.attributedText = makeSleepScoreText(score: tile.score, max: 100)
+
+        let cal = Calendar.current
+        if cal.isDateInToday(tile.date) {
+            sleepScoreDateLabel.text = "Today"
+        } else if cal.isDateInYesterday(tile.date) {
+            sleepScoreDateLabel.text = "Yesterday"
+        } else {
+            sleepScoreDateLabel.text = dayFormatter.string(from: tile.date)
+        }
+
+        sleepScoreContainer.alpha = 1.0
     }
-    
+
+    private func makeSleepScoreText(score: Int, max: Int = 100) -> NSAttributedString {
+        let numberFont  = UIFont.systemFont(ofSize: 44, weight: .heavy)
+        let suffixFont  = UIFont.systemFont(ofSize: 24, weight: .semibold)
+
+        let numberScaled = UIFontMetrics(forTextStyle: .largeTitle).scaledFont(for: numberFont)
+        let suffixScaled = UIFontMetrics(forTextStyle: .title2).scaledFont(for: suffixFont)
+
+        let numberColor  = UIColor.white
+        let suffixColor  = UIColor(white: 1.0, alpha: 0.5)
+
+        let s = NSMutableAttributedString(
+            string: "\(score)",
+            attributes: [.font: numberScaled, .foregroundColor: numberColor]
+        )
+        let suffix = NSAttributedString(
+            string: "/\(max)",
+            attributes: [.font: suffixScaled, .foregroundColor: suffixColor, .baselineOffset: 4]
+        )
+        s.append(suffix)
+        return s
+    }
+
+    private func placeholderSleepScore() -> NSAttributedString {
+        NSAttributedString(
+            string: "—/100",
+            attributes: [
+                .font: UIFontMetrics(forTextStyle: .largeTitle)
+                    .scaledFont(for: UIFont.systemFont(ofSize: 36, weight: .bold)),
+                .foregroundColor: UIColor(white: 1.0, alpha: 0.5)
+            ]
+        )
+    }
+
+    deinit {
+        viewModel.stop()
+    }
+
+    // MARK: - Actions
+    @IBAction func btnRMSSDTapped(_ sender: Any) {
+        let vc = UIStoryboard(name: Constants.Storyboard.Biometrics, bundle: nil)
+            .instantiateViewController(withIdentifier: "HRVDetailViewController") as! HRVDetailViewController
+        vc.metric = .rmssd
+        navigationController?.pushViewController(vc, transitionType: .fade)
+    }
+
+    @IBAction func btnSDNNTapped(_ sender: Any) {
+        let vc = UIStoryboard(name: Constants.Storyboard.Biometrics, bundle: nil)
+            .instantiateViewController(withIdentifier: "HRVDetailViewController") as! HRVDetailViewController
+        vc.metric = .sdnn
+        navigationController?.pushViewController(vc, transitionType: .fade)
+    }
+
     @IBAction func btnHRTapped(_ sender: Any) {
-        let hrDetailVC = UIStoryboard(name: Constants.Storyboard.Biometrics, bundle: nil).instantiateViewController(withIdentifier: "HeartRateDetailViewController") as! HeartRateDetailViewController
-        self.navigationController?.pushViewController(hrDetailVC,transitionType: .fade)
+        let vc = UIStoryboard(name: Constants.Storyboard.Biometrics, bundle: nil)
+            .instantiateViewController(withIdentifier: "HeartRateDetailViewController") as! HeartRateDetailViewController
+        self.navigationController?.pushViewController(vc, transitionType: .fade)
     }
-    
+
     @IBAction func btnRestingHRTapped(_ sender: Any) {
-        let restinghrDetailVC = UIStoryboard(name: Constants.Storyboard.Biometrics, bundle: nil).instantiateViewController(withIdentifier: "RestingHeartRateDetailViewController") as! RestingHeartRateDetailViewController
-        self.navigationController?.pushViewController(restinghrDetailVC,transitionType: .fade)
+        let vc = UIStoryboard(name: Constants.Storyboard.Biometrics, bundle: nil)
+            .instantiateViewController(withIdentifier: "RestingHeartRateDetailViewController") as! RestingHeartRateDetailViewController
+        self.navigationController?.pushViewController(vc, transitionType: .fade)
     }
-    
+
     @IBAction func btnStepsTapped(_ sender: Any) {
-        let stepsDetailVC = UIStoryboard(name: Constants.Storyboard.Biometrics, bundle: nil).instantiateViewController(withIdentifier: "StepsDetailViewController") as! StepsDetailViewController
-        self.navigationController?.pushViewController(stepsDetailVC,transitionType: .fade)
+        let vc = UIStoryboard(name: Constants.Storyboard.Biometrics, bundle: nil)
+            .instantiateViewController(withIdentifier: "StepsDetailViewController") as! StepsDetailViewController
+        self.navigationController?.pushViewController(vc, transitionType: .fade)
     }
-    
+
     @IBAction func btnSleepDataTapped(_ sender: Any) {
-        let sleepDataDetailVC = UIStoryboard(name: Constants.Storyboard.Biometrics, bundle: nil).instantiateViewController(withIdentifier: "SleepInsightViewController") as! SleepInsightViewController
-        self.navigationController?.pushViewController(sleepDataDetailVC,transitionType: .fade)
+        let vc = UIStoryboard(name: Constants.Storyboard.Biometrics, bundle: nil)
+            .instantiateViewController(withIdentifier: "SleepInsightViewController")
+        self.navigationController?.pushViewController(vc, transitionType: .fade)
     }
-    
+
+    private enum Prefs {
+        static let hideSleepInfo = "ct.prefs.hideSleepInfo"
+    }
+
     @IBAction func btnAddDataTapped(_ sender: Any) {
-        let addSleepDataVC = UIStoryboard(name: Constants.Storyboard.Biometrics, bundle: nil).instantiateViewController(withIdentifier: "AddSleepDataViewController") as! AddSleepDataViewController
-        self.navigationController?.pushViewController(addSleepDataVC,transitionType: .fade)
+        if UserDefaults.standard.bool(forKey: Prefs.hideSleepInfo) {
+            openHealthAppForSleep()
+            return
+        }
+        presentSleepInfoSheet()
+    }
+
+    private func presentSleepInfoSheet() {
+        let sheet = UIHostingController(
+            rootView: SleepInfoSheetView(
+                onAdd: { [weak self] dontShow in
+                    if dontShow { UserDefaults.standard.set(true, forKey: Prefs.hideSleepInfo) }
+                    self?.openHealthAppForSleep()
+                },
+                onLater: { dontShow in
+                    if dontShow { UserDefaults.standard.set(true, forKey: Prefs.hideSleepInfo) }
+                }
+            )
+        )
+        sheet.view.backgroundColor = .black
+        sheet.modalPresentationStyle = .pageSheet
+        if let sp = sheet.sheetPresentationController {
+            if #available(iOS 16.0, *) {
+                sp.detents = [.medium(), .large()]
+            } else {
+                sp.detents = [.medium()]
+            }
+            sp.prefersGrabberVisible = true
+        }
+        present(sheet, animated: true)
+    }
+
+    // Best-effort: open Health. If it fails, show inline instructions alert.
+    private func openHealthAppForSleep() {
+        guard let url = URL(string: "x-apple-health://") else { showHealthInstructionsFallback(); return }
+        if UIApplication.shared.canOpenURL(url) {
+            UIApplication.shared.open(url, options: [:]) { ok in
+                if !ok { self.showHealthInstructionsFallback() }
+            }
+        } else {
+            showHealthInstructionsFallback()
+        }
+    }
+
+    private func showHealthInstructionsFallback() {
+        let msg = """
+        Health → Browse → Sleep → Add Data → choose In Bed/Asleep → set Start & End → Add.
+        """
+        let alert = UIAlertController(title: "How to add sleep", message: msg, preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "OK", style: .default))
+        present(alert, animated: true)
     }
 }

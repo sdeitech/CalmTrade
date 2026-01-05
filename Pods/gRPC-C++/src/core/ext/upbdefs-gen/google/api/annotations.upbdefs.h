@@ -3,11 +3,10 @@
  *     google/api/annotations.proto
  *
  * Do not edit -- your changes will be discarded when the file is
- * regenerated.
- * NO CHECKED-IN PROTOBUF GENCODE */
+ * regenerated. */
 
-#ifndef GOOGLE_API_ANNOTATIONS_PROTO_UPB_H__UPBDEFS_H_
-#define GOOGLE_API_ANNOTATIONS_PROTO_UPB_H__UPBDEFS_H_
+#ifndef GOOGLE_API_ANNOTATIONS_PROTO_UPBDEFS_H_
+#define GOOGLE_API_ANNOTATIONS_PROTO_UPBDEFS_H_
 
 #include "upb/reflection/def.h"
 #include "upb/reflection/internal/def_pool.h"
@@ -25,4 +24,4 @@ extern _upb_DefPool_Init google_api_annotations_proto_upbdefinit;
 
 #include "upb/port/undef.inc"
 
-#endif  /* GOOGLE_API_ANNOTATIONS_PROTO_UPB_H__UPBDEFS_H_ */
+#endif  /* GOOGLE_API_ANNOTATIONS_PROTO_UPBDEFS_H_ */

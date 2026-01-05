@@ -6,8 +6,11 @@
 //
 
 import UIKit
+import KRProgressHUD
+import GoogleSignIn
+import FBSDKCoreKit
 
-class SignUpViewController: BaseViewController {
+final class SignUpViewController: BaseViewController {
     
     // MARK: - Outlets
     // --- Name UI Elements ---
@@ -34,29 +37,24 @@ class SignUpViewController: BaseViewController {
     @IBOutlet weak var lblTerms: UILabel!
     @IBOutlet weak var btnCheckbox: UIButton!
     
-    
     // MARK: - Properties
-    
     lazy var viewModel: SignUpViewModel = {
         let obj = SignUpViewModel()
         self.baseVwModel = obj
         return obj
     }()
     
-    private let socialLoginHandler = SocialLoginHandler()
+    private let socialLoginHandler = SocialLoginHandler() // keep for later if needed
     
-    //MARK: - App Lifecycle
-
+    // MARK: - App Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        // Set the text field delegates to self
         txtName.delegate = self
         txtEmail.delegate = self
         txtPhone.delegate = self
         txtPassword.delegate = self
         
-        // Set initial state for the UI elements
         updateUI(for: viewName, label: lblName, isFocused: false)
         updateUI(for: viewEmail, label: lblEmail, isFocused: false)
         updateUI(for: viewPhone, label: lblPhone, isFocused: false)
@@ -68,80 +66,83 @@ class SignUpViewController: BaseViewController {
     // MARK: - Actions
     
     @IBAction func btnPasswordEyeTapped(_ sender: UIButton) {
-        // Toggle the secure text entry state
         txtPassword.isSecureTextEntry.toggle()
-        
-        // Change the button icon based on the state
-        if txtPassword.isSecureTextEntry {
-            // Use SF Symbols for modern icons
-            btnPasswordEye.setImage(UIImage(systemName: "eye.slash"), for: .normal)
-        } else {
-            btnPasswordEye.setImage(UIImage(systemName: "eye"), for: .normal)
-        }
+        let icon = txtPassword.isSecureTextEntry ? "eye.slash" : "eye"
+        btnPasswordEye.setImage(UIImage(systemName: icon), for: .normal)
     }
     
     @IBAction func btnCheckboxTapped(_ sender: UIButton) {
         viewModel.isCheckboxSelected.toggle()
-        if viewModel.isCheckboxSelected {
-            btnCheckbox.setImage(viewModel.selectedImage, for: .normal)
-        } else {
-            btnCheckbox.setImage(viewModel.unselectedImage, for: .normal)
-        }
+        btnCheckbox.setImage(viewModel.isCheckboxSelected ? viewModel.selectedImage : viewModel.unselectedImage,
+                             for: .normal)
     }
     
     @IBAction func btnLoginTapped(_ sender: UIButton) {
-        self.navigationController?.popViewController(transitionType: .fade)
+        navigationController?.popViewController(transitionType: .fade)
     }
     
     @IBAction func btnSignUpTapped(_ sender: UIButton) {
         let fullName = txtName.text
-        let email = txtEmail.text
-        let phone = txtPhone.text
+        let email    = txtEmail.text
+        let phone    = txtPhone.text
         let password = txtPassword.text
         
-        // 1. Validate the form first.
-        let validationResult = viewModel.validate(fullName: fullName, email: email, phoneNumber: phone, password: password)
-        
-        if !validationResult.isValid {
-            showAlert(message: validationResult.error ?? "An unknown error occurred.")
+        // 1) Validate
+        let validation = viewModel.validate(fullName: fullName, email: email, phoneNumber: phone, password: password)
+        guard validation.isValid else {
+            showAlert(message: validation.error ?? "Please check your details.")
             return
         }
         
-        // 2. Call the ViewModel to create the user and send the email.
-        viewModel.createUser(email: email!, password: password!, fullName: fullName!) { [weak self] success, error in
+        // 2) Register via backend (not Firebase)
+        sender.isEnabled = false
+        KRProgressHUD.show()
+        viewModel.register(fullName: fullName!, email: email!, phone: phone!, password: password!) { [weak self] success, message in
             DispatchQueue.main.async {
+                sender.isEnabled = true
+                KRProgressHUD.dismiss()
                 if success {
-                    // --- SUCCESS ---
-                    // Navigate to the email verification screen.
-                    self?.navigateToVerificationScreen()
+                    // 3) Move to Email Verification (socket-based)
+                    let vc = UIStoryboard(name: "Main", bundle: nil)
+                        .instantiateViewController(withIdentifier: "EmailVerificationViewController") as! EmailVerificationViewController
+                    vc.passedEmail = email
+                    self?.navigationController?.pushViewController(vc, transitionType: .fade)
                 } else {
-                    // --- FAILURE ---
-                    // Show an alert with the error from Firebase.
-                    self?.showAlert(message: error?.localizedDescription ?? "An unknown error occurred.")
+                    self?.showAlert(message: message ?? "Please try again.")
                 }
             }
         }
     }
     
     @IBAction func btnGoogleLoginTapped(_ sender: UIButton) {
-        // Ensure the entire sign-in process is initiated on the main thread.
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
-            
-            // Use the handler to start the Google Sign-In process.
             self.socialLoginHandler.signInWithGoogle(presentingVC: self) { result in
-                // The completion handler from the SDK will often return on a background thread,
-                // so we still need to dispatch any UI updates back to the main thread.
                 DispatchQueue.main.async {
                     switch result {
                     case .success(_):
-                        print("Google Sign In Successful, now signing into Firebase...")
-                        let connectVC = UIStoryboard(name: Constants.Storyboard.Devices, bundle: nil).instantiateViewController(withIdentifier: "ConnectViewController") as! ConnectViewController
-                        self.navigationController?.pushViewController(connectVC, transitionType: .reveal, duration: 0.03)
-                        
+                        guard let idToken = self.socialLoginHandler.lastGoogleIDToken else {
+                            self.showAlert(message: "Couldn’t retrieve Google ID token.")
+                            return
+                        }
+                        KRProgressHUD.show()
+                        self.viewModel.googleAuth(idToken: idToken) { [weak self] ok, msg, isFirst  in
+                            guard let self = self else { return }
+                            KRProgressHUD.dismiss()
+                            if ok {
+                                if isFirst {
+                                    let connectVC = UIStoryboard(name: Constants.Storyboard.Devices, bundle: nil)
+                                        .instantiateViewController(withIdentifier: "ConnectViewController") as! ConnectViewController
+                                    navigationController?.pushViewController(connectVC, transitionType: .reveal, duration: 0.03)
+                                } else {
+                                    self.openDashboard()
+                                }
+                            }
+                            else { self.showAlert(message: msg ?? "Google auth failed. Please try again.") }
+                        }
                     case .failure(let error):
-                        print("Google Sign-In Failed with error: \(error.localizedDescription)")
-                        // Show an alert to the user here.
+                        print("Google Sign-In Failed:", error.localizedDescription)
+                        self.showAlert(message: error.localizedDescription)
                     }
                 }
             }
@@ -149,124 +150,144 @@ class SignUpViewController: BaseViewController {
     }
     
     @IBAction func btnFacebookLoginTapped(_ sender: UIButton) {
-        // Use the handler to start the Facebook Sign-In process.
-        socialLoginHandler.signInWithFacebook(presentingVC: self) { result in
+        socialLoginHandler.signInWithFacebook(presentingVC: self) { [weak self] result in
             DispatchQueue.main.async {
+                guard let self = self else { return }
                 switch result {
-                case .success(_):
-                    // --- SUCCESS ---
-                    // The handler has successfully created the Firebase credential.
-                    // Now, sign in to Firebase.
-                    print("Facebook Sign In Successful, now signing into Firebase...")
-                    let connectVC = UIStoryboard(name: Constants.Storyboard.Devices, bundle: nil).instantiateViewController(withIdentifier: "ConnectViewController") as! ConnectViewController
-                    self.navigationController?.pushViewController(connectVC, transitionType: .reveal, duration: 0.03)
+                case .success(let cred):
+                    let sdkAccess = AccessToken.current
+                    print("FB SDK AccessToken.current?:", sdkAccess != nil)
+                    print("FB SDK access token string:", sdkAccess?.tokenString ?? "nil")
+                    print("FB SDK appID:", sdkAccess?.appID ?? "nil")
+                    print("FB SDK userID:", sdkAccess?.userID ?? "nil")
+                    
+                    // If Limited Login was (accidentally) used, this will be non-nil:
+                    print("FB AuthenticationToken.current?:", AuthenticationToken.current != nil)
+                    print("FB AuthenticationToken (JWT):", AuthenticationToken.current?.tokenString ?? "nil")
+                    
+                    
+                    guard let token = cred.accessToken, let name = cred.fullName, let email = cred.email, let userId = cred.userID, let imageUrl = cred.avatarURL, !token.isEmpty else {
+                        self.showAlert(message: "Facebook login succeeded, but access token is missing.")
+                        return
+                    }
+                    KRProgressHUD.show()
+                    self.viewModel.facebookAuth(accessToken: token,name: name,email: email,userId: userId, imageUrl: imageUrl) { [weak self] ok, msg, isFirst in
+                        guard let self = self else { return }
+                        KRProgressHUD.dismiss()
+                        if ok {
+                            if isFirst {
+                                let connectVC = UIStoryboard(name: Constants.Storyboard.Devices, bundle: nil)
+                                    .instantiateViewController(withIdentifier: "ConnectViewController") as! ConnectViewController
+                                navigationController?.pushViewController(connectVC, transitionType: .reveal, duration: 0.03)
+                            } else {
+                                self.openDashboard()
+                            }
+                        }
+                        else { self.showAlert(message: msg ?? "Facebook auth failed. Please try again.") }
+                    }
                     
                 case .failure(let error):
-                    // --- FAILURE ---
-                    print("Facebook Sign-In Failed with error: \(error.localizedDescription)")
-                    // You can show an alert to the user here.
+                    print("Facebook Sign-In Failed:", error.localizedDescription)
+                    self.showAlert(message: error.localizedDescription)
                 }
             }
         }
     }
     
     @IBAction func btnAppleLoginTapped(_ sender: UIButton) {
-        socialLoginHandler.signInWithApple(presentingVC: self, completion: { result in
+        socialLoginHandler.signInWithApple(presentingVC: self) { [weak self] result in
             DispatchQueue.main.async {
+                guard let self = self else { return }
                 switch result {
-                case .success(_):
-                    // --- SUCCESS ---
-                    // The handler has successfully created the Firebase credential.
-                    // Now, sign in to Firebase.
-                    print("Apple Sign In Successful, now signing into Firebase...")
-                    let connectVC = UIStoryboard(name: Constants.Storyboard.Devices, bundle: nil).instantiateViewController(withIdentifier: "ConnectViewController") as! ConnectViewController
-                    self.navigationController?.pushViewController(connectVC, transitionType: .reveal, duration: 0.03)
-                    
+                case .success(let cred):
+                    // We need identityToken + authorizationCode for your backend.
+                    guard let idToken = cred.idToken, !idToken.isEmpty else {
+                        self.showAlert(message: "Missing Apple identity token.")
+                        return
+                    }
+                    guard let authCode = cred.authorizationCode, !authCode.isEmpty else {
+                        self.showAlert(message: "Missing Apple authorization code.")
+                        return
+                    }
+                    guard let givenName = cred.givenName, let familyName = cred.familyName else {
+                        self.showAlert(message: "Missing Apple given name or family name.")
+                        return
+                    }
+                    KRProgressHUD.show()
+                    self.viewModel.appleAuth(identityToken: idToken, authorizationCode: authCode, givenName: givenName, familyName: familyName) { [weak self] ok, msg, isFirst in
+                        KRProgressHUD.dismiss()
+                        guard let self = self else { return }
+                        if ok {
+                            if isFirst {
+                                let connectVC = UIStoryboard(name: Constants.Storyboard.Devices, bundle: nil)
+                                    .instantiateViewController(withIdentifier: "ConnectViewController") as! ConnectViewController
+                                navigationController?.pushViewController(connectVC, transitionType: .reveal, duration: 0.03)
+                            } else {
+                                self.openDashboard()
+                            }
+                        }
+                        else { self.showAlert(message: msg ?? "Apple auth failed. Please try again.") }
+                    }
                 case .failure(let error):
-                    // --- FAILURE ---
-                    print("Apple Sign-In Failed with error: \(error.localizedDescription)")
-                    // You can show an alert to the user here.
+                    print("Apple Sign-In Failed:", error.localizedDescription)
+                    self.showAlert(message: error.localizedDescription)
                 }
             }
-        })
+        }
     }
     
     // MARK: - Helper Methods
     
-    func navigateToVerificationScreen() {
-        
-        let verificationVC = UIStoryboard(name: "Main", bundle: nil).instantiateViewController(withIdentifier: "EmailVerificationViewController") as! EmailVerificationViewController
-        self.navigationController?.pushViewController(verificationVC, transitionType: .fade)
+    private func navigateToVerificationScreen() {
+        let verificationVC = UIStoryboard(name: "Main", bundle: nil)
+            .instantiateViewController(withIdentifier: "EmailVerificationViewController") as! EmailVerificationViewController
+        navigationController?.pushViewController(verificationVC, transitionType: .fade)
     }
     
-    /// Updates the border and label color for a text field's container.
+    private func openDashboard() {
+        let dashBoard = UIStoryboard(name: Constants.Storyboard.Dashboard, bundle: nil)
+            .instantiateViewController(withIdentifier: "TabbarController") as! TabbarController
+        self.navigationController?.pushViewController(dashBoard, transitionType: .reveal, duration: 0.03)
+    }
+    
     func updateUI(for view: UIView, label: UILabel, isFocused: Bool) {
         let color = isFocused ? viewModel.focusedColor : viewModel.normalColor
-        
-        // Animate the color changes for a smoother effect
         UIView.animate(withDuration: 0.3) {
             view.borderColor = color
-            label.textColor = color
+            label.textColor  = color
         }
     }
     
-    @objc func handleLabelTap(_ gesture: UITapGestureRecognizer) {
+    @objc private func handleLabelTap(_ gesture: UITapGestureRecognizer) {
         guard let label = gesture.view as? UILabel,
               let attributedText = label.attributedText else { return }
-
         let fullText = attributedText.string
         let tapLocation = gesture.location(in: label)
-
-        // Find the character index at the tap location
         let characterIndex = viewModel.characterIndex(for: tapLocation, in: label)
-
-        // Check if the tap was on "Terms & Conditions"
+        
         if let termsRange = fullText.range(of: "Terms & Conditions"),
            NSRange(termsRange, in: fullText).contains(characterIndex ?? 0) {
-            
-            print("Tapped on Terms & Conditions")
-            // Action: Open the Terms & Conditions URL
             viewModel.openURL(urlString: "https://www.example.com/terms", in: self)
         }
-
-        // Check if the tap was on "Data Privacy Policy"
         if let policyRange = fullText.range(of: "Data Privacy Policy"),
            NSRange(policyRange, in: fullText).contains(characterIndex ?? 0) {
-            
-            print("Tapped on Data Privacy Policy")
-            // Action: Open the Data Privacy Policy URL
             viewModel.openURL(urlString: "https://www.example.com/privacy", in: self)
         }
     }
 }
 
 // MARK: - UITextFieldDelegate
-
 extension SignUpViewController: UITextFieldDelegate {
-    
-    /// This method is called when a user taps on a text field.
     func textFieldDidBeginEditing(_ textField: UITextField) {
-        if textField == txtName {
-            updateUI(for: viewName, label: lblName, isFocused: true)
-        } else if textField == txtEmail {
-            updateUI(for: viewEmail, label: lblEmail, isFocused: true)
-        } else if textField == txtPhone {
-            updateUI(for: viewPhone, label: lblPhone, isFocused: true)
-        } else if textField == txtPassword {
-            updateUI(for: viewPassword, label: lblPassword, isFocused: true)
-        }
+        if textField == txtName { updateUI(for: viewName, label: lblName, isFocused: true) }
+        else if textField == txtEmail { updateUI(for: viewEmail, label: lblEmail, isFocused: true) }
+        else if textField == txtPhone { updateUI(for: viewPhone, label: lblPhone, isFocused: true) }
+        else if textField == txtPassword { updateUI(for: viewPassword, label: lblPassword, isFocused: true) }
     }
-    
-    /// This method is called when a user taps away from a text field.
     func textFieldDidEndEditing(_ textField: UITextField) {
-        if textField == txtName {
-            updateUI(for: viewName, label: lblName, isFocused: false)
-        } else if textField == txtEmail {
-            updateUI(for: viewEmail, label: lblEmail, isFocused: false)
-        } else if textField == txtPhone {
-            updateUI(for: viewPhone, label: lblPhone, isFocused: false)
-        } else if textField == txtPassword {
-            updateUI(for: viewPassword, label: lblPassword, isFocused: false)
-        }
+        if textField == txtName { updateUI(for: viewName, label: lblName, isFocused: false) }
+        else if textField == txtEmail { updateUI(for: viewEmail, label: lblEmail, isFocused: false) }
+        else if textField == txtPhone { updateUI(for: viewPhone, label: lblPhone, isFocused: false) }
+        else if textField == txtPassword { updateUI(for: viewPassword, label: lblPassword, isFocused: false) }
     }
 }

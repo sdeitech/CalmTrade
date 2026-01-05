@@ -26,11 +26,7 @@ class Arena {
 
   upb_Arena* ptr() const { return ptr_.get(); }
 
-  // Fuses the arenas together.
-  // This operation can only be performed on arenas with no initial blocks. Will
-  // return false if the fuse failed due to either arena having an initial
-  // block.
-  bool Fuse(Arena& other) { return upb_Arena_Fuse(ptr(), other.ptr()); }
+  void Fuse(Arena& other) { upb_Arena_Fuse(ptr(), other.ptr()); }
 
  protected:
   std::unique_ptr<upb_Arena, decltype(&upb_Arena_Free)> ptr_;

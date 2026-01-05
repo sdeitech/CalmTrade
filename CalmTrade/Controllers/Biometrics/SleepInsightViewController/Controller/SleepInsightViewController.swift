@@ -5,133 +5,126 @@
 //  Created by Anas Parekh on 03/09/25.
 //
 
-
 import UIKit
-import Charts
+import SwiftUI
 
-class SleepInsightViewController: BaseViewController, UICalendarSelectionSingleDateDelegate, UIPopoverPresentationControllerDelegate {
-    
+class SleepInsightViewController: BaseViewController {
+
     // MARK: - Outlets
+    @IBOutlet weak var segmentedControl: UISegmentedControl!
     @IBOutlet weak var lblTimeAsleep: UILabel!
     @IBOutlet weak var lblSleepDate: UILabel!
-    @IBOutlet weak var sleepChartView: BarChartView!
-    @IBOutlet weak var calendarButton: UIButton! // Connect this to your calendar icon button
-    
+    @IBOutlet weak var chartContainerView: UIView!
+
     // MARK: - Properties
     private let viewModel = SleepInsightViewModel()
-    private var selectedDate: Date = Date()
-    
-    // MARK: - View Lifecycle
+    private var swiftUIChartVC: UIHostingController<SleepCycleChart>?
+    private var currentAxisScale: AxisScale = .daily
+
+
+    // MARK: - Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
-        
-        setupChartStyle()
+        setupSegmentedControl()
         setupViewModelBindings()
-        
-        // Fetch data for the current date initially
-        viewModel.fetchData(for: selectedDate)
+        viewModel.fetchInitialData(for: .daily)
     }
     
-    // MARK: - Setup
+    override func motionEnded(_ motion: UIEvent.EventSubtype, with event: UIEvent?) {
+        guard motion == .motionShake else { return }
+        let host = UIHostingController(rootView: SleepLogView(limit: nil, newestFirst: true))
+        host.modalPresentationStyle = .formSheet
+        present(host, animated: true)
+    }
+
+    // MARK: - Bindings
     private func setupViewModelBindings() {
-        viewModel.onDataReady = { [weak self] uiData in
-            guard let self = self, let data = uiData else {
-                self?.lblTimeAsleep.text = "No Sleep Data"
-                self?.sleepChartView.data = nil
-                return
-            }
-            
-            self.lblTimeAsleep.attributedText = data.timeAsleepAttributedText
-            self.lblSleepDate.text = data.sleepDate
-            self.sleepChartView.data = data.chartData
-            self.updateXAxis(with: data.xAxisLabels, at: data.xAxisValues)
+        viewModel.onDataUpdate = { [weak self] uiData, isPaginating in
+            guard let self = self else { return }
+
+            self.lblTimeAsleep.attributedText = uiData.timeAsleepAttributedText
+            self.lblSleepDate.text = uiData.sleepDate
+
+            guard let start = uiData.chartStartDate, let end = uiData.chartEndDate else { return }
+            self.setupOrUpdateSwiftUIChart(segments: uiData.sleepSegments,
+                                           startDate: start,
+                                           endDate: end,
+                                           isPaginating: isPaginating)
         }
     }
-    
+
+    // MARK: - UI
+
+    private func setupSegmentedControl() {
+        segmentedControl.removeAllSegments()
+        for (i, range) in SleepInsightViewModel.ChartTimeRange.allCases.enumerated() {
+            segmentedControl.insertSegment(withTitle: range.title, at: i, animated: false)
+        }
+        segmentedControl.selectedSegmentIndex = SleepInsightViewModel.ChartTimeRange.daily.rawValue
+
+        let normal = [NSAttributedString.Key.foregroundColor: UIColor.lightGray]
+        let selected = [NSAttributedString.Key.foregroundColor: UIColor.white]
+        segmentedControl.setTitleTextAttributes(normal, for: .normal)
+        segmentedControl.setTitleTextAttributes(selected, for: .selected)
+    }
+
+    private func setupOrUpdateSwiftUIChart(segments: [SleepSegment],
+                                           startDate: Date,
+                                           endDate: Date,
+                                           isPaginating: Bool)
+    {
+        // Build a brand-new SwiftUI view every time (this is the correct way to update)
+        let chart = SleepCycleChart(
+            start: startDate,
+            end: endDate,
+            segments: segments,
+            axisScale: currentAxisScale
+        )
+
+        if let host = self.swiftUIChartVC {
+            // ✅ Update in place by assigning a NEW rootView (this triggers a redraw)
+            host.rootView = chart
+            return
+        }
+
+        // First-time setup
+        let host = UIHostingController(rootView: chart)
+        addChild(host)
+        chartContainerView.addSubview(host.view)
+        host.view.translatesAutoresizingMaskIntoConstraints = false
+        host.view.backgroundColor = .clear
+        chartContainerView.clipsToBounds = true
+        chartContainerView.layer.masksToBounds = true
+
+        NSLayoutConstraint.activate([
+            host.view.topAnchor.constraint(equalTo: chartContainerView.topAnchor),
+            host.view.bottomAnchor.constraint(equalTo: chartContainerView.bottomAnchor),
+            host.view.leadingAnchor.constraint(equalTo: chartContainerView.leadingAnchor),
+            host.view.trailingAnchor.constraint(equalTo: chartContainerView.trailingAnchor)
+        ])
+
+        host.didMove(toParent: self)
+        self.swiftUIChartVC = host
+    }
+
+
     // MARK: - Actions
-    @IBAction func calendarButtonTapped(_ sender: UIButton) {
-        let calendarVC = UIViewController()
-        
-        let calendarView = UICalendarView()
-        calendarView.calendar = .current
-        calendarView.locale = .current
-        let selection = UICalendarSelectionSingleDate(delegate: self)
-        selection.selectedDate = Calendar.current.dateComponents([.year, .month, .day], from: selectedDate)
-        calendarView.selectionBehavior = selection
-        
-        calendarVC.view = calendarView
-        
-        // --- Popover Configuration ---
-        calendarVC.modalPresentationStyle = .popover
-        calendarVC.preferredContentSize = CGSize(width: 320, height: 300)
-        
-        guard let popover = calendarVC.popoverPresentationController else { return }
-        popover.sourceView = sender
-        popover.permittedArrowDirections = .up
-        
-        // **THE KEY FIX**: Set the delegate to self.
-        popover.delegate = self
-        
-        present(calendarVC, animated: true)
-    }
-    
-    @IBAction func btnbackTapped(_ sender: Any) {
-        navigationController?.popViewController()
-    }
-    
-    // MARK: - UICalendarSelectionSingleDateDelegate
-    func dateSelection(_ selection: UICalendarSelectionSingleDate, didSelectDate dateComponents: DateComponents?) {
-        guard let date = dateComponents?.date else { return }
-        self.selectedDate = date
-        
-        // Dismiss the popover and fetch new data
-        self.presentedViewController?.dismiss(animated: true, completion: { [weak self] in
-            self?.viewModel.fetchData(for: date)
-        })
-    }
-    
-    // MARK: - Chart Styling
-    private func setupChartStyle() {
-        sleepChartView.backgroundColor = .black
-        sleepChartView.legend.enabled = false
-        sleepChartView.rightAxis.enabled = false
-        
-        let yAxis = sleepChartView.leftAxis
-        yAxis.labelTextColor = .gray
-        yAxis.axisLineColor = .clear
-        yAxis.gridColor = .darkGray
-        let sleepStages = ["", "Deep", "Core", "REM", "Awake"]
-        yAxis.valueFormatter = IndexAxisValueFormatter(values: sleepStages)
-        yAxis.setLabelCount(sleepStages.count, force: true)
-        yAxis.axisMinimum = 0
-        yAxis.axisMaximum = Double(sleepStages.count)
-        
-        let xAxis = sleepChartView.xAxis
-        xAxis.labelPosition = .bottom
-        xAxis.labelTextColor = .gray
-        xAxis.axisLineColor = .darkGray
-        xAxis.gridColor = .darkGray
-    }
-    
-    /// Updates the X-Axis to show custom time labels at specific positions.
-    private func updateXAxis(with labels: [String], at values: [Double]) {
-        let xAxis = sleepChartView.xAxis
-        xAxis.valueFormatter = IndexAxisValueFormatter(values: labels)
-        
-        // This tells the chart to only draw labels at the specific time values we calculated.
-        xAxis.setLabelCount(labels.count, force: true)
-        xAxis.axisMinLabels = labels.count
-        
-        // The customAxisMin/Max and entries are needed for custom label positioning
-        var customAxisEntries: [Double] = []
-        for value in values {
-            customAxisEntries.append(value)
+    @IBAction func segmentedControlChanged(_ sender: UISegmentedControl) {
+        guard let selectedRange = SleepInsightViewModel.ChartTimeRange(rawValue: sender.selectedSegmentIndex) else { return }
+
+        // Map VM range → SwiftUI axis for rendering
+        switch selectedRange {
+        case .daily:   currentAxisScale = .daily
+        case .weekly:  currentAxisScale = .weekly
+        case .monthly: currentAxisScale = .monthly
         }
-        xAxis.axisMinLabels = labels.count
-        xAxis.entries = customAxisEntries
+
+        // Ask VM to reload the corresponding data window
+        viewModel.fetchInitialData(for: selectedRange)
     }
-    
-    func adaptivePresentationStyle(for controller: UIPresentationController) -> UIModalPresentationStyle {
-        return .none
+
+
+    @IBAction func btnBackTapped(_ sender: Any) {
+        navigationController?.popViewController(animated: true)
     }
 }

@@ -18,8 +18,6 @@
 
 #include "src/core/tsi/alts/zero_copy_frame_protector/alts_zero_copy_grpc_protector.h"
 
-#include <grpc/support/alloc.h>
-#include <grpc/support/port_platform.h>
 #include <string.h>
 
 #include <memory>
@@ -27,6 +25,11 @@
 
 #include "absl/log/check.h"
 #include "absl/log/log.h"
+
+#include <grpc/support/alloc.h>
+#include <grpc/support/log.h>
+#include <grpc/support/port_platform.h>
+
 #include "src/core/tsi/alts/crypt/gsec.h"
 #include "src/core/tsi/alts/zero_copy_frame_protector/alts_grpc_integrity_only_record_protocol.h"
 #include "src/core/tsi/alts/zero_copy_frame_protector/alts_grpc_privacy_integrity_record_protocol.h"
@@ -156,7 +159,7 @@ static tsi_result alts_zero_copy_grpc_protector_protect(
   }
   alts_zero_copy_grpc_protector* protector =
       reinterpret_cast<alts_zero_copy_grpc_protector*>(self);
-  // Calls alts_grpc_record_protocol protect repeatedly.
+  // Calls alts_grpc_record_protocol protect repeatly.
   while (unprotected_slices->length > protector->max_unprotected_data_size) {
     grpc_slice_buffer_move_first(unprotected_slices,
                                  protector->max_unprotected_data_size,
@@ -177,7 +180,8 @@ static tsi_result alts_zero_copy_grpc_protector_unprotect(
     grpc_slice_buffer* unprotected_slices, int* min_progress_size) {
   if (self == nullptr || unprotected_slices == nullptr ||
       protected_slices == nullptr) {
-    LOG(ERROR) << "Invalid nullptr arguments to zero-copy grpc unprotect.";
+    gpr_log(GPR_ERROR,
+            "Invalid nullptr arguments to zero-copy grpc unprotect.");
     return TSI_INVALID_ARGUMENT;
   }
   alts_zero_copy_grpc_protector* protector =
@@ -262,8 +266,9 @@ tsi_result alts_zero_copy_grpc_protector_create(
     size_t* max_protected_frame_size,
     tsi_zero_copy_grpc_protector** protector) {
   if (protector == nullptr) {
-    LOG(ERROR)
-        << "Invalid nullptr arguments to alts_zero_copy_grpc_protector create.";
+    gpr_log(
+        GPR_ERROR,
+        "Invalid nullptr arguments to alts_zero_copy_grpc_protector create.");
     return TSI_INVALID_ARGUMENT;
   }
   // Creates alts_zero_copy_protector.

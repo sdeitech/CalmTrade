@@ -19,10 +19,11 @@
 #ifndef GRPC_CREDENTIALS_H
 #define GRPC_CREDENTIALS_H
 
+#include <stdbool.h>
+
 #include <grpc/grpc.h>
 #include <grpc/grpc_security_constants.h>
 #include <grpc/support/port_platform.h>
-#include <stdbool.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -102,7 +103,7 @@ GRPCAPI grpc_call_credentials* grpc_sts_credentials_create(
 /** Context that can be used by metadata credentials plugin in order to create
    auth related metadata. */
 typedef struct {
-  /** The fully qualified service url. */
+  /** The fully qualifed service url. */
   const char* service_url;
 
   /** The method name of the RPC being called (not fully qualified).

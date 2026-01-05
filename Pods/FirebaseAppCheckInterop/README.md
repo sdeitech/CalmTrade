@@ -181,11 +181,6 @@ For coverage report generation instructions, see [scripts/code_coverage_report/R
 ## Specific Component Instructions
 See the sections below for any special instructions for those components.
 
-### Firebase AI Logic
-
-See the [Firebase AI Logic README](FirebaseAI#development) for instructions
-about building and testing the SDK.
-
 ### Firebase Auth
 
 For specific Firebase Auth development, refer to the [Auth Sample README](FirebaseAuth/Tests/Sample/README.md) for instructions about
@@ -239,6 +234,11 @@ at **Project Settings > Cloud Messaging > [Your Firebase App]**.
 
 The iOS Simulator cannot register for remote notifications and will not receive push notifications.
 To receive push notifications, follow the steps above and run the app on a physical device.
+
+### Vertex AI for Firebase
+
+See the [Vertex AI for Firebase README](FirebaseVertexAI#development) for
+instructions about building and testing the SDK.
 
 ## Building with Firebase on Apple platforms
 

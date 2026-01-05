@@ -3,11 +3,10 @@
  *     envoy/type/matcher/v3/regex.proto
  *
  * Do not edit -- your changes will be discarded when the file is
- * regenerated.
- * NO CHECKED-IN PROTOBUF GENCODE */
+ * regenerated. */
 
-#ifndef ENVOY_TYPE_MATCHER_V3_REGEX_PROTO_UPB_H__UPB_MINITABLE_H_
-#define ENVOY_TYPE_MATCHER_V3_REGEX_PROTO_UPB_H__UPB_MINITABLE_H_
+#ifndef ENVOY_TYPE_MATCHER_V3_REGEX_PROTO_UPB_MINITABLE_H_
+#define ENVOY_TYPE_MATCHER_V3_REGEX_PROTO_UPB_MINITABLE_H_
 
 #include "upb/generated_code_support.h"
 
@@ -19,11 +18,8 @@ extern "C" {
 #endif
 
 extern const upb_MiniTable envoy__type__matcher__v3__RegexMatcher_msg_init;
-extern const upb_MiniTable* envoy__type__matcher__v3__RegexMatcher_msg_init_ptr;
 extern const upb_MiniTable envoy__type__matcher__v3__RegexMatcher__GoogleRE2_msg_init;
-extern const upb_MiniTable* envoy__type__matcher__v3__RegexMatcher__GoogleRE2_msg_init_ptr;
 extern const upb_MiniTable envoy__type__matcher__v3__RegexMatchAndSubstitute_msg_init;
-extern const upb_MiniTable* envoy__type__matcher__v3__RegexMatchAndSubstitute_msg_init_ptr;
 
 extern const upb_MiniTableFile envoy_type_matcher_v3_regex_proto_upb_file_layout;
 
@@ -33,4 +29,4 @@ extern const upb_MiniTableFile envoy_type_matcher_v3_regex_proto_upb_file_layout
 
 #include "upb/port/undef.inc"
 
-#endif  /* ENVOY_TYPE_MATCHER_V3_REGEX_PROTO_UPB_H__UPB_MINITABLE_H_ */
+#endif  /* ENVOY_TYPE_MATCHER_V3_REGEX_PROTO_UPB_MINITABLE_H_ */

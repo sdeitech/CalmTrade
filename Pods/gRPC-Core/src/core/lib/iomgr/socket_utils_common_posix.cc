@@ -35,9 +35,6 @@
 #else
 #include <netinet/tcp.h>
 #endif
-#include <grpc/event_engine/endpoint_config.h>
-#include <grpc/support/alloc.h>
-#include <grpc/support/sync.h>
 #include <stdio.h>
 #include <string.h>
 #include <sys/socket.h>
@@ -49,10 +46,16 @@
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/strings/str_cat.h"
+
+#include <grpc/event_engine/endpoint_config.h>
+#include <grpc/support/alloc.h>
+#include <grpc/support/log.h>
+#include <grpc/support/sync.h>
+
 #include "src/core/lib/address_utils/sockaddr_utils.h"
+#include "src/core/lib/gprpp/crash.h"
+#include "src/core/lib/gprpp/strerror.h"
 #include "src/core/lib/iomgr/sockaddr.h"
-#include "src/core/util/crash.h"
-#include "src/core/util/strerror.h"
 #include "src/core/util/string.h"
 
 // set a socket to use zerocopy
@@ -388,13 +391,13 @@ grpc_error_handle grpc_set_socket_tcp_user_timeout(
             << " ms";
         if (0 != setsockopt(fd, IPPROTO_TCP, TCP_USER_TIMEOUT, &timeout,
                             sizeof(timeout))) {
-          LOG(ERROR) << "setsockopt(TCP_USER_TIMEOUT) "
-                     << grpc_core::StrError(errno);
+          gpr_log(GPR_ERROR, "setsockopt(TCP_USER_TIMEOUT) %s",
+                  grpc_core::StrError(errno).c_str());
           return absl::OkStatus();
         }
         if (0 != getsockopt(fd, IPPROTO_TCP, TCP_USER_TIMEOUT, &newval, &len)) {
-          LOG(ERROR) << "getsockopt(TCP_USER_TIMEOUT) "
-                     << grpc_core::StrError(errno);
+          gpr_log(GPR_ERROR, "getsockopt(TCP_USER_TIMEOUT) %s",
+                  grpc_core::StrError(errno).c_str());
           return absl::OkStatus();
         }
         if (newval != timeout) {
@@ -478,15 +481,14 @@ static int create_socket(grpc_socket_factory* factory, int domain, int type,
                 : socket(domain, type, protocol);
   if (res < 0 && errno == EMFILE) {
     int saved_errno = errno;
-    LOG_EVERY_N_SEC(ERROR, 10)
-        << "socket(" << domain << ", " << type << ", " << protocol
-        << ") returned " << res << " with error: |"
-        << grpc_core::StrError(errno)
-        << "|. This process might not have a sufficient file descriptor limit "
-           "for the number of connections grpc wants to open (which is "
-           "generally a function of the number of grpc channels, the lb policy "
-           "of each channel, and the number of backends each channel is load "
-           "balancing across).";
+    GRPC_LOG_EVERY_N_SEC(
+        10, GPR_ERROR,
+        "socket(%d, %d, %d) returned %d with error: |%s|. This process "
+        "might not have a sufficient file descriptor limit for the number "
+        "of connections grpc wants to open (which is generally a function of "
+        "the number of grpc channels, the lb policy of each channel, and the "
+        "number of backends each channel is load balancing across).",
+        domain, type, protocol, res, grpc_core::StrError(errno).c_str());
     errno = saved_errno;
   }
   return res;

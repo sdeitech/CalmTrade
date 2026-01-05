@@ -3,8 +3,7 @@
  *     envoy/config/core/v3/grpc_method_list.proto
  *
  * Do not edit -- your changes will be discarded when the file is
- * regenerated.
- * NO CHECKED-IN PROTOBUF GENCODE */
+ * regenerated. */
 
 #include "upb/reflection/def.h"
 #include "envoy/config/core/v3/grpc_method_list.upbdefs.h"

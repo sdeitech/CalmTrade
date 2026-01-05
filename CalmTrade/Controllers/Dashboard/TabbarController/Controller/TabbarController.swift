@@ -17,6 +17,8 @@ class TabbarController: UITabBarController {
     override func viewDidLoad() {
         super.viewDidLoad()
         self.delegate = self
+        CalmScoreHub.shared.start()
+        DeviceManager.shared.configureOnLaunch()
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.2){
             self.addTabbarIndicatorView(index: 0, isFirstTime: true)
         }

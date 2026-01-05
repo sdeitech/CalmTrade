@@ -3,8 +3,7 @@
  *     xds/type/matcher/v3/domain.proto
  *
  * Do not edit -- your changes will be discarded when the file is
- * regenerated.
- * NO CHECKED-IN PROTOBUF GENCODE */
+ * regenerated. */
 
 #include "upb/reflection/def.h"
 #include "xds/type/matcher/v3/domain.upbdefs.h"

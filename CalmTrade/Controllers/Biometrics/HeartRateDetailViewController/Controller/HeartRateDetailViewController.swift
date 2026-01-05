@@ -5,113 +5,164 @@
 //  Created by Anas Parekh on 02/09/25.
 //
 
-
 import UIKit
+import SwiftUI
 import Charts
+import Combine
 
-class HeartRateDetailViewController: BaseViewController {
-
-    // MARK: - Outlets
-    @IBOutlet weak var segmentedControl: UISegmentedControl!
-    @IBOutlet weak var lblHeartRateRange: UILabel!
-    @IBOutlet weak var lblDateRange: UILabel!
-    @IBOutlet weak var heartRateBarChartView: CandleStickChartView!
+final class HeartRateDetailViewController: BaseViewController {
     
-    @IBOutlet weak var lblLatestTime: UILabel!
-    @IBOutlet weak var lblLatestValue: UILabel!
-    
-    // Outlets for the first highlight card
-    @IBOutlet weak var lblHighlightTitle: UILabel!
-    @IBOutlet weak var lblHighlightDescription: UILabel!
+    // MARK: - IBOutlets
+    @IBOutlet private weak var chartContainerView: UIView!     // <-- connect this
+    @IBOutlet private weak var segmentedControl: UISegmentedControl!
+    @IBOutlet private weak var lblRangeValue: UILabel!
+    @IBOutlet private weak var lblDateRange: UILabel!
+    @IBOutlet private weak var lblLatestTime: UILabel!
+    @IBOutlet private weak var lblLatestValue: UILabel!
+//    @IBOutlet private weak var activityIndicator: UIActivityIndicatorView!
     
     // MARK: - Properties
     private let viewModel = HeartRateDetailViewModel()
+    private var cancellables = Set<AnyCancellable>()
     
-    // MARK: - View Lifecycle
+    private var host: UIHostingController<HeartRateCalmChartView>?   // <-- was HeartRateSwiftChartView
+    private var currentPoints: [HeartPoint] = []
+    
+    // MARK: - Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
-        
         setupSegmentedControl()
-        setupChartStyle()
-        setupViewModelBindings()
-        
-        // Fetch initial data for the default selected segment (Daily)
-        viewModel.fetchData(for: .daily)
+        embedChartIfNeeded()
+        bindViewModel()
+        installPagingGestures() // swipe left/right to page
+        viewModel.fetchInitialData(for: .hourly) // Hourly by default
+    }
+    
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        viewModel.startLiveHR()
+    }
+
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        viewModel.stopLiveHR()
     }
     
     // MARK: - Setup
-    private func setupViewModelBindings() {
-        viewModel.onDataReady = { [weak self] uiData in
-            guard let self = self, let data = uiData else {
-                // Handle no data state
-                self?.lblHeartRateRange.text = "--"
-                self?.heartRateBarChartView.data = nil
-                return
-            }
-            
-            self.lblHeartRateRange.text = data.range
-            self.lblDateRange.text = data.dateRange
-            self.lblLatestTime.text = "Latest : \(data.latestTime)"
-            self.lblLatestValue.text = data.latestValue
-            self.heartRateBarChartView.data = data.chartData
-            self.updateXAxis(with: data.xAxisLabels)
-            
-            // Update highlights
-            if let firstHighlight = data.highlights.first {
-//                self.lblHighlightTitle.text = firstHighlight.title
-//                self.lblHighlightDescription.text = firstHighlight.description
-            }
-        }
-    }
     
     private func setupSegmentedControl() {
-        let textAttributes = [NSAttributedString.Key.foregroundColor: UIColor.white]
-        segmentedControl.setTitleTextAttributes(textAttributes, for: .normal)
-        segmentedControl.setTitleTextAttributes(textAttributes, for: .selected)
+        segmentedControl.removeAllSegments()
+        for (idx, range) in HeartRateDetailViewModel.ChartTimeRange.allCases.enumerated() {
+            segmentedControl.insertSegment(withTitle: range.title, at: idx, animated: false)
+        }
+        segmentedControl.selectedSegmentIndex = HeartRateDetailViewModel.ChartTimeRange.hourly.rawValue
+
+        let normalTextAttributes: [NSAttributedString.Key: Any] = [.foregroundColor: UIColor.lightGray]
+        let selectedTextAttributes: [NSAttributedString.Key: Any] = [.foregroundColor: UIColor.white]
+        segmentedControl.setTitleTextAttributes(normalTextAttributes, for: .normal)
+        segmentedControl.setTitleTextAttributes(selectedTextAttributes, for: .selected)
+    }
+    
+    /// Create the SwiftUI host **once** and pin it to `chartContainerView`.
+    private func embedChartIfNeeded() {
+        guard host == nil else { return }
+        let chart = HeartRateCalmChartView(
+            points: currentPoints,
+            range: viewModel.selectedRange,
+            domain: viewModel.xDomain
+        )
+        let hosting = UIHostingController(rootView: chart)
+        hosting.view.backgroundColor = .clear
+        addChild(hosting)
+        chartContainerView.addSubview(hosting.view)
+        hosting.view.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([
+            hosting.view.leadingAnchor.constraint(equalTo: chartContainerView.leadingAnchor),
+            hosting.view.trailingAnchor.constraint(equalTo: chartContainerView.trailingAnchor),
+            hosting.view.topAnchor.constraint(equalTo: chartContainerView.topAnchor),
+            hosting.view.bottomAnchor.constraint(equalTo: chartContainerView.bottomAnchor)
+        ])
+        hosting.didMove(toParent: self)
+        host = hosting
+    }
+    
+    /// Update the existing host by swapping its root view (no re-adding).
+    private func updateChart(points: [HeartPoint]) {
+        currentPoints = points
+        guard let host else { return embedChartIfNeeded() }
+        host.rootView = HeartRateCalmChartView(
+            points: points,
+            range: viewModel.selectedRange,
+            domain: viewModel.xDomain
+        )
+    }
+    
+    private func installPagingGestures() {
+        let left = UISwipeGestureRecognizer(target: self, action: #selector(didSwipeLeft))
+        left.direction = .left
+        chartContainerView.addGestureRecognizer(left)
+
+        let right = UISwipeGestureRecognizer(target: self, action: #selector(didSwipeRight))
+        right.direction = .right
+        chartContainerView.addGestureRecognizer(right)
+    }
+    
+    private func bindViewModel() {
+        // Points -> Chart
+        viewModel.$points
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] pts in
+                self?.updateChart(points: pts)
+            }
+            .store(in: &cancellables)
+        
+        // Labels
+        viewModel.$headerDateText
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] in self?.lblDateRange.text = $0 }
+            .store(in: &cancellables)
+        
+        viewModel.$rangeText
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] in self?.lblRangeValue.text = $0 }
+            .store(in: &cancellables)
+        
+        viewModel.$latestTimeText
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] in self?.lblLatestTime.text = $0 }
+            .store(in: &cancellables)
+        
+        viewModel.$latestValueText
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] in self?.lblLatestValue.text = $0 }
+            .store(in: &cancellables)
+        
+        // Loading (optional)
+//        viewModel.onIsLoading = { [weak self] loading in
+//            DispatchQueue.main.async {
+//                loading ? self?.activityIndicator.startAnimating()
+//                        : self?.activityIndicator.stopAnimating()
+//            }
+//        }
+    }
+    
+    @objc private func didSwipeLeft() { // older period
+        viewModel.loadPreviousPeriod()
+    }
+
+    @objc private func didSwipeRight() { // newer period (capped at now)
+        viewModel.loadNextPeriod()
     }
     
     // MARK: - Actions
-    @IBAction func segmentedControlChanged(_ sender: UISegmentedControl) {
-        let selectedRange: HeartRateDetailViewModel.ChartTimeRange
-        switch sender.selectedSegmentIndex {
-        case 0: selectedRange = .daily
-        case 1: selectedRange = .weekly
-        case 2: selectedRange = .monthly
-        default: return
-        }
-        viewModel.fetchData(for: selectedRange)
+    
+    @IBAction private func segmentedControlChanged(_ sender: UISegmentedControl) {
+        guard let range = HeartRateDetailViewModel.ChartTimeRange(rawValue: sender.selectedSegmentIndex) else { return }
+        viewModel.fetchInitialData(for: range)
+        updateChart(points: currentPoints)  // re-render with new timeframe styling
     }
     
-    @IBAction func btnBackTapped(_ sender: Any) {
-        navigationController?.popViewController(transitionType: .fade)
-    }
-
-    // MARK: - Chart Styling
-    private func setupChartStyle() {
-        heartRateBarChartView.backgroundColor = .black
-        heartRateBarChartView.legend.enabled = false
-        heartRateBarChartView.leftAxis.enabled = false
-        
-        let yAxis = heartRateBarChartView.rightAxis
-        yAxis.enabled = true
-        yAxis.labelTextColor = .gray
-        yAxis.axisLineColor = .darkGray
-        yAxis.gridColor = .clear
-        yAxis.axisMinimum = 0
-        yAxis.axisMaximum = 150
-        yAxis.granularity = 50
-        
-        let xAxis = heartRateBarChartView.xAxis
-        xAxis.labelPosition = .bottom
-        xAxis.labelTextColor = .gray
-        xAxis.axisLineColor = .darkGray
-        xAxis.gridColor = .darkGray
-        xAxis.granularity = 1
-    }
-    
-    private func updateXAxis(with labels: [String]) {
-        let xAxis = heartRateBarChartView.xAxis
-        xAxis.valueFormatter = IndexAxisValueFormatter(values: labels)
-        xAxis.setLabelCount(labels.count, force: true)
+    @IBAction private func btnBackTapped(_ sender: Any) {
+        navigationController?.popViewController(animated: true)
     }
 }

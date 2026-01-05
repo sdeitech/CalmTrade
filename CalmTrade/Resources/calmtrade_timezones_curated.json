@@ -1,0 +1,513 @@
+[
+  {
+    "tzid": "Pacific/Pago_Pago",
+    "friendly_name": "Pago Pago",
+    "offset_now": "UTC-11:00",
+    "is_dst_now": false,
+    "label_now": "(UTC-11:00) Pago Pago \u2014 Pacific/Pago_Pago"
+  },
+  {
+    "tzid": "Pacific/Honolulu",
+    "friendly_name": "Honolulu",
+    "offset_now": "UTC-10:00",
+    "is_dst_now": false,
+    "label_now": "(UTC-10:00) Honolulu \u2014 Pacific/Honolulu"
+  },
+  {
+    "tzid": "America/Anchorage",
+    "friendly_name": "Anchorage",
+    "offset_now": "UTC-08:00",
+    "is_dst_now": true,
+    "label_now": "(UTC-08:00) Anchorage \u2014 America/Anchorage"
+  },
+  {
+    "tzid": "America/Los_Angeles",
+    "friendly_name": "Los Angeles",
+    "offset_now": "UTC-07:00",
+    "is_dst_now": true,
+    "label_now": "(UTC-07:00) Los Angeles \u2014 America/Los_Angeles"
+  },
+  {
+    "tzid": "America/Phoenix",
+    "friendly_name": "Phoenix",
+    "offset_now": "UTC-07:00",
+    "is_dst_now": false,
+    "label_now": "(UTC-07:00) Phoenix \u2014 America/Phoenix"
+  },
+  {
+    "tzid": "America/Denver",
+    "friendly_name": "Denver",
+    "offset_now": "UTC-06:00",
+    "is_dst_now": true,
+    "label_now": "(UTC-06:00) Denver \u2014 America/Denver"
+  },
+  {
+    "tzid": "America/Mexico_City",
+    "friendly_name": "Mexico City",
+    "offset_now": "UTC-06:00",
+    "is_dst_now": false,
+    "label_now": "(UTC-06:00) Mexico City \u2014 America/Mexico_City"
+  },
+  {
+    "tzid": "America/Bogota",
+    "friendly_name": "Bogota",
+    "offset_now": "UTC-05:00",
+    "is_dst_now": false,
+    "label_now": "(UTC-05:00) Bogota \u2014 America/Bogota"
+  },
+  {
+    "tzid": "America/Chicago",
+    "friendly_name": "Chicago",
+    "offset_now": "UTC-05:00",
+    "is_dst_now": true,
+    "label_now": "(UTC-05:00) Chicago \u2014 America/Chicago"
+  },
+  {
+    "tzid": "America/Lima",
+    "friendly_name": "Lima",
+    "offset_now": "UTC-05:00",
+    "is_dst_now": false,
+    "label_now": "(UTC-05:00) Lima \u2014 America/Lima"
+  },
+  {
+    "tzid": "America/Asuncion",
+    "friendly_name": "Asuncion",
+    "offset_now": "UTC-04:00",
+    "is_dst_now": false,
+    "label_now": "(UTC-04:00) Asuncion \u2014 America/Asuncion"
+  },
+  {
+    "tzid": "America/Caracas",
+    "friendly_name": "Caracas",
+    "offset_now": "UTC-04:00",
+    "is_dst_now": false,
+    "label_now": "(UTC-04:00) Caracas \u2014 America/Caracas"
+  },
+  {
+    "tzid": "America/Manaus",
+    "friendly_name": "Manaus",
+    "offset_now": "UTC-04:00",
+    "is_dst_now": false,
+    "label_now": "(UTC-04:00) Manaus \u2014 America/Manaus"
+  },
+  {
+    "tzid": "America/New_York",
+    "friendly_name": "New York",
+    "offset_now": "UTC-04:00",
+    "is_dst_now": true,
+    "label_now": "(UTC-04:00) New York \u2014 America/New_York"
+  },
+  {
+    "tzid": "America/Puerto_Rico",
+    "friendly_name": "Puerto Rico",
+    "offset_now": "UTC-04:00",
+    "is_dst_now": false,
+    "label_now": "(UTC-04:00) Puerto Rico \u2014 America/Puerto_Rico"
+  },
+  {
+    "tzid": "America/Santiago",
+    "friendly_name": "Santiago",
+    "offset_now": "UTC-04:00",
+    "is_dst_now": false,
+    "label_now": "(UTC-04:00) Santiago \u2014 America/Santiago"
+  },
+  {
+    "tzid": "America/St_Thomas",
+    "friendly_name": "St Thomas",
+    "offset_now": "UTC-04:00",
+    "is_dst_now": false,
+    "label_now": "(UTC-04:00) St Thomas \u2014 America/St_Thomas"
+  },
+  {
+    "tzid": "America/Buenos_Aires",
+    "friendly_name": "Buenos Aires",
+    "offset_now": "UTC-03:00",
+    "is_dst_now": false,
+    "label_now": "(UTC-03:00) Buenos Aires \u2014 America/Buenos_Aires"
+  },
+  {
+    "tzid": "America/Halifax",
+    "friendly_name": "Halifax",
+    "offset_now": "UTC-03:00",
+    "is_dst_now": true,
+    "label_now": "(UTC-03:00) Halifax \u2014 America/Halifax"
+  },
+  {
+    "tzid": "America/Montevideo",
+    "friendly_name": "Montevideo",
+    "offset_now": "UTC-03:00",
+    "is_dst_now": false,
+    "label_now": "(UTC-03:00) Montevideo \u2014 America/Montevideo"
+  },
+  {
+    "tzid": "America/Sao_Paulo",
+    "friendly_name": "Sao Paulo",
+    "offset_now": "UTC-03:00",
+    "is_dst_now": false,
+    "label_now": "(UTC-03:00) Sao Paulo \u2014 America/Sao_Paulo"
+  },
+  {
+    "tzid": "America/St_Johns",
+    "friendly_name": "St Johns",
+    "offset_now": "UTC-02:30",
+    "is_dst_now": true,
+    "label_now": "(UTC-02:30) St Johns \u2014 America/St_Johns"
+  },
+  {
+    "tzid": "UTC",
+    "friendly_name": "UTC",
+    "offset_now": "UTC+00:00",
+    "is_dst_now": false,
+    "label_now": "(UTC+00:00) UTC \u2014 UTC"
+  },
+  {
+    "tzid": "Africa/Algiers",
+    "friendly_name": "Algiers",
+    "offset_now": "UTC+01:00",
+    "is_dst_now": false,
+    "label_now": "(UTC+01:00) Algiers \u2014 Africa/Algiers"
+  },
+  {
+    "tzid": "Africa/Casablanca",
+    "friendly_name": "Casablanca",
+    "offset_now": "UTC+01:00",
+    "is_dst_now": false,
+    "label_now": "(UTC+01:00) Casablanca \u2014 Africa/Casablanca"
+  },
+  {
+    "tzid": "Europe/Dublin",
+    "friendly_name": "Dublin",
+    "offset_now": "UTC+01:00",
+    "is_dst_now": false,
+    "label_now": "(UTC+01:00) Dublin \u2014 Europe/Dublin"
+  },
+  {
+    "tzid": "Africa/Lagos",
+    "friendly_name": "Lagos",
+    "offset_now": "UTC+01:00",
+    "is_dst_now": false,
+    "label_now": "(UTC+01:00) Lagos \u2014 Africa/Lagos"
+  },
+  {
+    "tzid": "Europe/Lisbon",
+    "friendly_name": "Lisbon",
+    "offset_now": "UTC+01:00",
+    "is_dst_now": true,
+    "label_now": "(UTC+01:00) Lisbon \u2014 Europe/Lisbon"
+  },
+  {
+    "tzid": "Europe/London",
+    "friendly_name": "London",
+    "offset_now": "UTC+01:00",
+    "is_dst_now": true,
+    "label_now": "(UTC+01:00) London \u2014 Europe/London"
+  },
+  {
+    "tzid": "Europe/Berlin",
+    "friendly_name": "Berlin",
+    "offset_now": "UTC+02:00",
+    "is_dst_now": true,
+    "label_now": "(UTC+02:00) Berlin \u2014 Europe/Berlin"
+  },
+  {
+    "tzid": "Africa/Johannesburg",
+    "friendly_name": "Johannesburg",
+    "offset_now": "UTC+02:00",
+    "is_dst_now": false,
+    "label_now": "(UTC+02:00) Johannesburg \u2014 Africa/Johannesburg"
+  },
+  {
+    "tzid": "Europe/Paris",
+    "friendly_name": "Paris",
+    "offset_now": "UTC+02:00",
+    "is_dst_now": true,
+    "label_now": "(UTC+02:00) Paris \u2014 Europe/Paris"
+  },
+  {
+    "tzid": "Europe/Rome",
+    "friendly_name": "Rome",
+    "offset_now": "UTC+02:00",
+    "is_dst_now": true,
+    "label_now": "(UTC+02:00) Rome \u2014 Europe/Rome"
+  },
+  {
+    "tzid": "Europe/Warsaw",
+    "friendly_name": "Warsaw",
+    "offset_now": "UTC+02:00",
+    "is_dst_now": true,
+    "label_now": "(UTC+02:00) Warsaw \u2014 Europe/Warsaw"
+  },
+  {
+    "tzid": "Europe/Zurich",
+    "friendly_name": "Zurich",
+    "offset_now": "UTC+02:00",
+    "is_dst_now": true,
+    "label_now": "(UTC+02:00) Zurich \u2014 Europe/Zurich"
+  },
+  {
+    "tzid": "Asia/Amman",
+    "friendly_name": "Amman",
+    "offset_now": "UTC+03:00",
+    "is_dst_now": false,
+    "label_now": "(UTC+03:00) Amman \u2014 Asia/Amman"
+  },
+  {
+    "tzid": "Europe/Athens",
+    "friendly_name": "Athens",
+    "offset_now": "UTC+03:00",
+    "is_dst_now": true,
+    "label_now": "(UTC+03:00) Athens \u2014 Europe/Athens"
+  },
+  {
+    "tzid": "Asia/Baghdad",
+    "friendly_name": "Baghdad",
+    "offset_now": "UTC+03:00",
+    "is_dst_now": false,
+    "label_now": "(UTC+03:00) Baghdad \u2014 Asia/Baghdad"
+  },
+  {
+    "tzid": "Asia/Beirut",
+    "friendly_name": "Beirut",
+    "offset_now": "UTC+03:00",
+    "is_dst_now": true,
+    "label_now": "(UTC+03:00) Beirut \u2014 Asia/Beirut"
+  },
+  {
+    "tzid": "Africa/Cairo",
+    "friendly_name": "Cairo",
+    "offset_now": "UTC+03:00",
+    "is_dst_now": true,
+    "label_now": "(UTC+03:00) Cairo \u2014 Africa/Cairo"
+  },
+  {
+    "tzid": "Europe/Helsinki",
+    "friendly_name": "Helsinki",
+    "offset_now": "UTC+03:00",
+    "is_dst_now": true,
+    "label_now": "(UTC+03:00) Helsinki \u2014 Europe/Helsinki"
+  },
+  {
+    "tzid": "Europe/Istanbul",
+    "friendly_name": "Istanbul",
+    "offset_now": "UTC+03:00",
+    "is_dst_now": false,
+    "label_now": "(UTC+03:00) Istanbul \u2014 Europe/Istanbul"
+  },
+  {
+    "tzid": "Asia/Jerusalem",
+    "friendly_name": "Jerusalem",
+    "offset_now": "UTC+03:00",
+    "is_dst_now": true,
+    "label_now": "(UTC+03:00) Jerusalem \u2014 Asia/Jerusalem"
+  },
+  {
+    "tzid": "Europe/Kyiv",
+    "friendly_name": "Kyiv",
+    "offset_now": "UTC+03:00",
+    "is_dst_now": true,
+    "label_now": "(UTC+03:00) Kyiv \u2014 Europe/Kyiv"
+  },
+  {
+    "tzid": "Europe/Moscow",
+    "friendly_name": "Moscow",
+    "offset_now": "UTC+03:00",
+    "is_dst_now": false,
+    "label_now": "(UTC+03:00) Moscow \u2014 Europe/Moscow"
+  },
+  {
+    "tzid": "Africa/Nairobi",
+    "friendly_name": "Nairobi",
+    "offset_now": "UTC+03:00",
+    "is_dst_now": false,
+    "label_now": "(UTC+03:00) Nairobi \u2014 Africa/Nairobi"
+  },
+  {
+    "tzid": "Asia/Riyadh",
+    "friendly_name": "Riyadh",
+    "offset_now": "UTC+03:00",
+    "is_dst_now": false,
+    "label_now": "(UTC+03:00) Riyadh \u2014 Asia/Riyadh"
+  },
+  {
+    "tzid": "Asia/Tehran",
+    "friendly_name": "Tehran",
+    "offset_now": "UTC+03:30",
+    "is_dst_now": false,
+    "label_now": "(UTC+03:30) Tehran \u2014 Asia/Tehran"
+  },
+  {
+    "tzid": "Asia/Karachi",
+    "friendly_name": "Karachi",
+    "offset_now": "UTC+05:00",
+    "is_dst_now": false,
+    "label_now": "(UTC+05:00) Karachi \u2014 Asia/Karachi"
+  },
+  {
+    "tzid": "Asia/Colombo",
+    "friendly_name": "Colombo",
+    "offset_now": "UTC+05:30",
+    "is_dst_now": false,
+    "label_now": "(UTC+05:30) Colombo \u2014 Asia/Colombo"
+  },
+  {
+    "tzid": "Asia/Kolkata",
+    "friendly_name": "Kolkata",
+    "offset_now": "UTC+05:30",
+    "is_dst_now": false,
+    "label_now": "(UTC+05:30) Kolkata \u2014 Asia/Kolkata"
+  },
+  {
+    "tzid": "Asia/Kathmandu",
+    "friendly_name": "Kathmandu",
+    "offset_now": "UTC+05:45",
+    "is_dst_now": false,
+    "label_now": "(UTC+05:45) Kathmandu \u2014 Asia/Kathmandu"
+  },
+  {
+    "tzid": "Asia/Dhaka",
+    "friendly_name": "Dhaka",
+    "offset_now": "UTC+06:00",
+    "is_dst_now": false,
+    "label_now": "(UTC+06:00) Dhaka \u2014 Asia/Dhaka"
+  },
+  {
+    "tzid": "Asia/Yangon",
+    "friendly_name": "Yangon",
+    "offset_now": "UTC+06:30",
+    "is_dst_now": false,
+    "label_now": "(UTC+06:30) Yangon \u2014 Asia/Yangon"
+  },
+  {
+    "tzid": "Asia/Bangkok",
+    "friendly_name": "Bangkok",
+    "offset_now": "UTC+07:00",
+    "is_dst_now": false,
+    "label_now": "(UTC+07:00) Bangkok \u2014 Asia/Bangkok"
+  },
+  {
+    "tzid": "Asia/Ho_Chi_Minh",
+    "friendly_name": "Ho Chi Minh",
+    "offset_now": "UTC+07:00",
+    "is_dst_now": false,
+    "label_now": "(UTC+07:00) Ho Chi Minh \u2014 Asia/Ho_Chi_Minh"
+  },
+  {
+    "tzid": "Asia/Jakarta",
+    "friendly_name": "Jakarta",
+    "offset_now": "UTC+07:00",
+    "is_dst_now": false,
+    "label_now": "(UTC+07:00) Jakarta \u2014 Asia/Jakarta"
+  },
+  {
+    "tzid": "Asia/Hong_Kong",
+    "friendly_name": "Hong Kong",
+    "offset_now": "UTC+08:00",
+    "is_dst_now": false,
+    "label_now": "(UTC+08:00) Hong Kong \u2014 Asia/Hong_Kong"
+  },
+  {
+    "tzid": "Asia/Kuala_Lumpur",
+    "friendly_name": "Kuala Lumpur",
+    "offset_now": "UTC+08:00",
+    "is_dst_now": false,
+    "label_now": "(UTC+08:00) Kuala Lumpur \u2014 Asia/Kuala_Lumpur"
+  },
+  {
+    "tzid": "Asia/Manila",
+    "friendly_name": "Manila",
+    "offset_now": "UTC+08:00",
+    "is_dst_now": false,
+    "label_now": "(UTC+08:00) Manila \u2014 Asia/Manila"
+  },
+  {
+    "tzid": "Australia/Perth",
+    "friendly_name": "Perth",
+    "offset_now": "UTC+08:00",
+    "is_dst_now": false,
+    "label_now": "(UTC+08:00) Perth \u2014 Australia/Perth"
+  },
+  {
+    "tzid": "Asia/Shanghai",
+    "friendly_name": "Shanghai",
+    "offset_now": "UTC+08:00",
+    "is_dst_now": false,
+    "label_now": "(UTC+08:00) Shanghai \u2014 Asia/Shanghai"
+  },
+  {
+    "tzid": "Asia/Singapore",
+    "friendly_name": "Singapore",
+    "offset_now": "UTC+08:00",
+    "is_dst_now": false,
+    "label_now": "(UTC+08:00) Singapore \u2014 Asia/Singapore"
+  },
+  {
+    "tzid": "Asia/Taipei",
+    "friendly_name": "Taipei",
+    "offset_now": "UTC+08:00",
+    "is_dst_now": false,
+    "label_now": "(UTC+08:00) Taipei \u2014 Asia/Taipei"
+  },
+  {
+    "tzid": "Asia/Seoul",
+    "friendly_name": "Seoul",
+    "offset_now": "UTC+09:00",
+    "is_dst_now": false,
+    "label_now": "(UTC+09:00) Seoul \u2014 Asia/Seoul"
+  },
+  {
+    "tzid": "Asia/Tokyo",
+    "friendly_name": "Tokyo",
+    "offset_now": "UTC+09:00",
+    "is_dst_now": false,
+    "label_now": "(UTC+09:00) Tokyo \u2014 Asia/Tokyo"
+  },
+  {
+    "tzid": "Australia/Adelaide",
+    "friendly_name": "Adelaide",
+    "offset_now": "UTC+09:30",
+    "is_dst_now": false,
+    "label_now": "(UTC+09:30) Adelaide \u2014 Australia/Adelaide"
+  },
+  {
+    "tzid": "Australia/Brisbane",
+    "friendly_name": "Brisbane",
+    "offset_now": "UTC+10:00",
+    "is_dst_now": false,
+    "label_now": "(UTC+10:00) Brisbane \u2014 Australia/Brisbane"
+  },
+  {
+    "tzid": "Pacific/Guam",
+    "friendly_name": "Guam",
+    "offset_now": "UTC+10:00",
+    "is_dst_now": false,
+    "label_now": "(UTC+10:00) Guam \u2014 Pacific/Guam"
+  },
+  {
+    "tzid": "Pacific/Port_Moresby",
+    "friendly_name": "Port Moresby",
+    "offset_now": "UTC+10:00",
+    "is_dst_now": false,
+    "label_now": "(UTC+10:00) Port Moresby \u2014 Pacific/Port_Moresby"
+  },
+  {
+    "tzid": "Pacific/Saipan",
+    "friendly_name": "Saipan",
+    "offset_now": "UTC+10:00",
+    "is_dst_now": false,
+    "label_now": "(UTC+10:00) Saipan \u2014 Pacific/Saipan"
+  },
+  {
+    "tzid": "Australia/Sydney",
+    "friendly_name": "Sydney",
+    "offset_now": "UTC+10:00",
+    "is_dst_now": false,
+    "label_now": "(UTC+10:00) Sydney \u2014 Australia/Sydney"
+  },
+  {
+    "tzid": "Pacific/Auckland",
+    "friendly_name": "Auckland",
+    "offset_now": "UTC+12:00",
+    "is_dst_now": false,
+    "label_now": "(UTC+12:00) Auckland \u2014 Pacific/Auckland"
+  }
+]

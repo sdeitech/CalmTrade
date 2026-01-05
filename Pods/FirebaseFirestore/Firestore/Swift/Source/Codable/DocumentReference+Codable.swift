@@ -51,4 +51,3 @@ extension CodableDocumentReference {
 }
 
 extension FirebaseFirestore.DocumentReference: FirebaseFirestore.CodableDocumentReference {}
-extension FirebaseFirestore.DocumentReference: @retroactive Codable {}

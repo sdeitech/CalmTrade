@@ -3,8 +3,7 @@
  *     envoy/config/listener/v3/listener_components.proto
  *
  * Do not edit -- your changes will be discarded when the file is
- * regenerated.
- * NO CHECKED-IN PROTOBUF GENCODE */
+ * regenerated. */
 
 #include "upb/reflection/def.h"
 #include "envoy/config/listener/v3/listener_components.upbdefs.h"

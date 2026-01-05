@@ -14,9 +14,10 @@
 
 #include "src/core/lib/event_engine/forkable.h"
 
-#include <grpc/support/port_platform.h>
-
 #include "absl/log/check.h"
+
+#include <grpc/support/log.h>
+#include <grpc/support/port_platform.h>
 
 #ifdef GRPC_POSIX_FORK_ALLOW_PTHREAD_ATFORK
 #include <pthread.h>
@@ -26,7 +27,7 @@
 #include <utility>
 #include <vector>
 
-#include "src/core/config/config_vars.h"
+#include "src/core/lib/config/config_vars.h"
 #include "src/core/lib/debug/trace.h"
 
 namespace grpc_event_engine {

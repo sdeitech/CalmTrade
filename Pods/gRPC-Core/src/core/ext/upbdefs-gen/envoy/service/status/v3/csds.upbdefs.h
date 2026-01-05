@@ -3,11 +3,10 @@
  *     envoy/service/status/v3/csds.proto
  *
  * Do not edit -- your changes will be discarded when the file is
- * regenerated.
- * NO CHECKED-IN PROTOBUF GENCODE */
+ * regenerated. */
 
-#ifndef ENVOY_SERVICE_STATUS_V3_CSDS_PROTO_UPB_H__UPBDEFS_H_
-#define ENVOY_SERVICE_STATUS_V3_CSDS_PROTO_UPB_H__UPBDEFS_H_
+#ifndef ENVOY_SERVICE_STATUS_V3_CSDS_PROTO_UPBDEFS_H_
+#define ENVOY_SERVICE_STATUS_V3_CSDS_PROTO_UPBDEFS_H_
 
 #include "upb/reflection/def.h"
 #include "upb/reflection/internal/def_pool.h"
@@ -50,4 +49,4 @@ UPB_INLINE const upb_MessageDef *envoy_service_status_v3_ClientStatusResponse_ge
 
 #include "upb/port/undef.inc"
 
-#endif  /* ENVOY_SERVICE_STATUS_V3_CSDS_PROTO_UPB_H__UPBDEFS_H_ */
+#endif  /* ENVOY_SERVICE_STATUS_V3_CSDS_PROTO_UPBDEFS_H_ */

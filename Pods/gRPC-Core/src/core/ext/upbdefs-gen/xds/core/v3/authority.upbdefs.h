@@ -3,11 +3,10 @@
  *     xds/core/v3/authority.proto
  *
  * Do not edit -- your changes will be discarded when the file is
- * regenerated.
- * NO CHECKED-IN PROTOBUF GENCODE */
+ * regenerated. */
 
-#ifndef XDS_CORE_V3_AUTHORITY_PROTO_UPB_H__UPBDEFS_H_
-#define XDS_CORE_V3_AUTHORITY_PROTO_UPB_H__UPBDEFS_H_
+#ifndef XDS_CORE_V3_AUTHORITY_PROTO_UPBDEFS_H_
+#define XDS_CORE_V3_AUTHORITY_PROTO_UPBDEFS_H_
 
 #include "upb/reflection/def.h"
 #include "upb/reflection/internal/def_pool.h"
@@ -30,4 +29,4 @@ UPB_INLINE const upb_MessageDef *xds_core_v3_Authority_getmsgdef(upb_DefPool *s)
 
 #include "upb/port/undef.inc"
 
-#endif  /* XDS_CORE_V3_AUTHORITY_PROTO_UPB_H__UPBDEFS_H_ */
+#endif  /* XDS_CORE_V3_AUTHORITY_PROTO_UPBDEFS_H_ */

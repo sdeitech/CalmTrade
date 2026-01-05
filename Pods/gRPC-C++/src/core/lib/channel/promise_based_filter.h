@@ -19,9 +19,6 @@
 // promise-style. Most of this will be removed once the promises conversion is
 // completed.
 
-#include <grpc/event_engine/event_engine.h>
-#include <grpc/grpc.h>
-#include <grpc/support/port_platform.h>
 #include <stdint.h>
 #include <stdlib.h>
 
@@ -40,13 +37,20 @@
 #include "absl/status/status.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/optional.h"
-#include "src/core/filter/blackboard.h"
+
+#include <grpc/event_engine/event_engine.h>
+#include <grpc/grpc.h>
+#include <grpc/support/port_platform.h>
+
 #include "src/core/lib/channel/call_finalization.h"
 #include "src/core/lib/channel/channel_args.h"
 #include "src/core/lib/channel/channel_fwd.h"
 #include "src/core/lib/channel/channel_stack.h"
 #include "src/core/lib/event_engine/default_event_engine.h"
 #include "src/core/lib/event_engine/event_engine_context.h"  // IWYU pragma: keep
+#include "src/core/lib/gprpp/debug_location.h"
+#include "src/core/lib/gprpp/match.h"
+#include "src/core/lib/gprpp/time.h"
 #include "src/core/lib/iomgr/call_combiner.h"
 #include "src/core/lib/iomgr/closure.h"
 #include "src/core/lib/iomgr/error.h"
@@ -68,9 +72,6 @@
 #include "src/core/lib/transport/error_utils.h"
 #include "src/core/lib/transport/metadata_batch.h"
 #include "src/core/lib/transport/transport.h"
-#include "src/core/util/debug_location.h"
-#include "src/core/util/match.h"
-#include "src/core/util/time.h"
 
 namespace grpc_core {
 
@@ -80,23 +81,15 @@ class ChannelFilter {
    public:
     Args() : Args(nullptr, nullptr) {}
     Args(grpc_channel_stack* channel_stack,
-         grpc_channel_element* channel_element,
-         const Blackboard* old_blackboard = nullptr,
-         Blackboard* new_blackboard = nullptr)
-        : impl_(ChannelStackBased{channel_stack, channel_element}),
-          old_blackboard_(old_blackboard),
-          new_blackboard_(new_blackboard) {}
+         grpc_channel_element* channel_element)
+        : impl_(ChannelStackBased{channel_stack, channel_element}) {}
     // While we're moving to call-v3 we need to have access to
     // grpc_channel_stack & friends here. That means that we can't rely on this
     // type signature from interception_chain.h, which means that we need a way
     // of constructing this object without naming it ===> implicit construction.
     // TODO(ctiller): remove this once we're fully on call-v3
     // NOLINTNEXTLINE(google-explicit-constructor)
-    Args(size_t instance_id, const Blackboard* old_blackboard = nullptr,
-         Blackboard* new_blackboard = nullptr)
-        : impl_(V3Based{instance_id}),
-          old_blackboard_(old_blackboard),
-          new_blackboard_(new_blackboard) {}
+    Args(size_t instance_id) : impl_(V3Based{instance_id}) {}
 
     ABSL_DEPRECATED("Direct access to channel stack is deprecated")
     grpc_channel_stack* channel_stack() const {
@@ -120,21 +113,6 @@ class ChannelFilter {
           [](const V3Based& v3) { return v3.instance_id; });
     }
 
-    // If a filter state object of type T exists for key from a previous
-    // filter stack, retains it for the new filter stack we're constructing.
-    // Otherwise, invokes create_func() to create a new filter state
-    // object for the new filter stack.  Returns the new filter state object.
-    template <typename T>
-    RefCountedPtr<T> GetOrCreateState(
-        const std::string& key,
-        absl::FunctionRef<RefCountedPtr<T>()> create_func) {
-      RefCountedPtr<T> state;
-      if (old_blackboard_ != nullptr) state = old_blackboard_->Get<T>(key);
-      if (state == nullptr) state = create_func();
-      if (new_blackboard_ != nullptr) new_blackboard_->Set(key, state);
-      return state;
-    }
-
    private:
     friend class ChannelFilter;
 
@@ -149,9 +127,6 @@ class ChannelFilter {
 
     using Impl = absl::variant<ChannelStackBased, V3Based>;
     Impl impl_;
-
-    const Blackboard* old_blackboard_ = nullptr;
-    Blackboard* new_blackboard_ = nullptr;
   };
 
   // Perform post-initialization step (if any).
@@ -175,11 +150,21 @@ class ChannelFilter {
   virtual bool GetChannelInfo(const grpc_channel_info*) { return false; }
 
   virtual ~ChannelFilter() = default;
+
+  grpc_event_engine::experimental::EventEngine*
+  hack_until_per_channel_stack_event_engines_land_get_event_engine() {
+    return event_engine_.get();
+  }
+
+ private:
+  // TODO(ctiller): remove once per-channel-stack EventEngines land
+  std::shared_ptr<grpc_event_engine::experimental::EventEngine> event_engine_ =
+      grpc_event_engine::experimental::GetDefaultEventEngine();
 };
 
 namespace promise_filter_detail {
 
-// Determine if a list of interceptors has any that need to asynchronously error
+// Determine if a list of interceptors has any that need to asyncronously error
 // the promise. If so, we need to allocate a latch for the generated promise for
 // the original promise stack polyfill code that's generated.
 
@@ -968,15 +953,14 @@ class BaseCallData : public Activity, private Wakeable {
         : promise_detail::Context<Arena>(call_data->arena_),
           promise_detail::Context<grpc_polling_entity>(
               call_data->pollent_.load(std::memory_order_acquire)),
-          promise_detail::Context<CallFinalization>(&call_data->finalization_) {
-    }
+          promise_detail::Context<CallFinalization>(&call_data->finalization_),
+          promise_detail::Context<grpc_event_engine::experimental::EventEngine>(
+              call_data->event_engine_) {}
   };
 
-  class Flusher : public latent_see::InnerScope {
+  class Flusher {
    public:
-    explicit Flusher(BaseCallData* call,
-                     latent_see::Metadata* desc = GRPC_LATENT_SEE_METADATA(
-                         "PromiseBasedFilter::Flusher"));
+    explicit Flusher(BaseCallData* call);
     // Calls closures, schedules batches, relinquishes call combiner.
     ~Flusher();
 
@@ -1321,6 +1305,7 @@ class BaseCallData : public Activity, private Wakeable {
   Pipe<ServerMetadataHandle>* const server_initial_metadata_pipe_;
   SendMessage* const send_message_;
   ReceiveMessage* const receive_message_;
+  grpc_event_engine::experimental::EventEngine* event_engine_;
 };
 
 class ClientCallData : public BaseCallData {
@@ -1502,7 +1487,7 @@ class ServerCallData : public BaseCallData {
   //   - return a wrapper around PollTrailingMetadata as the promise.
   ArenaPromise<ServerMetadataHandle> MakeNextPromise(CallArgs call_args);
   // Wrapper to make it look like we're calling the next filter as a promise.
-  // All polls: await sending the trailing metadata, then forward it down the
+  // All polls: await sending the trailing metadata, then foward it down the
   // stack.
   Poll<ServerMetadataHandle> PollTrailingMetadata();
   static void RecvInitialMetadataReadyCallback(void* arg,
@@ -1647,10 +1632,8 @@ struct ChannelFilterWithFlagsMethods {
   static absl::Status InitChannelElem(grpc_channel_element* elem,
                                       grpc_channel_element_args* args) {
     CHECK(args->is_last == ((kFlags & kFilterIsLast) != 0));
-    auto status = F::Create(
-        args->channel_args,
-        ChannelFilter::Args(args->channel_stack, elem, args->old_blackboard,
-                            args->new_blackboard));
+    auto status = F::Create(args->channel_args,
+                            ChannelFilter::Args(args->channel_stack, elem));
     if (!status.ok()) {
       new (elem->channel_data) F*(nullptr);
       return absl_status_to_grpc_error(status.status());
@@ -1676,7 +1659,7 @@ template <typename F, FilterEndpoint kEndpoint, uint8_t kFlags = 0>
 absl::enable_if_t<std::is_base_of<ChannelFilter, F>::value &&
                       !std::is_base_of<ImplementChannelFilterTag, F>::value,
                   grpc_channel_filter>
-MakePromiseBasedFilter() {
+MakePromiseBasedFilter(const char* name) {
   using CallData = promise_filter_detail::CallData<kEndpoint>;
 
   return grpc_channel_filter{
@@ -1707,14 +1690,14 @@ MakePromiseBasedFilter() {
       // get_channel_info
       promise_filter_detail::ChannelFilterMethods::GetChannelInfo,
       // name
-      UniqueTypeNameFor<F>(),
+      name,
   };
 }
 
 template <typename F, FilterEndpoint kEndpoint, uint8_t kFlags = 0>
 absl::enable_if_t<std::is_base_of<ImplementChannelFilterTag, F>::value,
                   grpc_channel_filter>
-MakePromiseBasedFilter() {
+MakePromiseBasedFilter(const char* name) {
   using CallData = promise_filter_detail::CallData<kEndpoint>;
 
   return grpc_channel_filter{
@@ -1745,7 +1728,7 @@ MakePromiseBasedFilter() {
       // get_channel_info
       promise_filter_detail::ChannelFilterMethods::GetChannelInfo,
       // name
-      UniqueTypeNameFor<F>(),
+      name,
   };
 }
 

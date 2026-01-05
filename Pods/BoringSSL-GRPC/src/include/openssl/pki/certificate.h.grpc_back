@@ -22,7 +22,7 @@
 #include <openssl_grpc/base.h>
 #include <openssl_grpc/span.h>
 
-BSSL_NAMESPACE_BEGIN
+namespace bssl {
 
 struct CertificateInternals;
 
@@ -78,6 +78,6 @@ class OPENSSL_EXPORT Certificate {
   std::unique_ptr<CertificateInternals> internals_;
 };
 
-BSSL_NAMESPACE_END
+}  // namespace bssl
 
 #endif  // OPENSSL_HEADER_BSSL_PKI_CERTIFICATE_H_ && __cplusplus

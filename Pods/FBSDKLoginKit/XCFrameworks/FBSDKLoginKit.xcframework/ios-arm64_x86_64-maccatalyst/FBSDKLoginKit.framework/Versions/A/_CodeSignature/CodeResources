@@ -6,7 +6,7 @@
 	<dict>
 		<key>Resources/Info.plist</key>
 		<data>
-		RFWazf9QVbcMa89pwaawnj5otiE=
+		TG8fOUCi7t+nWmkrGQXX3BO2KIk=
 		</data>
 		<key>Resources/PrivacyInfo.xcprivacy</key>
 		<data>
@@ -40,7 +40,7 @@
 		<dict>
 			<key>hash2</key>
 			<data>
-			+OlTJMhLt5rsnscJg7iI4pXuAHzJhUHzeXJjtnILwvQ=
+			zUSibOBtPcKIgF+JPlcX4IPHTHdhi5c8jiCso5BptYw=
 			</data>
 		</dict>
 		<key>Headers/FBSDKLoginKit.h</key>
@@ -68,21 +68,21 @@
 		<dict>
 			<key>hash2</key>
 			<data>
-			8xarBo1RnzFDytDIwhA9Lfl1TpjYIlnVyGWF1h0M87g=
+			s+OgBCaUk2vEvbC6ZTlCFmTCaM8eKsgd8Rk2TB11P0c=
 			</data>
 		</dict>
 		<key>Modules/FBSDKLoginKit.swiftmodule/arm64-apple-ios-macabi.swiftdoc</key>
 		<dict>
 			<key>hash2</key>
 			<data>
-			xTMqY1WA9SY3EBc1iRRY8zRWnKUQXAalcyn4KUdnTus=
+			VdyaiDEV+E4/A4h5b/H+fxHlYyO6YgFX6kItdzBtFSM=
 			</data>
 		</dict>
 		<key>Modules/FBSDKLoginKit.swiftmodule/arm64-apple-ios-macabi.swiftinterface</key>
 		<dict>
 			<key>hash2</key>
 			<data>
-			8xarBo1RnzFDytDIwhA9Lfl1TpjYIlnVyGWF1h0M87g=
+			s+OgBCaUk2vEvbC6ZTlCFmTCaM8eKsgd8Rk2TB11P0c=
 			</data>
 		</dict>
 		<key>Modules/FBSDKLoginKit.swiftmodule/x86_64-apple-ios-macabi.abi.json</key>
@@ -96,21 +96,21 @@
 		<dict>
 			<key>hash2</key>
 			<data>
-			ik1WCZq4pfs0t/W6dHO1W//v4pMEqIPkLfAgY+Z/xg8=
+			Rx18Cyq1IKSF+VuP4rmYEk7/VblGN7eqBRHRcR5cgto=
 			</data>
 		</dict>
 		<key>Modules/FBSDKLoginKit.swiftmodule/x86_64-apple-ios-macabi.swiftdoc</key>
 		<dict>
 			<key>hash2</key>
 			<data>
-			VSgWFGdlsXGncYX7o2jQ1SOgeBUkO0LB7xkdkgbuQQg=
+			W4IVhyEE6miiRQk5KuGeh2FI4RGHxGfw30rg7DstX9A=
 			</data>
 		</dict>
 		<key>Modules/FBSDKLoginKit.swiftmodule/x86_64-apple-ios-macabi.swiftinterface</key>
 		<dict>
 			<key>hash2</key>
 			<data>
-			ik1WCZq4pfs0t/W6dHO1W//v4pMEqIPkLfAgY+Z/xg8=
+			Rx18Cyq1IKSF+VuP4rmYEk7/VblGN7eqBRHRcR5cgto=
 			</data>
 		</dict>
 		<key>Modules/module.modulemap</key>
@@ -124,7 +124,7 @@
 		<dict>
 			<key>hash2</key>
 			<data>
-			08KQ7lYYaDu3ykWTmGmvmoXr6QVYFT5IP02nTJ1ytZA=
+			wdHIEvXv9ZcUZN7q9uHXMsZawM0exWJgFzJfsOlD8aI=
 			</data>
 		</dict>
 		<key>Resources/PrivacyInfo.xcprivacy</key>

@@ -75,6 +75,9 @@ private let kAndroidMinimumVersionKey = "androidMinimumVersion"
 /// or not.
 private let kCanHandleCodeInAppKey = "canHandleCodeInApp"
 
+/// The key for the "dynamic link domain" value in the request.
+private let kDynamicLinkDomainKey = "dynamicLinkDomain"
+
 /// The key for the "link domain" value in the request.
 private let kLinkDomainKey = "linkDomain"
 
@@ -101,6 +104,12 @@ private let kClientType = "clientType"
 
 /// The key for the "recaptchaVersion" value in the request.
 private let kRecaptchaVersion = "recaptchaVersion"
+
+protocol SuppressWarning {
+  var dynamicLinkDomain: String? { get set }
+}
+
+extension ActionCodeSettings: SuppressWarning {}
 
 @available(iOS 13, tvOS 13, macOS 10.15, macCatalyst 13, watchOS 7, *)
 class GetOOBConfirmationCodeRequest: IdentityToolkitRequest, AuthRPCRequest {
@@ -137,6 +146,9 @@ class GetOOBConfirmationCodeRequest: IdentityToolkitRequest, AuthRPCRequest {
   ///   redirected from a Firebase owned web widget.
   let handleCodeInApp: Bool
 
+  /// The Firebase Dynamic Link domain used for out of band code flow.
+  private let dynamicLinkDomain: String?
+
   /// The Firebase Hosting domain used for out of band code flow.
   private(set) var linkDomain: String?
 
@@ -171,6 +183,12 @@ class GetOOBConfirmationCodeRequest: IdentityToolkitRequest, AuthRPCRequest {
     androidMinimumVersion = actionCodeSettings?.androidMinimumVersion
     androidInstallApp = actionCodeSettings?.androidInstallIfNotAvailable ?? false
     handleCodeInApp = actionCodeSettings?.handleCodeInApp ?? false
+    dynamicLinkDomain =
+      if let actionCodeSettings {
+        (actionCodeSettings as SuppressWarning).dynamicLinkDomain
+      } else {
+        nil
+      }
     linkDomain = actionCodeSettings?.linkDomain
 
     super.init(
@@ -270,6 +288,9 @@ class GetOOBConfirmationCodeRequest: IdentityToolkitRequest, AuthRPCRequest {
     }
     if handleCodeInApp {
       body[kCanHandleCodeInAppKey] = true
+    }
+    if let dynamicLinkDomain {
+      body[kDynamicLinkDomainKey] = dynamicLinkDomain
     }
     if let linkDomain {
       body[kLinkDomainKey] = linkDomain

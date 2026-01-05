@@ -6,7 +6,16 @@
 	<array>
 		<string>Default</string>
 	</array>
+	<key>com.apple.developer.associated-domains</key>
+	<array>
+		<string>applinks:44.211.113.36:8087</string>
+		<string>applinks:44.211.113.36</string>
+	</array>
 	<key>com.apple.developer.healthkit</key>
 	<true/>
+	<key>com.apple.developer.healthkit.background-delivery</key>
+	<true/>
+	<key>keychain-access-groups</key>
+	<array/>
 </dict>
 </plist>

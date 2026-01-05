@@ -19,11 +19,6 @@
 #ifndef GRPCPP_IMPL_RPC_SERVICE_METHOD_H
 #define GRPCPP_IMPL_RPC_SERVICE_METHOD_H
 
-#include <grpcpp/impl/rpc_method.h>
-#include <grpcpp/support/byte_buffer.h>
-#include <grpcpp/support/config.h>
-#include <grpcpp/support/status.h>
-
 #include <climits>
 #include <functional>
 #include <map>
@@ -32,6 +27,11 @@
 
 #include "absl/log/absl_check.h"
 #include "absl/log/absl_log.h"
+
+#include <grpcpp/impl/rpc_method.h>
+#include <grpcpp/support/byte_buffer.h>
+#include <grpcpp/support/config.h>
+#include <grpcpp/support/status.h>
 
 namespace grpc {
 class ServerContextBase;

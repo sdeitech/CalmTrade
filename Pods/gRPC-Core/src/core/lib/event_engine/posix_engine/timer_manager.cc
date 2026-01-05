@@ -18,16 +18,17 @@
 
 #include "src/core/lib/event_engine/posix_engine/timer_manager.h"
 
-#include <grpc/support/port_platform.h>
-#include <grpc/support/time.h>
-
 #include <memory>
 #include <utility>
 
 #include "absl/log/check.h"
-#include "absl/log/log.h"
 #include "absl/time/time.h"
 #include "absl/types/optional.h"
+
+#include <grpc/support/log.h>
+#include <grpc/support/port_platform.h>
+#include <grpc/support/time.h>
+
 #include "src/core/lib/debug/trace.h"
 
 static thread_local bool g_timer_thread;
@@ -101,9 +102,10 @@ void TimerManager::TimerInit(Timer* timer, grpc_core::Timestamp deadline,
   if (GRPC_TRACE_FLAG_ENABLED(timer)) {
     grpc_core::MutexLock lock(&mu_);
     if (shutdown_) {
-      LOG(ERROR) << "WARNING: TimerManager::" << this
-                 << ": scheduling Closure::" << closure
-                 << " after TimerManager has been shut down.";
+      gpr_log(GPR_ERROR,
+              "WARNING: TimerManager::%p: scheduling Closure::%p after "
+              "TimerManager has been shut down.",
+              this, closure);
     }
   }
   timer_list_->TimerInit(timer, deadline, closure);
@@ -117,13 +119,17 @@ void TimerManager::Shutdown() {
   {
     grpc_core::MutexLock lock(&mu_);
     if (shutdown_) return;
-    GRPC_TRACE_VLOG(timer, 2) << "TimerManager::" << this << " shutting down";
+    if (GRPC_TRACE_FLAG_ENABLED(timer)) {
+      gpr_log(GPR_DEBUG, "TimerManager::%p shutting down", this);
+    }
     shutdown_ = true;
     // Wait on the main loop to exit.
     cv_wait_.Signal();
   }
   main_loop_exit_signal_->WaitForNotification();
-  GRPC_TRACE_VLOG(timer, 2) << "TimerManager::" << this << " shutdown complete";
+  if (GRPC_TRACE_FLAG_ENABLED(timer)) {
+    gpr_log(GPR_DEBUG, "TimerManager::%p shutdown complete", this);
+  }
 }
 
 TimerManager::~TimerManager() { Shutdown(); }
@@ -139,8 +145,9 @@ void TimerManager::Kick() {
 void TimerManager::RestartPostFork() {
   grpc_core::MutexLock lock(&mu_);
   CHECK(GPR_LIKELY(shutdown_));
-  GRPC_TRACE_VLOG(timer, 2)
-      << "TimerManager::" << this << " restarting after shutdown";
+  if (GRPC_TRACE_FLAG_ENABLED(timer)) {
+    gpr_log(GPR_DEBUG, "TimerManager::%p restarting after shutdown", this);
+  }
   shutdown_ = false;
   main_loop_exit_signal_.emplace();
   thread_pool_->Run([this]() { MainLoop(); });

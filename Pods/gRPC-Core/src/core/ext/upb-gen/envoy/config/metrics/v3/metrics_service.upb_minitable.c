@@ -3,8 +3,7 @@
  *     envoy/config/metrics/v3/metrics_service.proto
  *
  * Do not edit -- your changes will be discarded when the file is
- * regenerated.
- * NO CHECKED-IN PROTOBUF GENCODE */
+ * regenerated. */
 
 #include <stddef.h>
 #include "upb/generated_code_support.h"
@@ -19,10 +18,9 @@
 // Must be last.
 #include "upb/port/def.inc"
 
-extern const struct upb_MiniTable UPB_PRIVATE(_kUpb_MiniTable_StaticallyTreeShaken);
-static const upb_MiniTableSubInternal envoy_config_metrics_v3_MetricsServiceConfig__submsgs[2] = {
-  {.UPB_PRIVATE(submsg) = &envoy__config__core__v3__GrpcService_msg_init_ptr},
-  {.UPB_PRIVATE(submsg) = &google__protobuf__BoolValue_msg_init_ptr},
+static const upb_MiniTableSub envoy_config_metrics_v3_MetricsServiceConfig_submsgs[2] = {
+  {.UPB_PRIVATE(submsg) = &envoy__config__core__v3__GrpcService_msg_init},
+  {.UPB_PRIVATE(submsg) = &google__protobuf__BoolValue_msg_init},
 };
 
 static const upb_MiniTableField envoy_config_metrics_v3_MetricsServiceConfig__fields[5] = {
@@ -34,12 +32,9 @@ static const upb_MiniTableField envoy_config_metrics_v3_MetricsServiceConfig__fi
 };
 
 const upb_MiniTable envoy__config__metrics__v3__MetricsServiceConfig_msg_init = {
-  &envoy_config_metrics_v3_MetricsServiceConfig__submsgs[0],
+  &envoy_config_metrics_v3_MetricsServiceConfig_submsgs[0],
   &envoy_config_metrics_v3_MetricsServiceConfig__fields[0],
   UPB_SIZE(32, 40), 5, kUpb_ExtMode_NonExtendable, 5, UPB_FASTTABLE_MASK(56), 0,
-#ifdef UPB_TRACING_ENABLED
-  "envoy.config.metrics.v3.MetricsServiceConfig",
-#endif
   UPB_FASTTABLE_INIT({
     {0x0000000000000000, &_upb_FastDecoder_DecodeGeneric},
     {0x0000000000000000, &_upb_FastDecoder_DecodeGeneric},
@@ -52,7 +47,6 @@ const upb_MiniTable envoy__config__metrics__v3__MetricsServiceConfig_msg_init = 
   })
 };
 
-const upb_MiniTable* envoy__config__metrics__v3__MetricsServiceConfig_msg_init_ptr = &envoy__config__metrics__v3__MetricsServiceConfig_msg_init;
 static const upb_MiniTable *messages_layout[1] = {
   &envoy__config__metrics__v3__MetricsServiceConfig_msg_init,
 };

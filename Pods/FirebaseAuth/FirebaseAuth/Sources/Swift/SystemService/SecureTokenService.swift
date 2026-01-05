@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import FirebaseCoreInternal
 import Foundation
 
 private let kFiveMinutes = 5 * 60.0
@@ -115,17 +114,12 @@ actor SecureTokenServiceInternal {
 /// A class represents a credential that proves the identity of the app.
 @available(iOS 13, tvOS 13, macOS 10.15, macCatalyst 13, watchOS 7, *)
 @objc(FIRSecureTokenService) // objc Needed for decoding old versions
-final class SecureTokenService: NSObject, NSSecureCoding, Sendable {
+class SecureTokenService: NSObject, NSSecureCoding {
   /// Internal actor to enforce serialization
   private let internalService: SecureTokenServiceInternal
 
   /// The configuration for making requests to server.
-  var requestConfiguration: AuthRequestConfiguration? {
-    get { _requestConfiguration.withLock { $0 } }
-    set { _requestConfiguration.withLock { $0 = newValue } }
-  }
-
-  let _requestConfiguration: UnfairLock<AuthRequestConfiguration?>
+  var requestConfiguration: AuthRequestConfiguration?
 
   /// The cached access token.
   ///
@@ -136,29 +130,20 @@ final class SecureTokenService: NSObject, NSSecureCoding, Sendable {
   /// - Note: The atomic wrapper can be removed when the SDK is fully
   /// synchronized with structured concurrency.
   var accessToken: String {
-    get { _accessToken.withLock { $0 } }
-    set { _accessToken.withLock { $0 = newValue } }
+    get { accessTokenLock.withLock { _accessToken } }
+    set { accessTokenLock.withLock { _accessToken = newValue } }
   }
 
-  private let _accessToken: UnfairLock<String>
+  private var _accessToken: String
+  private let accessTokenLock = NSLock()
 
   /// The refresh token for the user, or `nil` if the user has yet completed sign-in flow.
   ///
   /// This property needs to be set manually after the instance is decoded from archive.
-  var refreshToken: String? {
-    get { _refreshToken.withLock { $0 } }
-    set { _refreshToken.withLock { $0 = newValue } }
-  }
-
-  private let _refreshToken: UnfairLock<String?>
+  var refreshToken: String?
 
   /// The expiration date of the cached access token.
-  var accessTokenExpirationDate: Date? {
-    get { _accessTokenExpirationDate.withLock { $0 } }
-    set { _accessTokenExpirationDate.withLock { $0 = newValue } }
-  }
-
-  private let _accessTokenExpirationDate: UnfairLock<Date?>
+  var accessTokenExpirationDate: Date?
 
   /// Creates a `SecureTokenService` with access and refresh tokens.
   /// - Parameter requestConfiguration: The configuration for making requests to server.
@@ -170,10 +155,10 @@ final class SecureTokenService: NSObject, NSSecureCoding, Sendable {
        accessTokenExpirationDate: Date?,
        refreshToken: String) {
     internalService = SecureTokenServiceInternal()
-    _requestConfiguration = UnfairLock(requestConfiguration)
-    _accessToken = UnfairLock(accessToken)
-    _accessTokenExpirationDate = UnfairLock(accessTokenExpirationDate)
-    _refreshToken = UnfairLock(refreshToken)
+    self.requestConfiguration = requestConfiguration
+    _accessToken = accessToken
+    self.accessTokenExpirationDate = accessTokenExpirationDate
+    self.refreshToken = refreshToken
   }
 
   /// Fetch a fresh ephemeral access token for the ID associated with this instance. The token

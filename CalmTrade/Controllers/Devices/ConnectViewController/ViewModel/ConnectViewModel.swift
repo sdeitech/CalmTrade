@@ -12,7 +12,7 @@ class ConnectViewModel: BaseViewModel {
     
     // MARK: - Properties
     
-    private let healthKitService = HealthKitService()
+    private let healthKitService = HealthKitService.shared
     
     /// A closure that is called with the result of the authorization request.
     var onAuthorizationComplete: ((Bool, String?) -> Void)?

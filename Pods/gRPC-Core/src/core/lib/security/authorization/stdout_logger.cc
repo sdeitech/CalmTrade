@@ -14,10 +14,6 @@
 
 #include "src/core/lib/security/authorization/stdout_logger.h"
 
-#include <grpc/grpc_audit_logging.h>
-#include <grpc/support/json.h>
-#include <grpc/support/port_platform.h>
-
 #include <cstdio>
 #include <memory>
 #include <string>
@@ -28,6 +24,11 @@
 #include "absl/strings/string_view.h"
 #include "absl/time/clock.h"
 #include "absl/time/time.h"
+
+#include <grpc/grpc_audit_logging.h>
+#include <grpc/support/json.h>
+#include <grpc/support/log.h>
+#include <grpc/support/port_platform.h>
 
 namespace grpc_core {
 namespace experimental {

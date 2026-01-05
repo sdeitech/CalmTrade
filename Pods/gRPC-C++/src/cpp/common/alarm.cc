@@ -15,15 +15,6 @@
 //
 //
 
-#include <grpc/event_engine/event_engine.h>
-#include <grpc/grpc.h>
-#include <grpc/support/port_platform.h>
-#include <grpc/support/sync.h>
-#include <grpc/support/time.h>
-#include <grpcpp/alarm.h>
-#include <grpcpp/completion_queue.h>
-#include <grpcpp/impl/completion_queue_tag.h>
-
 #include <atomic>
 #include <functional>
 #include <memory>
@@ -31,11 +22,22 @@
 
 #include "absl/log/check.h"
 #include "absl/status/status.h"
+
+#include <grpc/event_engine/event_engine.h>
+#include <grpc/grpc.h>
+#include <grpc/support/log.h>
+#include <grpc/support/port_platform.h>
+#include <grpc/support/sync.h>
+#include <grpc/support/time.h>
+#include <grpcpp/alarm.h>
+#include <grpcpp/completion_queue.h>
+#include <grpcpp/impl/completion_queue_tag.h>
+
 #include "src/core/lib/event_engine/default_event_engine.h"
+#include "src/core/lib/gprpp/time.h"
 #include "src/core/lib/iomgr/error.h"
 #include "src/core/lib/iomgr/exec_ctx.h"
 #include "src/core/lib/surface/completion_queue.h"
-#include "src/core/util/time.h"
 
 namespace grpc {
 

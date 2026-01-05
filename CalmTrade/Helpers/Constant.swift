@@ -59,5 +59,9 @@ public struct Constants {
         static let Dashboard = "Dashboard"
         static let Biometrics = "Biometrics"
         static let Devices = "Devices"
+        static let ProfileHost = "ProfileHost"
+        static let Profile = "Profile"
+        static let Analytics = "Analytics"
+        static let Home = "Home"
     }
 }

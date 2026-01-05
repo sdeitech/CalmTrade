@@ -14,9 +14,6 @@
 
 import Foundation
 
-// TODO(Swift 6 Breaking): Make checked Sendable. Also, does this need
-// to be public?
-
 #if os(iOS)
 
   /// Extends the MultiFactorInfo class for time based one-time password second factors.
@@ -24,7 +21,7 @@ import Foundation
   /// The identifier of this second factor is "totp".
   ///
   /// This class is available on iOS only.
-  class TOTPMultiFactorInfo: MultiFactorInfo, @unchecked Sendable {
+  class TOTPMultiFactorInfo: MultiFactorInfo {
     /// Initialize the AuthProtoMFAEnrollment instance with proto.
     /// - Parameter proto: AuthProtoMFAEnrollment proto object.
     init(proto: AuthProtoMFAEnrollment) {

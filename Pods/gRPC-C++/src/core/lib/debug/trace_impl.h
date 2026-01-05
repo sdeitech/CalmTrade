@@ -15,8 +15,6 @@
 #ifndef GRPC_SRC_CORE_LIB_DEBUG_TRACE_IMPL_H
 #define GRPC_SRC_CORE_LIB_DEBUG_TRACE_IMPL_H
 
-#include <grpc/support/port_platform.h>
-
 #include <atomic>
 #include <map>
 #include <string>
@@ -25,9 +23,7 @@
 #include "absl/log/log.h"
 #include "absl/strings/string_view.h"
 
-#ifdef _WIN32
-#undef ERROR
-#endif
+#include <grpc/support/port_platform.h>
 
 void grpc_tracer_init();
 void grpc_tracer_shutdown(void);
@@ -81,16 +77,10 @@ class TraceFlag {
 };
 
 #define GRPC_TRACE_FLAG_ENABLED_OBJ(obj) GPR_UNLIKELY((obj).enabled())
-
 #define GRPC_TRACE_FLAG_ENABLED(tracer) \
   GPR_UNLIKELY((grpc_core::tracer##_trace).enabled())
-
 #define GRPC_TRACE_LOG(tracer, level) \
   LOG_IF(level, GRPC_TRACE_FLAG_ENABLED(tracer))
-
-#define GRPC_TRACE_DLOG(tracer, level) \
-  DLOG_IF(level, GRPC_TRACE_FLAG_ENABLED(tracer))
-
 #define GRPC_TRACE_VLOG(tracer, level) \
   if (GRPC_TRACE_FLAG_ENABLED(tracer)) VLOG(level)
 

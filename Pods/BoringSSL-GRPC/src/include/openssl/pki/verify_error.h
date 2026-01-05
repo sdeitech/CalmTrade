@@ -15,11 +15,10 @@
 #if !defined(OPENSSL_HEADER_BSSL_PKI_VERIFY_ERROR_H_) && defined(__cplusplus)
 #define OPENSSL_HEADER_BSSL_PKI_VERIFY_ERROR_H_
 
-#include <openssl_grpc/base.h>
-
 #include <string>
+#include <string_view>
 
-BSSL_NAMESPACE_BEGIN
+namespace bssl {
 
 // VerifyError describes certificate chain validation result.
 class OPENSSL_EXPORT VerifyError {
@@ -133,6 +132,6 @@ class OPENSSL_EXPORT VerifyError {
   std::string diagnostic_;
 };
 
-BSSL_NAMESPACE_END
+} // namespace bssl
 
 #endif  // OPENSSL_HEADER_BSSL_PKI_VERIFY_ERROR_H_

@@ -3,8 +3,7 @@
  *     envoy/config/trace/v3/zipkin.proto
  *
  * Do not edit -- your changes will be discarded when the file is
- * regenerated.
- * NO CHECKED-IN PROTOBUF GENCODE */
+ * regenerated. */
 
 #include <stddef.h>
 #include "upb/generated_code_support.h"
@@ -19,9 +18,8 @@
 // Must be last.
 #include "upb/port/def.inc"
 
-extern const struct upb_MiniTable UPB_PRIVATE(_kUpb_MiniTable_StaticallyTreeShaken);
-static const upb_MiniTableSubInternal envoy_config_trace_v3_ZipkinConfig__submsgs[1] = {
-  {.UPB_PRIVATE(submsg) = &google__protobuf__BoolValue_msg_init_ptr},
+static const upb_MiniTableSub envoy_config_trace_v3_ZipkinConfig_submsgs[1] = {
+  {.UPB_PRIVATE(submsg) = &google__protobuf__BoolValue_msg_init},
 };
 
 static const upb_MiniTableField envoy_config_trace_v3_ZipkinConfig__fields[7] = {
@@ -35,12 +33,9 @@ static const upb_MiniTableField envoy_config_trace_v3_ZipkinConfig__fields[7] = 
 };
 
 const upb_MiniTable envoy__config__trace__v3__ZipkinConfig_msg_init = {
-  &envoy_config_trace_v3_ZipkinConfig__submsgs[0],
+  &envoy_config_trace_v3_ZipkinConfig_submsgs[0],
   &envoy_config_trace_v3_ZipkinConfig__fields[0],
   UPB_SIZE(48, 80), 7, kUpb_ExtMode_NonExtendable, 7, UPB_FASTTABLE_MASK(56), 0,
-#ifdef UPB_TRACING_ENABLED
-  "envoy.config.trace.v3.ZipkinConfig",
-#endif
   UPB_FASTTABLE_INIT({
     {0x0000000000000000, &_upb_FastDecoder_DecodeGeneric},
     {0x001800003f00000a, &upb_pss_1bt},
@@ -53,7 +48,6 @@ const upb_MiniTable envoy__config__trace__v3__ZipkinConfig_msg_init = {
   })
 };
 
-const upb_MiniTable* envoy__config__trace__v3__ZipkinConfig_msg_init_ptr = &envoy__config__trace__v3__ZipkinConfig_msg_init;
 static const upb_MiniTable *messages_layout[1] = {
   &envoy__config__trace__v3__ZipkinConfig_msg_init,
 };

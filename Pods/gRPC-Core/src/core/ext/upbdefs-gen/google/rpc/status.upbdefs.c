@@ -3,8 +3,7 @@
  *     google/rpc/status.proto
  *
  * Do not edit -- your changes will be discarded when the file is
- * regenerated.
- * NO CHECKED-IN PROTOBUF GENCODE */
+ * regenerated. */
 
 #include "upb/reflection/def.h"
 #include "google/rpc/status.upbdefs.h"

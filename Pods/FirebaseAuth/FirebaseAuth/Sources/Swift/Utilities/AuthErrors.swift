@@ -240,6 +240,9 @@ import Foundation
   /// user was provided.
   case nullUser = 17067
 
+  /// Indicates that a Firebase Dynamic Link is not activated.
+  case dynamicLinkNotActivated = 17068
+
   /// Represents the error code for when the given provider id for a web operation is invalid.
   case invalidProviderID = 17071
 
@@ -250,6 +253,10 @@ import Foundation
   /// Represents the error code for when a request is made to the backend with an associated tenant
   /// ID for an operation that does not support multi-tenancy.
   case unsupportedTenantOperation = 17073
+
+  /// Indicates that the Firebase Dynamic Link domain used is either not configured or is
+  /// unauthorized for the current project.
+  case invalidDynamicLinkDomain = 17074
 
   /// Indicates that the provided Firebase Hosting Link domain is not owned by the current project.
   case invalidHostingLinkDomain = 17214
@@ -462,6 +469,8 @@ import Foundation
       return kErrorNullUser
     case .invalidProviderID:
       return kErrorInvalidProviderID
+    case .invalidDynamicLinkDomain:
+      return kErrorInvalidDynamicLinkDomain
     case .invalidHostingLinkDomain:
       return kErrorInvalidHostingLinkDomain
     case .webInternalError:
@@ -496,6 +505,8 @@ import Foundation
       return FIRAuthErrorMessageUnsupportedFirstFactor
     case .emailChangeNeedsVerification:
       return FIRAuthErrorMessageEmailChangeNeedsVerification
+    case .dynamicLinkNotActivated:
+      return kErrorDynamicLinkNotActivated
     case .rejectedCredential:
       return kErrorRejectedCredential
     case .missingOrInvalidNonce:
@@ -653,6 +664,8 @@ import Foundation
       return "ERROR_NULL_USER"
     case .invalidProviderID:
       return "ERROR_INVALID_PROVIDER_ID"
+    case .invalidDynamicLinkDomain:
+      return "ERROR_INVALID_DYNAMIC_LINK_DOMAIN"
     case .invalidHostingLinkDomain:
       return "ERROR_INVALID_HOSTING_LINK_DOMAIN"
     case .webInternalError:
@@ -687,6 +700,8 @@ import Foundation
       return "ERROR_UNSUPPORTED_FIRST_FACTOR"
     case .emailChangeNeedsVerification:
       return "ERROR_EMAIL_CHANGE_NEEDS_VERIFICATION"
+    case .dynamicLinkNotActivated:
+      return "ERROR_DYNAMIC_LINK_NOT_ACTIVATED"
     case .rejectedCredential:
       return "ERROR_REJECTED_CREDENTIAL"
     case .missingOrInvalidNonce:

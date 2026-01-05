@@ -3,8 +3,7 @@
  *     google/rpc/status.proto
  *
  * Do not edit -- your changes will be discarded when the file is
- * regenerated.
- * NO CHECKED-IN PROTOBUF GENCODE */
+ * regenerated. */
 
 #include <stddef.h>
 #include "upb/generated_code_support.h"
@@ -14,9 +13,8 @@
 // Must be last.
 #include "upb/port/def.inc"
 
-extern const struct upb_MiniTable UPB_PRIVATE(_kUpb_MiniTable_StaticallyTreeShaken);
-static const upb_MiniTableSubInternal google_rpc_Status__submsgs[1] = {
-  {.UPB_PRIVATE(submsg) = &google__protobuf__Any_msg_init_ptr},
+static const upb_MiniTableSub google_rpc_Status_submsgs[1] = {
+  {.UPB_PRIVATE(submsg) = &google__protobuf__Any_msg_init},
 };
 
 static const upb_MiniTableField google_rpc_Status__fields[3] = {
@@ -26,12 +24,9 @@ static const upb_MiniTableField google_rpc_Status__fields[3] = {
 };
 
 const upb_MiniTable google__rpc__Status_msg_init = {
-  &google_rpc_Status__submsgs[0],
+  &google_rpc_Status_submsgs[0],
   &google_rpc_Status__fields[0],
   UPB_SIZE(24, 40), 3, kUpb_ExtMode_NonExtendable, 3, UPB_FASTTABLE_MASK(24), 0,
-#ifdef UPB_TRACING_ENABLED
-  "google.rpc.Status",
-#endif
   UPB_FASTTABLE_INIT({
     {0x0000000000000000, &_upb_FastDecoder_DecodeGeneric},
     {0x000800003f000008, &upb_psv4_1bt},
@@ -40,7 +35,6 @@ const upb_MiniTable google__rpc__Status_msg_init = {
   })
 };
 
-const upb_MiniTable* google__rpc__Status_msg_init_ptr = &google__rpc__Status_msg_init;
 static const upb_MiniTable *messages_layout[1] = {
   &google__rpc__Status_msg_init,
 };

@@ -16,10 +16,9 @@
 //
 //
 
-#include "src/core/ext/filters/http/client_authority_filter.h"
-
-#include <grpc/impl/channel_arg_names.h>
 #include <grpc/support/port_platform.h>
+
+#include "src/core/ext/filters/http/client_authority_filter.h"
 
 #include <functional>
 #include <memory>
@@ -27,12 +26,14 @@
 #include "absl/status/status.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/optional.h"
-#include "src/core/config/core_configuration.h"
+
+#include <grpc/impl/channel_arg_names.h>
+
 #include "src/core/lib/channel/channel_stack.h"
+#include "src/core/lib/config/core_configuration.h"
 #include "src/core/lib/security/transport/auth_filters.h"
 #include "src/core/lib/surface/channel_stack_type.h"
 #include "src/core/lib/transport/metadata_batch.h"
-#include "src/core/util/latent_see.h"
 
 namespace grpc_core {
 
@@ -58,8 +59,6 @@ ClientAuthorityFilter::Create(const ChannelArgs& args, ChannelFilter::Args) {
 
 void ClientAuthorityFilter::Call::OnClientInitialMetadata(
     ClientMetadata& md, ClientAuthorityFilter* filter) {
-  GRPC_LATENT_SEE_INNER_SCOPE(
-      "ClientAuthorityFilter::Call::OnClientInitialMetadata");
   // If no authority is set, set the default authority.
   if (md.get_pointer(HttpAuthorityMetadata()) == nullptr) {
     md.Set(HttpAuthorityMetadata(), filter->default_authority_.Ref());
@@ -67,7 +66,8 @@ void ClientAuthorityFilter::Call::OnClientInitialMetadata(
 }
 
 const grpc_channel_filter ClientAuthorityFilter::kFilter =
-    MakePromiseBasedFilter<ClientAuthorityFilter, FilterEndpoint::kClient>();
+    MakePromiseBasedFilter<ClientAuthorityFilter, FilterEndpoint::kClient>(
+        "authority");
 
 namespace {
 bool NeedsClientAuthorityFilter(const ChannelArgs& args) {

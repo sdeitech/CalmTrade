@@ -21,12 +21,24 @@
 #include <vector>
 
 #include "absl/strings/string_view.h"
+#include "absl/types/optional.h"
 #include "absl/types/variant.h"
+#include "envoy/extensions/transport_sockets/tls/v3/tls.upb.h"
+#include "google/protobuf/any.upb.h"
+#include "google/protobuf/duration.upb.h"
+
+#include <grpc/support/port_platform.h>
+
+#include "src/core/lib/gprpp/time.h"
+#include "src/core/lib/gprpp/validation_errors.h"
+#include "src/core/lib/matchers/matchers.h"
 #include "src/core/util/json/json.h"
-#include "src/core/util/matchers.h"
-#include "src/core/util/validation_errors.h"
+#include "src/core/xds/xds_client/xds_resource_type.h"
 
 namespace grpc_core {
+
+Duration ParseDuration(const google_protobuf_Duration* proto_duration,
+                       ValidationErrors* errors);
 
 struct CommonTlsContext {
   struct CertificateProviderPluginInstance {
@@ -43,16 +55,12 @@ struct CommonTlsContext {
   };
 
   struct CertificateValidationContext {
-    struct SystemRootCerts {
-      bool operator==(const SystemRootCerts&) const { return true; }
-    };
-    absl::variant<absl::monostate, CertificateProviderPluginInstance,
-                  SystemRootCerts>
-        ca_certs;
+    CertificateProviderPluginInstance ca_certificate_provider_instance;
     std::vector<StringMatcher> match_subject_alt_names;
 
     bool operator==(const CertificateValidationContext& other) const {
-      return ca_certs == other.ca_certs &&
+      return ca_certificate_provider_instance ==
+                 other.ca_certificate_provider_instance &&
              match_subject_alt_names == other.match_subject_alt_names;
     }
 
@@ -72,6 +80,12 @@ struct CommonTlsContext {
 
   std::string ToString() const;
   bool Empty() const;
+
+  static CommonTlsContext Parse(
+      const XdsResourceType::DecodeContext& context,
+      const envoy_extensions_transport_sockets_tls_v3_CommonTlsContext*
+          common_tls_context_proto,
+      ValidationErrors* errors);
 };
 
 struct XdsExtension {
@@ -84,6 +98,10 @@ struct XdsExtension {
   // processing the extension.
   std::vector<ValidationErrors::ScopedField> validation_fields;
 };
+
+absl::optional<XdsExtension> ExtractXdsExtension(
+    const XdsResourceType::DecodeContext& context,
+    const google_protobuf_Any* any, ValidationErrors* errors);
 
 }  // namespace grpc_core
 

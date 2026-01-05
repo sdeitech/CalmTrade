@@ -2,165 +2,232 @@
 //  HRVDetailViewModel.swift
 //  CalmTrade
 //
-//  Created by Anas Parekh on 02/09/25.
+//  Updated: repo-only (no HealthKit). Buckets local RMSSD/SDNN for CalmScore-style range chart.
+//  - Supports RMSSD or SDNN (set via `set(metric:)`)
+//  - Timeframes mirror HeartRate detail (Hourly/Daily/Weekly/Monthly/Yearly)
+//  - Produces min/max “range bars” per bucket
 //
 
-
 import Foundation
-import Charts
-import HealthKit
+import Combine
 
-// A data structure to pass all necessary UI data from ViewModel to ViewController
-struct HRVUIData {
-    let chartData: LineChartData
-    let averageValue: String
-    let dateRange: String
-    let xAxisLabels: [String]
-}
+enum HRVMetricType { case rmssd, sdnn }
 
-class HRVDetailViewModel {
-    
-    enum ChartTimeRange {
-        case daily, weekly, monthly
-    }
-    
-    // This closure will be called when the chart data is ready for the UI
-    var onDataReady: ((HRVUIData?) -> Void)?
-    private let deviceManager = DeviceManager.shared
-    private let hrvType = HKQuantityType.quantityType(forIdentifier: .heartRateVariabilitySDNN)!
-    
-    /// The main entry point for the ViewController to request data.
-    func fetchData(for range: ChartTimeRange) {
-        HealthKitManager.shared.requestAuthorization { [weak self] success, error in
-            guard success, error == nil else {
-                self?.onDataReady?(nil) // Signal that data is unavailable
-                return
+final class HRVDetailViewModel: ObservableObject {
+
+    // MARK: - Time ranges (match HR)
+    enum ChartTimeRange: Int, CaseIterable {
+        case hourly = 0, daily, weekly, monthly, yearly
+        var title: String {
+            switch self {
+            case .hourly:  return "Hourly"
+            case .daily:   return "Daily"
+            case .weekly:  return "Weekly"
+            case .monthly: return "Monthly"
+            case .yearly:  return "Yearly"
             }
-            
-            // If authorized, proceed with fetching data for the selected range.
+        }
+    }
+
+    // MARK: - Outputs
+    @Published var points: [HRVRangeCalmChartView.HRVRangePoint] = []
+    @Published var averageText: String = "--"      // average of bucket midpoints
+    @Published var dateRangeText: String = "--"
+    @Published var yMax: Double = 600
+    @Published var currentChartRange: ChartTimeRange = .hourly
+    
+    var hrvDetailText : String {
+        let rmssdText = "Heart Rate Variability (HRV) measures the variation in time between each heartbeat. With Polar 360 and Polar H10 devices, HRV is derived using RMSSD (Root Mean Square of Successive Differences) from inter-beat interval (IBI) data. RMSSD reflects the activity of the parasympathetic nervous system, providing insight into your recovery, stress, and overall autonomic balance."
+        let sdnnText = "Heart Rate Variability (HRV) measures the variation in time between each heartbeat. For Polar 360 and Polar H10 devices, HRV is calculated using SDNN (Standard Deviation of NN intervals) derived from inter-beat interval (IBI) data. SDNN reflects overall autonomic nervous system activity, including both sympathetic and parasympathetic branches.\nIf you use Apple Watch, SDNN values are fetched directly from Apple Health and displayed in the app."
+        return metric == .rmssd ? rmssdText : sdnnText
+    }
+
+    var onIsLoading: ((Bool) -> Void)?
+
+    // MARK: - Private
+    private let repo = CTMetricsRepository.shared
+    private(set) var metric: HRVMetricType = .rmssd
+    private(set) var selectedRange: ChartTimeRange = .hourly
+    private(set) var centerDate: Date = Date()
+    private var isLoading = false { didSet { onIsLoading?(isLoading) } }
+
+    // MARK: - Configure
+    func set(metric: HRVMetricType) { self.metric = metric }
+
+    // MARK: - Entry points
+    func fetch(for range: ChartTimeRange) {
+        selectedRange = range
+        currentChartRange = range
+        centerDate = Date()
+        let domain = makeXDomain(for: range, center: centerDate)
+        load(start: domain.lowerBound, end: domain.upperBound, range: range)
+    }
+
+    func loadPreviousPeriod() {
+        guard !isLoading else { return }
+        centerDate = shift(center: centerDate, for: selectedRange, direction: -1)
+        let d = makeXDomain(for: selectedRange, center: centerDate)
+        load(start: d.lowerBound, end: d.upperBound, range: selectedRange)
+    }
+
+    func loadNextPeriod() {
+        guard !isLoading else { return }
+        centerDate = min(shift(center: centerDate, for: selectedRange, direction: +1), Date())
+        let d = makeXDomain(for: selectedRange, center: centerDate)
+        load(start: d.lowerBound, end: d.upperBound, range: selectedRange)
+    }
+
+    // MARK: - Core load
+    private func load(start: Date, end: Date, range: ChartTimeRange) {
+        isLoading = true
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            guard let self else { return }
+
+            let kind: CTMetricKind = (self.metric == .rmssd) ? .rmssd : .sdnn
+            // Detached value structs (safe for background use)
+            let samples: [CTMetricsRepository.CTBiometricPoint] =
+                self.repo.series(kind: kind, from: start, to: end, source: nil)
+
+            let bucketed = self.bucket(samples: samples, for: range)
+            let sorted = bucketed.sorted(by: { $0.time < $1.time })
+
+            let maxU = sorted.map(\.max).max() ?? 0
+            let yTop = self.pickHRVTop(maxU)
+            let header = self.headerText(range: range, domain: start...end)
+
+            let avgMid: Double? = {
+                guard !sorted.isEmpty else { return nil }
+                let mids = sorted.map { ($0.min + $0.max) / 2.0 }
+                return mids.reduce(0, +) / Double(mids.count)
+            }()
+
+            DispatchQueue.main.async {
+                self.points = sorted
+                self.yMax = yTop
+                self.averageText = avgMid.map { "\(Int(($0).rounded()))" } ?? "--"
+                self.dateRangeText = header
+                self.isLoading = false
+            }
+        }
+    }
+
+    // MARK: - Bucketing (same cadence rules as HR)
+    private func bucket(
+        samples: [CTMetricsRepository.CTBiometricPoint],
+        for range: ChartTimeRange
+    ) -> [HRVRangeCalmChartView.HRVRangePoint] {
+
+        guard !samples.isEmpty else { return [] }
+        let cal = Calendar.current
+
+        // Group by bucket start date
+        let grouped = Dictionary(grouping: samples) { s -> Date in
             switch range {
-            case .daily: self?.fetchDailyData()
-            case .weekly: self?.fetchWeeklyData()
-            case .monthly: self?.fetchMonthlyData()
+            case .hourly:
+                let hourStart = cal.dateInterval(of: .hour, for: s.date)?.start ?? cal.startOfDay(for: s.date)
+                let minute = cal.component(.minute, from: s.date)
+                let idx = minute / 3
+                return cal.date(byAdding: .minute, value: idx * 3, to: hourStart) ?? hourStart
+
+            case .daily:
+                return cal.dateInterval(of: .hour, for: s.date)?.start ?? s.date
+
+            case .weekly:
+                return cal.startOfDay(for: s.date)
+
+            case .monthly:
+                return cal.startOfDay(for: s.date)
+
+            case .yearly:
+                return cal.dateInterval(of: .month, for: s.date)?.start ?? cal.startOfDay(for: s.date)
             }
         }
-    }
-    
-    // MARK: - Data Fetching
-    
-    private func fetchDailyData() {
-        let calendar = Calendar.current
-        let anchorDate = calendar.startOfDay(for: Date())
-        let predicate = HKQuery.predicateForSamples(withStart: anchorDate, end: Date(), options: .strictStartDate)
-        let interval = DateComponents(hour: 1)
-        
-        deviceManager.fetchStatisticsCollection(for: hrvType, predicate: predicate, options: .discreteAverage, anchorDate: anchorDate, interval: interval) { [weak self] results in
-            self?.process(statsCollection: results, range: .daily, anchorDate: anchorDate)
-        }
-    }
-    
-    private func fetchWeeklyData() {
-        let calendar = Calendar.current
-        guard let anchorDate = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: Date())) else {
-            onDataReady?(nil)
-            return
-        }
-        let predicate = HKQuery.predicateForSamples(withStart: anchorDate, end: Date(), options: .strictStartDate)
-        let interval = DateComponents(day: 1)
-        
-        deviceManager.fetchStatisticsCollection(for: hrvType, predicate: predicate, options: .discreteAverage, anchorDate: anchorDate, interval: interval) { [weak self] results in
-            self?.process(statsCollection: results, range: .weekly, anchorDate: anchorDate)
-        }
-    }
-    
-    private func fetchMonthlyData() {
-        let calendar = Calendar.current
-        guard let anchorDate = calendar.date(from: calendar.dateComponents([.year, .month], from: Date())) else {
-            onDataReady?(nil)
-            return
-        }
-        let predicate = HKQuery.predicateForSamples(withStart: anchorDate, end: Date(), options: .strictStartDate)
-        let interval = DateComponents(weekOfYear: 1)
-        
-        deviceManager.fetchStatisticsCollection(for: hrvType, predicate: predicate, options: .discreteAverage, anchorDate: anchorDate, interval: interval) { [weak self] results in
-            self?.process(statsCollection: results, range: .monthly, anchorDate: anchorDate)
-        }
-    }
-    
-    // MARK: - Unified Data Processing
-    
-    private func process(statsCollection: HKStatisticsCollection?, range: ChartTimeRange, anchorDate: Date) {
-        guard let statsCollection = statsCollection else {
-            onDataReady?(nil)
-            return
-        }
-        
-        var entries: [ChartDataEntry] = []
-        var totalValue: Double = 0
-        var dataPointCount: Int = 0
-        
-        let group = DispatchGroup()
-        group.enter()
-        
-        statsCollection.enumerateStatistics(from: anchorDate, to: Date()) { statistics, stop in
-            if let averageValue = statistics.averageQuantity()?.doubleValue(for: .secondUnit(with: .milli)) {
-                // **THE FIX**: Use the current count of entries as the x-value.
-                // This guarantees a sequential index (0, 1, 2...) that maps to the labels array.
-                let xValue = Double(entries.count)
-                
-                entries.append(ChartDataEntry(x: xValue, y: averageValue))
-                totalValue += averageValue
-                dataPointCount += 1
+
+        // Compute min/max for each bucket
+        var out: [HRVRangeCalmChartView.HRVRangePoint] = []
+        out.reserveCapacity(grouped.count)
+
+        for (bucketStart, items) in grouped {
+            let vals = items.map(\.value)
+            if let lo = vals.min(), let hi = vals.max() {
+                out.append(.init(time: bucketStart, min: lo, max: hi))
             }
         }
-        group.leave()
-        
-        group.notify(queue: .main) {
-            let average = dataPointCount > 0 ? Int(totalValue / Double(dataPointCount)) : 0
-            let (dateRange, xAxisLabels) = self.getLabels(for: range)
-            let uiData = self.createUIData(from: entries, average: average, dateRange: dateRange, xAxisLabels: xAxisLabels)
-            self.onDataReady?(uiData)
-        }
+
+        return out
     }
-    
-    // MARK: - Chart Data Creation & Formatting
-    
-    private func createUIData(from entries: [ChartDataEntry], average: Int, dateRange: String, xAxisLabels: [String]) -> HRVUIData {
-        let dataSet = LineChartDataSet(entries: entries, label: "HRV")
-        // Styling the line and circles
-        let lineColor = UIColor.init("#B52D0B")//(red: 0.96, green: 0.51, blue: 0.31, alpha: 1.00) // Orange
-        dataSet.colors = [lineColor]
-        dataSet.lineWidth = 2.0
-        dataSet.circleHoleColor = .black
-        dataSet.circleColors = [lineColor]
-        dataSet.circleHoleRadius = 3.0
-        dataSet.circleRadius = 4.5
-        
-        dataSet.drawValuesEnabled = false
-        dataSet.mode = .cubicBezier
-        
-        return HRVUIData(chartData: LineChartData(dataSet: dataSet), averageValue: "\(average)", dateRange: dateRange, xAxisLabels: xAxisLabels)
-    }
-    
-    // MARK: - Formatting Helpers
-    private func getLabels(for range: ChartTimeRange) -> (dateRange: String, xAxisLabels: [String]) {
-        let now = Date()
-        let calendar = Calendar.current
-        let dateFormatter = DateFormatter()
-        
+
+    // MARK: - Domains/paging (copied from HR VM)
+    private func makeXDomain(for range: ChartTimeRange, center: Date) -> ClosedRange<Date> {
+        let cal = Calendar.current
         switch range {
+        case .hourly:
+            let day = cal.startOfDay(for: center)
+            let endOfDay = cal.date(byAdding: DateComponents(day: 1, second: -1), to: day)!
+            let mid = cal.dateInterval(of: .hour, for: center)?.start ?? center
+            let from = max(day, cal.date(byAdding: .hour, value: -12, to: mid)!)
+            let to   = min(endOfDay, cal.date(byAdding: .hour, value:  12, to: mid)!)
+            return from...min(to, Date())
         case .daily:
-            return ("Today", ["12 AM", "6 AM", "12 PM", "6 PM"])
+            let s = cal.startOfDay(for: cal.date(byAdding: .day, value: -3, to: center)!)
+            let e = cal.startOfDay(for: cal.date(byAdding: .day, value: +4, to: center)!)
+            return s...min(e, Date())
         case .weekly:
-            dateFormatter.dateFormat = "MMM d"
-            guard let weekStartDate = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: now)) else { return ("-", []) }
-            let weekEndDate = calendar.date(byAdding: .day, value: 6, to: weekStartDate)!
-            let rangeString = "\(dateFormatter.string(from: weekStartDate))-\(dateFormatter.string(from: weekEndDate)), \(calendar.component(.year, from: now))"
-            return (rangeString, ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"])
+            let week = cal.dateInterval(of: .weekOfYear, for: center)!
+            let s = cal.date(byAdding: .weekOfYear, value: -2, to: week.start)!
+            let e = cal.date(byAdding: .weekOfYear, value: +3, to: week.start)!
+            return s...min(e, Date())
         case .monthly:
-            dateFormatter.dateFormat = "MMMM yyyy"
-            return (dateFormatter.string(from: now), ["Week 1", "Week 2", "Week 3", "Week 4"])
+            let month = cal.dateInterval(of: .month, for: center)!
+            let s = cal.date(byAdding: .month, value: -6, to: month.start)!
+            let e = cal.date(byAdding: .month, value: +7, to: month.start)!
+            return s...min(e, Date())
+        case .yearly:
+            let year = cal.dateInterval(of: .year, for: center)!
+            let s = cal.date(byAdding: .year, value: -2, to: year.start)!
+            let e = cal.date(byAdding: .year, value: +3, to: year.start)!
+            return s...min(e, Date())
         }
+    }
+
+    private func shift(center: Date, for range: ChartTimeRange, direction: Int) -> Date {
+        let cal = Calendar.current
+        switch range {
+        case .hourly:  return cal.date(byAdding: .day, value: direction, to: center)!
+        case .daily:   return cal.date(byAdding: .weekOfYear, value: direction, to: center)!
+        case .weekly:  return cal.date(byAdding: .month, value: direction, to: center)!
+        case .monthly: return cal.date(byAdding: .year, value: direction, to: center)!
+        case .yearly:  return cal.date(byAdding: .year, value: 5 * direction, to: center)!
+        }
+    }
+
+    private func headerText(range: ChartTimeRange, domain: ClosedRange<Date>) -> String {
+        let fmt = DateFormatter()
+        let s = domain.lowerBound
+        let e = domain.upperBound
+        switch range {
+        case .hourly:
+            fmt.dateFormat = "MMMM d, yyyy"; return fmt.string(from: centerDate)
+        case .daily:
+            fmt.dateFormat = "MMM d"; return "\(fmt.string(from: s)) - \(fmt.string(from: e))"
+        case .weekly:
+            fmt.dateFormat = "MMMM yyyy"; return fmt.string(from: centerDate)
+        case .monthly:
+            fmt.dateFormat = "yyyy"; return fmt.string(from: centerDate)
+        case .yearly:
+            let cal = Calendar.current
+            let ys = cal.component(.year, from: s)
+            let ye = cal.component(.year, from: e)
+            return ys == ye ? "\(ys)" : "\(ys) - \(ye)"
+        }
+    }
+
+    // MARK: - Local helper (axis top selection for HRV)
+    @inline(__always)
+    private func pickHRVTop(_ rangeMax: Double) -> Double {
+        let step = 200.0
+        let safe = max(0.0, rangeMax)
+        let top = ceil(safe / step) * step
+        return max(step, top) // at least 200
     }
 }
-

@@ -7,6 +7,7 @@
 //
 
 import UIKit
+import KRProgressHUD
 
 class BaseViewController: UIViewController {
 
@@ -53,8 +54,8 @@ class BaseViewController: UIViewController {
             
         baseVwModel?.updateLoadingStatus = { [weak self] () in
             DispatchQueue.main.async {
-                let isLoading = self?.baseVwModel?.isLoading ?? false
-                UIApplication.shared.isNetworkActivityIndicatorVisible = isLoading
+//                let isLoading = self?.baseVwModel?.isLoading ?? false
+//                UIApplication.shared.isNetworkActivityIndicatorVisible = isLoading
             }
         }
     }

@@ -18,7 +18,6 @@
 
 #include "src/core/resolver/endpoint_addresses.h"
 
-#include <grpc/support/port_platform.h>
 #include <string.h>
 
 #include <string>
@@ -30,6 +29,10 @@
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
+
+#include <grpc/support/log.h>
+#include <grpc/support/port_platform.h>
+
 #include "src/core/lib/address_utils/sockaddr_utils.h"
 #include "src/core/lib/channel/channel_args.h"
 #include "src/core/util/useful.h"

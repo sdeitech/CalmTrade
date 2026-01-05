@@ -14,9 +14,9 @@
 
 import Foundation
 #if COCOAPODS
-  internal import GoogleUtilities
+  @_implementationOnly import GoogleUtilities
 #else
-  internal import GoogleUtilities_Environment
+  @_implementationOnly import GoogleUtilities_Environment
 #endif
 
 #if os(iOS)
@@ -47,14 +47,14 @@ import Foundation
         return ""
       }
       return "otpauth://totp/\(issuer):\(accountName)?secret=\(secretKey)&issuer=\(issuer)" +
-        "&algorithm=\(hashingAlgorithm)&digits=\(codeLength)"
+        "&algorithm=%\(hashingAlgorithm)&digits=\(codeLength)"
     }
 
     /// Opens the specified QR Code URL in a password manager like iCloud Keychain.
     ///
     /// See more details
     /// [here](https://developer.apple.com/documentation/authenticationservices/securing_logins_with_icloud_keychain_verification_codes)
-    @MainActor @objc(openInOTPAppWithQRCodeURL:)
+    @objc(openInOTPAppWithQRCodeURL:)
     open func openInOTPApp(withQRCodeURL qrCodeURL: String) {
       if GULAppEnvironmentUtil.isAppExtension() {
         // iOS App extensions should not call [UIApplication sharedApplication], even if

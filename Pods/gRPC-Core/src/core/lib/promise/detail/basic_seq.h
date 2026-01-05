@@ -17,41 +17,35 @@
 
 #include <grpc/support/port_platform.h>
 
-#include "src/core/lib/promise/detail/promise_factory.h"
+#include "src/core/lib/gprpp/construct_destruct.h"
 #include "src/core/lib/promise/poll.h"
-#include "src/core/util/construct_destruct.h"
 
 namespace grpc_core {
 namespace promise_detail {
-
-template <typename FactoryFn>
-auto BindFactoryFnArgs(FactoryFn fn) {
-  return [fn = std::move(fn)](auto x) mutable {
-    return fn(std::get<0>(x), std::move(std::get<1>(x)));
-  };
-}
 
 // Models a sequence of unknown size
 // At each element, the accumulator A and the current value V is passed to some
 // function of type IterTraits::Factory as f(V, IterTraits::Argument); f is
 // expected to return a promise that resolves to IterTraits::Wrapped.
-template <template <typename> class Traits, typename Iter, typename FactoryFn,
-          typename Argument>
+template <class IterTraits>
 class BasicSeqIter {
  private:
-  using BoundFactoryFn = decltype(BindFactoryFnArgs(std::declval<FactoryFn>()));
-  using TplArg = std::tuple<decltype((*std::declval<Iter>())), Argument>;
-  using Factory = RepeatedPromiseFactory<TplArg, BoundFactoryFn>;
-  using State = typename Factory::Promise;
-  using StateResult = typename State::Result;
+  using Traits = typename IterTraits::Traits;
+  using Iter = typename IterTraits::Iter;
+  using Factory = typename IterTraits::Factory;
+  using Argument = typename IterTraits::Argument;
+  using IterValue = typename IterTraits::IterValue;
+  using StateCreated = typename IterTraits::StateCreated;
+  using State = typename IterTraits::State;
+  using Wrapped = typename IterTraits::Wrapped;
 
  public:
-  BasicSeqIter(Iter begin, Iter end, FactoryFn f, Argument arg)
-      : cur_(begin), end_(end), f_(BindFactoryFnArgs(std::move(f))) {
+  BasicSeqIter(Iter begin, Iter end, Factory f, Argument arg)
+      : cur_(begin), end_(end), f_(std::move(f)) {
     if (cur_ == end_) {
       Construct(&result_, std::move(arg));
     } else {
-      Construct(&state_, f_.Make(TplArg(*cur_, std::move(arg))));
+      Construct(&state_, f_(*cur_, std::move(arg)));
     }
   }
 
@@ -85,7 +79,7 @@ class BasicSeqIter {
     return *this;
   }
 
-  Poll<StateResult> operator()() {
+  Poll<Wrapped> operator()() {
     if (cur_ == end_) {
       return std::move(result_);
     }
@@ -93,12 +87,11 @@ class BasicSeqIter {
   }
 
  private:
-  Poll<StateResult> PollNonEmpty() {
-    Poll<StateResult> r = state_();
+  Poll<Wrapped> PollNonEmpty() {
+    Poll<Wrapped> r = state_();
     if (r.pending()) return r;
-    using Tr = Traits<StateResult>;
-    return Tr::template CheckResultAndRunNext<StateResult>(
-        std::move(r.value()), [this](auto arg) -> Poll<StateResult> {
+    return Traits::template CheckResultAndRunNext<Wrapped>(
+        std::move(r.value()), [this](Wrapped arg) -> Poll<Wrapped> {
           auto next = cur_;
           ++next;
           if (next == end_) {
@@ -106,14 +99,7 @@ class BasicSeqIter {
           }
           cur_ = next;
           state_.~State();
-          struct WrapperFactory {
-            BasicSeqIter* owner;
-            State Make(typename Tr::UnwrappedType r) {
-              return owner->f_.Make(TplArg(*owner->cur_, std::move(r)));
-            }
-          };
-          WrapperFactory wrapper_factory{this};
-          Construct(&state_, Tr::CallFactory(&wrapper_factory, std::move(arg)));
+          Construct(&state_, Traits::CallSeqFactory(f_, *cur_, std::move(arg)));
           return PollNonEmpty();
         });
   }

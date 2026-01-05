@@ -46,10 +46,6 @@ bool ssl_protocol_version_from_wire(uint16_t *out, uint16_t version) {
       *out = TLS1_2_VERSION;
       return true;
 
-    case DTLS1_3_EXPERIMENTAL_VERSION:
-      *out = TLS1_3_VERSION;
-      return true;
-
     default:
       return false;
   }
@@ -66,7 +62,6 @@ static const uint16_t kTLSVersions[] = {
 };
 
 static const uint16_t kDTLSVersions[] = {
-    DTLS1_3_EXPERIMENTAL_VERSION,
     DTLS1_2_VERSION,
     DTLS1_VERSION,
 };
@@ -104,7 +99,6 @@ static const VersionInfo kVersionNames[] = {
     {TLS1_VERSION, "TLSv1"},
     {DTLS1_VERSION, "DTLSv1"},
     {DTLS1_2_VERSION, "DTLSv1.2"},
-    {DTLS1_3_EXPERIMENTAL_VERSION, "DTLSv1.3"},
 };
 
 static const char *ssl_version_to_string(uint16_t version) {

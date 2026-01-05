@@ -1081,8 +1081,7 @@ extension User: NSSecureCoding {}
                           anonymous: Bool) async throws -> User {
     guard let accessToken = accessToken,
           let refreshToken = refreshToken else {
-      throw AuthErrorUtils
-        .invalidUserTokenError(message: "Invalid user token: accessToken or refreshToken is nil")
+      fatalError("Internal FirebaseAuth Error: nil token")
     }
     let tokenService = SecureTokenService(withRequestConfiguration: auth.requestConfiguration,
                                           accessToken: accessToken,
@@ -1591,22 +1590,13 @@ extension User: NSSecureCoding {}
   /// on the  global work thread in the future.
   func internalGetToken(forceRefresh: Bool = false,
                         backend: AuthBackend,
-                        callback: @escaping (String?, Error?) -> Void,
-                        callCallbackOnMain: Bool = false) {
+                        callback: @escaping (String?, Error?) -> Void) {
     Task {
       do {
         let token = try await internalGetTokenAsync(forceRefresh: forceRefresh, backend: backend)
-        if callCallbackOnMain {
-          Auth.wrapMainAsync(callback: callback, with: .success(token))
-        } else {
-          callback(token, nil)
-        }
+        callback(token, nil)
       } catch {
-        if callCallbackOnMain {
-          Auth.wrapMainAsync(callback: callback, with: .failure(error))
-        } else {
-          callback(nil, error)
-        }
+        callback(nil, error)
       }
     }
   }

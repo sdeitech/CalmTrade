@@ -22,14 +22,6 @@
 
 #ifdef GRPC_WINSOCK_SOCKET
 
-#include <grpc/event_engine/endpoint_config.h>
-#include <grpc/event_engine/event_engine.h>
-#include <grpc/event_engine/memory_allocator.h>
-#include <grpc/support/alloc.h>
-#include <grpc/support/log_windows.h>
-#include <grpc/support/string_util.h>
-#include <grpc/support/sync.h>
-#include <grpc/support/time.h>
 #include <inttypes.h>
 #include <io.h>
 
@@ -38,12 +30,23 @@
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 #include "absl/strings/str_cat.h"
+
+#include <grpc/event_engine/endpoint_config.h>
+#include <grpc/event_engine/event_engine.h>
+#include <grpc/event_engine/memory_allocator.h>
+#include <grpc/support/alloc.h>
+#include <grpc/support/log_windows.h>
+#include <grpc/support/string_util.h>
+#include <grpc/support/sync.h>
+#include <grpc/support/time.h>
+
 #include "src/core/lib/address_utils/sockaddr_utils.h"
 #include "src/core/lib/event_engine/memory_allocator_factory.h"
 #include "src/core/lib/event_engine/resolved_address_internal.h"
 #include "src/core/lib/event_engine/tcp_socket_utils.h"
 #include "src/core/lib/event_engine/windows/windows_engine.h"
 #include "src/core/lib/event_engine/windows/windows_listener.h"
+#include "src/core/lib/gprpp/crash.h"
 #include "src/core/lib/iomgr/closure.h"
 #include "src/core/lib/iomgr/event_engine_shims/closure.h"
 #include "src/core/lib/iomgr/event_engine_shims/endpoint.h"
@@ -57,7 +60,6 @@
 #include "src/core/lib/resource_quota/api.h"
 #include "src/core/lib/resource_quota/resource_quota.h"
 #include "src/core/lib/slice/slice_internal.h"
-#include "src/core/util/crash.h"
 
 #define MIN_SAFE_ACCEPT_QUEUE_SIZE 100
 
@@ -371,7 +373,7 @@ static void on_accept(void* arg, grpc_error_handle error) {
   grpc_winsocket_callback_info* info = &sp->socket->read_info;
   grpc_endpoint* ep = NULL;
   grpc_resolved_address peer_name;
-  DWORD transferred_bytes;
+  DWORD transfered_bytes;
   DWORD flags;
   BOOL wsa_success;
   int err;
@@ -392,9 +394,9 @@ static void on_accept(void* arg, grpc_error_handle error) {
   }
   // The IOCP notified us of a completed operation. Let's grab the results,
   // and act accordingly.
-  transferred_bytes = 0;
+  transfered_bytes = 0;
   wsa_success = WSAGetOverlappedResult(sock, &info->overlapped,
-                                       &transferred_bytes, FALSE, &flags);
+                                       &transfered_bytes, FALSE, &flags);
   if (!wsa_success) {
     if (!sp->shutting_down) {
       char* utf8_message = gpr_format_message(WSAGetLastError());

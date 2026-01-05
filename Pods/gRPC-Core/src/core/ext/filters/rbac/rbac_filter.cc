@@ -14,20 +14,22 @@
 // limitations under the License.
 //
 
-#include "src/core/ext/filters/rbac/rbac_filter.h"
-
-#include <grpc/grpc_security.h>
 #include <grpc/support/port_platform.h>
+
+#include "src/core/ext/filters/rbac/rbac_filter.h"
 
 #include <functional>
 #include <memory>
 #include <utility>
 
 #include "absl/status/status.h"
-#include "src/core/config/core_configuration.h"
+
+#include <grpc/grpc_security.h>
+
 #include "src/core/ext/filters/rbac/rbac_service_config_parser.h"
 #include "src/core/lib/channel/channel_args.h"
 #include "src/core/lib/channel/channel_stack.h"
+#include "src/core/lib/config/core_configuration.h"
 #include "src/core/lib/iomgr/error.h"
 #include "src/core/lib/promise/context.h"
 #include "src/core/lib/promise/promise.h"
@@ -37,7 +39,6 @@
 #include "src/core/lib/transport/metadata_batch.h"
 #include "src/core/lib/transport/transport.h"
 #include "src/core/service_config/service_config_call_data.h"
-#include "src/core/util/latent_see.h"
 
 namespace grpc_core {
 
@@ -50,7 +51,6 @@ const NoInterceptor RbacFilter::Call::OnFinalize;
 
 absl::Status RbacFilter::Call::OnClientInitialMetadata(ClientMetadata& md,
                                                        RbacFilter* filter) {
-  GRPC_LATENT_SEE_INNER_SCOPE("RbacFilter::Call::OnClientInitialMetadata");
   // Fetch and apply the rbac policy from the service config.
   auto* service_config_call_data = GetContext<ServiceConfigCallData>();
   auto* method_params = static_cast<RbacMethodParsedConfig*>(
@@ -71,7 +71,7 @@ absl::Status RbacFilter::Call::OnClientInitialMetadata(ClientMetadata& md,
 }
 
 const grpc_channel_filter RbacFilter::kFilterVtable =
-    MakePromiseBasedFilter<RbacFilter, FilterEndpoint::kServer>();
+    MakePromiseBasedFilter<RbacFilter, FilterEndpoint::kServer>("rbac_filter");
 
 RbacFilter::RbacFilter(size_t index,
                        EvaluateArgs::PerChannelArgs per_channel_evaluate_args)

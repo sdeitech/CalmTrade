@@ -13,7 +13,6 @@
 // limitations under the License.
 
 import FirebaseCoreExtension
-import FirebaseCoreInternal
 import Foundation
 
 /// The prefix string for keychain item account attribute before the key.
@@ -23,15 +22,16 @@ private let kAccountPrefix = "firebase_auth_1_"
 
 /// The utility class to manipulate data in iOS Keychain.
 @available(iOS 13, tvOS 13, macOS 10.15, macCatalyst 13, watchOS 7, *)
-final class AuthKeychainServices: Sendable {
+final class AuthKeychainServices {
   /// The name of the keychain service.
-  private let service: String
+  let service: String
 
-  private let keychainStorage: AuthKeychainStorage
+  let keychainStorage: AuthKeychainStorage
 
   // MARK: - Internal methods for shared keychain operations
 
-  required init(service: String = "Unset service", storage: AuthKeychainStorage) {
+  required init(service: String = "Unset service",
+                storage: AuthKeychainStorage = AuthKeychainStorageReal()) {
     self.service = service
     keychainStorage = storage
   }
@@ -102,7 +102,11 @@ final class AuthKeychainServices: Sendable {
   /// been deleted.
   ///
   /// This dictionary is to avoid unnecessary keychain operations against legacy items.
-  private let legacyEntryDeletedForKey = UnfairLock<Set<String>>([])
+  private var legacyEntryDeletedForKey: Set<String> = []
+
+  static func storage(identifier: String) -> Self {
+    return Self(service: identifier)
+  }
 
   func data(forKey key: String) throws -> Data? {
     if let data = try getItemLegacy(query: genericPasswordQuery(key: key)) {
@@ -110,7 +114,7 @@ final class AuthKeychainServices: Sendable {
     }
 
     // Check for legacy form.
-    if legacyEntryDeletedForKey.value().contains(key) {
+    if legacyEntryDeletedForKey.contains(key) {
       return nil
     }
     if let data = try getItemLegacy(query: legacyGenericPasswordQuery(key: key)) {
@@ -120,7 +124,7 @@ final class AuthKeychainServices: Sendable {
       return data
     } else {
       // Mark legacy data as non-existing so we don't have to query it again.
-      legacyEntryDeletedForKey.withLock { $0.insert(key) }
+      legacyEntryDeletedForKey.insert(key)
       return nil
     }
   }
@@ -210,12 +214,12 @@ final class AuthKeychainServices: Sendable {
   /// Deletes legacy item from the keychain if it is not already known to be deleted.
   /// - Parameter key: The key for the item.
   private func deleteLegacyItem(key: String) {
-    if legacyEntryDeletedForKey.value().contains(key) {
+    if legacyEntryDeletedForKey.contains(key) {
       return
     }
     let query = legacyGenericPasswordQuery(key: key)
     keychainStorage.delete(query: query)
-    legacyEntryDeletedForKey.withLock { $0.insert(key) }
+    legacyEntryDeletedForKey.insert(key)
   }
 
   /// Returns a keychain query of generic password to be used to manipulate key'ed value.

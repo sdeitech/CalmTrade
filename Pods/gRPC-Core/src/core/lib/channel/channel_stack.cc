@@ -18,7 +18,6 @@
 
 #include "src/core/lib/channel/channel_stack.h"
 
-#include <grpc/support/port_platform.h>
 #include <stdint.h>
 
 #include <memory>
@@ -26,6 +25,10 @@
 
 #include "absl/log/check.h"
 #include "absl/log/log.h"
+
+#include <grpc/support/log.h>
+#include <grpc/support/port_platform.h>
+
 #include "src/core/lib/channel/channel_args.h"
 #include "src/core/lib/channel/channel_fwd.h"
 #include "src/core/lib/surface/channel_init.h"
@@ -114,8 +117,7 @@ grpc_error_handle grpc_channel_stack_init(
     int initial_refs, grpc_iomgr_cb_func destroy, void* destroy_arg,
     const grpc_channel_filter** filters, size_t filter_count,
     const grpc_core::ChannelArgs& channel_args, const char* name,
-    grpc_channel_stack* stack, const grpc_core::Blackboard* old_blackboard,
-    grpc_core::Blackboard* new_blackboard) {
+    grpc_channel_stack* stack) {
   if (GRPC_TRACE_FLAG_ENABLED(channel_stack)) {
     LOG(INFO) << "CHANNEL_STACK: init " << name;
     for (size_t i = 0; i < filter_count; i++) {
@@ -144,8 +146,6 @@ grpc_error_handle grpc_channel_stack_init(
                                              sizeof(grpc_channel_element));
 
   // init per-filter data
-  args.old_blackboard = old_blackboard;
-  args.new_blackboard = new_blackboard;
   grpc_error_handle first_error;
   for (i = 0; i < filter_count; i++) {
     args.channel_stack = stack;
@@ -262,9 +262,7 @@ void grpc_call_stack_destroy(grpc_call_stack* stack,
 void grpc_call_next_op(grpc_call_element* elem,
                        grpc_transport_stream_op_batch* op) {
   grpc_call_element* next_elem = elem + 1;
-  GRPC_TRACE_LOG(channel, INFO)
-      << "OP[" << elem->filter->name << ":" << elem
-      << "]: " << grpc_transport_stream_op_batch_string(op, false);
+  GRPC_CALL_LOG_OP(GPR_INFO, next_elem, op);
   next_elem->filter->start_transport_stream_op_batch(next_elem, op);
 }
 
@@ -294,3 +292,10 @@ grpc_call_stack* grpc_call_stack_from_top_element(grpc_call_element* elem) {
 
 void grpc_channel_stack_no_post_init(grpc_channel_stack*,
                                      grpc_channel_element*) {}
+
+void grpc_call_log_op(const char* file, int line, gpr_log_severity severity,
+                      grpc_call_element* elem,
+                      grpc_transport_stream_op_batch* op) {
+  gpr_log(file, line, severity, "OP[%s:%p]: %s", elem->filter->name, elem,
+          grpc_transport_stream_op_batch_string(op, false).c_str());
+}

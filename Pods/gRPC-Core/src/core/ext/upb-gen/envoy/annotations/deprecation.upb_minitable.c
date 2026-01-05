@@ -3,8 +3,7 @@
  *     envoy/annotations/deprecation.proto
  *
  * Do not edit -- your changes will be discarded when the file is
- * regenerated.
- * NO CHECKED-IN PROTOBUF GENCODE */
+ * regenerated. */
 
 #include <stddef.h>
 #include "upb/generated_code_support.h"
@@ -14,29 +13,24 @@
 // Must be last.
 #include "upb/port/def.inc"
 
-extern const struct upb_MiniTable UPB_PRIVATE(_kUpb_MiniTable_StaticallyTreeShaken);
-UPB_LINKARR_APPEND(upb_AllExts)
 const upb_MiniTableExtension envoy_annotations_disallowed_by_default_ext = {
   {189503207, 0, 0, kUpb_NoSub, 8, (int)kUpb_FieldMode_Scalar | (int)kUpb_LabelFlags_IsExtension | ((int)kUpb_FieldRep_1Byte << kUpb_FieldRep_Shift)},
   &google__protobuf__FieldOptions_msg_init,
   {.UPB_PRIVATE(submsg) = NULL},
 
 };
-UPB_LINKARR_APPEND(upb_AllExts)
 const upb_MiniTableExtension envoy_annotations_deprecated_at_minor_version_ext = {
   {157299826, 0, 0, kUpb_NoSub, 9, (int)kUpb_FieldMode_Scalar | (int)kUpb_LabelFlags_IsExtension | ((int)kUpb_FieldRep_StringView << kUpb_FieldRep_Shift)},
   &google__protobuf__FieldOptions_msg_init,
   {.UPB_PRIVATE(submsg) = NULL},
 
 };
-UPB_LINKARR_APPEND(upb_AllExts)
 const upb_MiniTableExtension envoy_annotations_disallowed_by_default_enum_ext = {
   {70100853, 0, 0, kUpb_NoSub, 8, (int)kUpb_FieldMode_Scalar | (int)kUpb_LabelFlags_IsExtension | ((int)kUpb_FieldRep_1Byte << kUpb_FieldRep_Shift)},
   &google__protobuf__EnumValueOptions_msg_init,
   {.UPB_PRIVATE(submsg) = NULL},
 
 };
-UPB_LINKARR_APPEND(upb_AllExts)
 const upb_MiniTableExtension envoy_annotations_deprecated_at_minor_version_enum_ext = {
   {181198657, 0, 0, kUpb_NoSub, 9, (int)kUpb_FieldMode_Scalar | (int)kUpb_LabelFlags_IsExtension | ((int)kUpb_FieldRep_StringView << kUpb_FieldRep_Shift)},
   &google__protobuf__EnumValueOptions_msg_init,

@@ -3,11 +3,10 @@
  *     envoy/config/core/v3/backoff.proto
  *
  * Do not edit -- your changes will be discarded when the file is
- * regenerated.
- * NO CHECKED-IN PROTOBUF GENCODE */
+ * regenerated. */
 
-#ifndef ENVOY_CONFIG_CORE_V3_BACKOFF_PROTO_UPB_H__UPB_MINITABLE_H_
-#define ENVOY_CONFIG_CORE_V3_BACKOFF_PROTO_UPB_H__UPB_MINITABLE_H_
+#ifndef ENVOY_CONFIG_CORE_V3_BACKOFF_PROTO_UPB_MINITABLE_H_
+#define ENVOY_CONFIG_CORE_V3_BACKOFF_PROTO_UPB_MINITABLE_H_
 
 #include "upb/generated_code_support.h"
 
@@ -19,7 +18,6 @@ extern "C" {
 #endif
 
 extern const upb_MiniTable envoy__config__core__v3__BackoffStrategy_msg_init;
-extern const upb_MiniTable* envoy__config__core__v3__BackoffStrategy_msg_init_ptr;
 
 extern const upb_MiniTableFile envoy_config_core_v3_backoff_proto_upb_file_layout;
 
@@ -29,4 +27,4 @@ extern const upb_MiniTableFile envoy_config_core_v3_backoff_proto_upb_file_layou
 
 #include "upb/port/undef.inc"
 
-#endif  /* ENVOY_CONFIG_CORE_V3_BACKOFF_PROTO_UPB_H__UPB_MINITABLE_H_ */
+#endif  /* ENVOY_CONFIG_CORE_V3_BACKOFF_PROTO_UPB_MINITABLE_H_ */

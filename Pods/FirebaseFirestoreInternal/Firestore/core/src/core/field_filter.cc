@@ -16,7 +16,6 @@
 
 #include "Firestore/core/src/core/field_filter.h"
 
-#include <memory>
 #include <utility>
 
 #include "Firestore/core/src/core/array_contains_any_filter.h"
@@ -123,12 +122,12 @@ FieldFilter::FieldFilter(std::shared_ptr<const Filter::Rep> rep)
     : Filter(std::move(rep)) {
 }
 
-std::shared_ptr<std::vector<FieldFilter>>
-FieldFilter::Rep::CalculateFlattenedFilters() const {
+const std::vector<FieldFilter>& FieldFilter::Rep::GetFlattenedFilters() const {
   // This is already a field filter, so we return a vector of size one.
-  auto filters = std::make_shared<std::vector<FieldFilter>>();
-  filters->push_back(FieldFilter(std::make_shared<const Rep>(*this)));
-  return filters;
+  return memoized_flattened_filters_->memoize([&]() {
+    return std::vector<FieldFilter>{
+        FieldFilter(std::make_shared<const Rep>(*this))};
+  });
 }
 
 std::vector<Filter> FieldFilter::Rep::GetFilters() const {
@@ -157,8 +156,7 @@ bool FieldFilter::Rep::Matches(const model::Document& doc) const {
 
   // Types do not have to match in NotEqual filters.
   if (op_ == Operator::NotEqual) {
-    return lhs.which_value_type != google_firestore_v1_Value_null_value_tag &&
-           MatchesComparison(Compare(lhs, *value_rhs_));
+    return MatchesComparison(Compare(lhs, *value_rhs_));
   }
 
   // Only compare types with matching backend order (such as double and int).

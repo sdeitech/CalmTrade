@@ -14,15 +14,6 @@
 // limitations under the License.
 //
 
-#include <grpc/credentials.h>
-#include <grpc/grpc_security.h>
-#include <grpc/status.h>
-#include <grpc/support/alloc.h>
-#include <grpc/support/string_util.h>
-#include <grpcpp/impl/sync.h>
-#include <grpcpp/security/tls_certificate_verifier.h>
-#include <grpcpp/support/status.h>
-#include <grpcpp/support/string_ref.h>
 #include <stddef.h>
 
 #include <algorithm>
@@ -32,6 +23,17 @@
 #include <vector>
 
 #include "absl/log/check.h"
+
+#include <grpc/credentials.h>
+#include <grpc/grpc_security.h>
+#include <grpc/status.h>
+#include <grpc/support/alloc.h>
+#include <grpc/support/log.h>
+#include <grpc/support/string_util.h>
+#include <grpcpp/impl/sync.h>
+#include <grpcpp/security/tls_certificate_verifier.h>
+#include <grpcpp/support/status.h>
+#include <grpcpp/support/string_ref.h>
 
 namespace grpc {
 namespace experimental {

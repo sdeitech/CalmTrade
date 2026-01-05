@@ -2,133 +2,171 @@
 //  StepsDetailViewModel.swift
 //  CalmTrade
 //
-//  Created by Anas Parekh on 03/09/25.
-//
-
 
 import Foundation
-import Charts
-import HealthKit
+import Combine
+import UIKit
 
-class StepsDetailViewModel {
-    
-    enum ChartTimeRange { case daily, weekly, monthly }
-    
-    var onDataReady: ((StepsUIData?) -> Void)?
-    
-    private let healthKitManager = HealthKitManager.shared
-    private let stepCountType = HKQuantityType.quantityType(forIdentifier: .stepCount)!
-    
-    func fetchData(for range: ChartTimeRange) {
-        healthKitManager.requestAuthorization { [weak self] success, _ in
-            guard success else {
-                self?.onDataReady?(nil)
-                return
-            }
-            self?.fetchStepsData(for: range)
-        }
+final class StepsDetailViewModel: ObservableObject {
+
+    enum ChartTimeRange: CaseIterable { case daily, weekly, monthly }
+
+    // MARK: - Outputs
+    @Published var bars: [StepBar] = []
+    @Published var rangeText: String = "--"
+    @Published var headerDateText: String = "--"
+    @Published var averageText: String = "--"
+    @Published var xDomain: ClosedRange<Date> = Date()...Date()
+    @Published var yMax: Double = 0
+
+    // MARK: - Private
+    private let calendar = Calendar.current
+    private var currentRange: ChartTimeRange = .daily
+    private var observersInstalled = false
+
+    // MARK: - Lifecycle / entry points
+    func fetchInitialData(for range: ChartTimeRange) {
+        currentRange = range
+        _installObserversIfNeeded()
+        load(range: range)
     }
-    
-    private func fetchStepsData(for range: ChartTimeRange) {
-        let calendar = Calendar.current
-        let endDate = Date()
-        let anchorDate: Date
-        let interval: DateComponents
-        
-        switch range {
-        case .daily:
-            anchorDate = calendar.startOfDay(for: endDate)
-            interval = DateComponents(hour: 1)
-        case .weekly:
-            anchorDate = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: endDate))!
-            interval = DateComponents(day: 1)
-        case .monthly:
-            anchorDate = calendar.date(from: calendar.dateComponents([.year, .month], from: endDate))!
-            interval = DateComponents(weekOfYear: 1)
-        }
-        
-        let predicate = HKQuery.predicateForSamples(withStart: anchorDate, end: endDate, options: .strictStartDate)
-        
-        healthKitManager.fetchStatisticsCollection(for: stepCountType,
-                                                predicate: predicate,
-                                                options: .cumulativeSum,
-                                                anchorDate: anchorDate,
-                                                interval: interval) { [weak self] results in
-            self?.process(statsCollection: results, range: range, anchorDate: anchorDate)
-        }
+
+    deinit {
+        NotificationCenter.default.removeObserver(self)
     }
-    
-    private func process(statsCollection: HKStatisticsCollection?, range: ChartTimeRange, anchorDate: Date) {
-        guard let statsCollection = statsCollection else {
-            onDataReady?(nil)
-            return
-        }
-        
-        var entries: [BarChartDataEntry] = []
-        var totalSteps: Double = 0
-        
-        let group = DispatchGroup()
-        group.enter()
-        
-        statsCollection.enumerateStatistics(from: anchorDate, to: Date()) { statistics, _ in
-            if let sum = statistics.sumQuantity()?.doubleValue(for: .count()) {
-                // **THE FIX**: Use a sequential index for the x-value.
-                let xValue = Double(entries.count)
-                entries.append(BarChartDataEntry(x: xValue, y: sum))
-                totalSteps += sum
+
+    // MARK: - Load
+    func load(range: ChartTimeRange) {
+        currentRange = range
+        let (start, end) = window(for: range)
+        xDomain = start...end
+
+        DispatchQueue.global(qos: .userInitiated).async {
+            // ✅ unified, priority-aware minute series
+            let minutes = StepEngine.seriesPerMinute(from: start, to: end)
+
+            // Bucket into hour/day/7-day windows
+            let grouped = Dictionary(grouping: minutes) { pair -> Date in
+                self.bucketStart(for: pair.0, within: start...end, range: range)
             }
-        }
-        group.leave()
-        
-        group.notify(queue: .main) {
-            let dataPointCount = entries.count
-            let average = dataPointCount > 0 ? Int(totalSteps / Double(dataPointCount)) : 0
-            let (dateRange, xAxisLabels) = self.getLabels(for: range)
-            
-            let trends = [Trend(title: "Steps", description: "On average, you took more steps over the past 5 weeks")]
-            
-            let uiData = self.createUIData(from: entries, average: average, dateRange: dateRange, xAxisLabels: xAxisLabels, trends: trends)
-            self.onDataReady?(uiData)
+
+            var items: [StepBar] = []
+            items.reserveCapacity(grouped.count)
+            for (bucketStart, arr) in grouped {
+                let sum = arr.reduce(0) { $0 + Double($1.1) }
+                items.append(.init(time: bucketStart, value: sum))
+            }
+            items.sort { $0.time < $1.time }
+
+            let total = items.reduce(0.0) { $0 + $1.value }
+            let avg = items.isEmpty ? 0 : (total / Double(items.count))
+            let yMax = items.map(\.value).max() ?? 0
+            let header = self.headerTitle(range: range, start: start, end: end)
+
+            DispatchQueue.main.async {
+                self.bars = items
+                self.headerDateText = header
+                self.averageText = self.formatSteps(Int(avg.rounded()))
+                self.rangeText = "Average"
+                self.yMax = yMax
+            }
         }
     }
 
-    private func createUIData(from entries: [BarChartDataEntry], average: Int, dateRange: String, xAxisLabels: [String], trends: [Trend]) -> StepsUIData {
-        let dataSet = BarChartDataSet(entries: entries, label: "Steps")
-        
-        dataSet.colors = [UIColor(red: 0.85, green: 0.45, blue: 0.22, alpha: 1.00)] // Burnt Orange
-        dataSet.drawValuesEnabled = false
-        
-        let chartData = BarChartData(dataSet: dataSet)
-        chartData.barWidth = 0.6
-        
-        return StepsUIData(chartData: chartData, averageValue: formatSteps(average), dateRange: dateRange, xAxisLabels: xAxisLabels, trends: trends)
+    // MARK: - Observers
+    private func _installObserversIfNeeded() {
+        guard !observersInstalled else { return }
+        observersInstalled = true
+
+        // step-by-step inserts (either from Polar 360 or Apple Health mirror)
+        NotificationCenter.default.addObserver(
+            forName: .ctMetricUpdated,
+            object: nil,
+            queue: .main
+        ) { [weak self] note in
+            guard let self else { return }
+            if let kind = note.userInfo?["kind"] as? String, kind == "steps" {
+                StepEngine.invalidateCache()
+                self.load(range: self.currentRange)
+            }
+        }
+
+        // bulk mirror finished
+        NotificationCenter.default.addObserver(
+            forName: .ctMetricsDidMirror,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            guard let self else { return }
+            StepEngine.invalidateCache()
+            self.load(range: self.currentRange)
+        }
+
+        // app back to foreground → refresh window
+        NotificationCenter.default.addObserver(
+            forName: UIApplication.willEnterForegroundNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            guard let self else { return }
+            StepEngine.invalidateCache()
+            self.load(range: self.currentRange)
+        }
     }
-    
-    // MARK: - Formatting Helpers
-    private func getLabels(for range: ChartTimeRange) -> (dateRange: String, xAxisLabels: [String]) {
+
+    // MARK: - Windows / Bucketing
+    private func window(for range: ChartTimeRange) -> (Date, Date) {
         let now = Date()
-        let calendar = Calendar.current
-        let dateFormatter = DateFormatter()
-        
         switch range {
         case .daily:
-            return ("Today", ["12 AM", "6 AM", "12 PM", "6 PM"])
+            let start = calendar.startOfDay(for: now)
+            let end = calendar.date(byAdding: .day, value: 1, to: start)!
+            return (start, end)
         case .weekly:
-            dateFormatter.dateFormat = "MMM d"
-            guard let weekStartDate = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: now)) else { return ("-", []) }
-            let weekEndDate = calendar.date(byAdding: .day, value: 6, to: weekStartDate)!
-            let rangeString = "\(dateFormatter.string(from: weekStartDate))-\(dateFormatter.string(from: weekEndDate)), \(calendar.component(.year, from: now))"
-            return (rangeString, ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"])
+            let start = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: now))!
+            let end = calendar.date(byAdding: .day, value: 7, to: start)!
+            return (start, end)
         case .monthly:
-            dateFormatter.dateFormat = "MMMM yyyy"
-            return (dateFormatter.string(from: now), ["Week 1", "Week 2", "Week 3", "Week 4"])
+            let start = calendar.date(from: calendar.dateComponents([.year, .month], from: now))!
+            let end = calendar.date(byAdding: .month, value: 1, to: start)!
+            return (start, end)
         }
     }
-    
+
+    private func bucketStart(for date: Date, within domain: ClosedRange<Date>, range: ChartTimeRange) -> Date {
+        switch range {
+        case .daily:
+            return calendar.dateInterval(of: .hour, for: date)?.start ?? date
+        case .weekly:
+            return calendar.startOfDay(for: date)
+        case .monthly:
+            let monthStart = domain.lowerBound
+            let secs = date.timeIntervalSince(monthStart)
+            let sevenDays: TimeInterval = 7 * 24 * 3600
+            let idx = floor(secs / sevenDays)
+            let start = monthStart.addingTimeInterval(idx * sevenDays)
+            return max(start, domain.lowerBound)
+        }
+    }
+
+    // MARK: - Labels
+    private func headerTitle(range: ChartTimeRange, start: Date, end: Date) -> String {
+        let df = DateFormatter()
+        switch range {
+        case .daily:
+            df.dateFormat = "MMM d, yyyy"; return df.string(from: start)
+        case .weekly:
+            df.dateFormat = "MMM d"
+            let s = df.string(from: start)
+            let e = df.string(from: calendar.date(byAdding: .day, value: -1, to: end)!)
+            return "\(s) - \(e) \(calendar.component(.year, from: start))"
+        case .monthly:
+            df.dateFormat = "MMMM yyyy"; return df.string(from: start)
+        }
+    }
+
     private func formatSteps(_ count: Int) -> String {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .decimal
-        return formatter.string(from: NSNumber(value: count)) ?? "0"
+        let nf = NumberFormatter(); nf.numberStyle = .decimal
+        return nf.string(from: .init(value: count)) ?? "0"
     }
 }
-

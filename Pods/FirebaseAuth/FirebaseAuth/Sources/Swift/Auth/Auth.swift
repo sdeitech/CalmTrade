@@ -19,10 +19,10 @@ import FirebaseAuthInterop
 import FirebaseCore
 import FirebaseCoreExtension
 #if COCOAPODS
-  internal import GoogleUtilities
+  @_implementationOnly import GoogleUtilities
 #else
-  internal import GoogleUtilities_AppDelegateSwizzler
-  internal import GoogleUtilities_Environment
+  @_implementationOnly import GoogleUtilities_AppDelegateSwizzler
+  @_implementationOnly import GoogleUtilities_Environment
 #endif
 
 #if os(iOS) || os(tvOS) || targetEnvironment(macCatalyst)
@@ -124,12 +124,11 @@ extension Auth: AuthInterop {
       }
       // Call back with current user token.
       currentUser
-        .internalGetToken(
-          forceRefresh: forceRefresh,
-          backend: strongSelf.backend,
-          callback: callback,
-          callCallbackOnMain: true
-        )
+        .internalGetToken(forceRefresh: forceRefresh, backend: strongSelf.backend) { token, error in
+          DispatchQueue.main.async {
+            callback(token, error)
+          }
+        }
     }
   }
 
@@ -864,41 +863,29 @@ extension Auth: AuthInterop {
                                          displayName: nil,
                                          idToken: nil,
                                          requestConfiguration: self.requestConfiguration)
+
       #if os(iOS)
-        Task {
-          do {
-            let response = try await self.injectRecaptcha(
-              request: request,
-              action: AuthRecaptchaAction.signUpPassword
-            )
-            self.internalCreateUserWithEmail(
-              request: request,
-              inResponse: response,
-              decoratedCallback: decoratedCallback
-            )
-          } catch {
+        self.wrapInjectRecaptcha(request: request,
+                                 action: AuthRecaptchaAction.signUpPassword) { response, error in
+          if let error {
             DispatchQueue.main.async {
               decoratedCallback(.failure(error))
             }
             return
           }
+          self.internalCreateUserWithEmail(request: request, inResponse: response,
+                                           decoratedCallback: decoratedCallback)
         }
       #else
-        self.internalCreateUserWithEmail(
-          request: request,
-          decoratedCallback: decoratedCallback
-        )
+        self.internalCreateUserWithEmail(request: request, decoratedCallback: decoratedCallback)
       #endif
     }
   }
 
-  private func internalCreateUserWithEmail(request: SignUpNewUserRequest,
-                                           inResponse: SignUpNewUserResponse? = nil,
-                                           decoratedCallback: @escaping (Result<
-                                             AuthDataResult,
-                                             Error
-                                           >)
-                                             -> Void) {
+  func internalCreateUserWithEmail(request: SignUpNewUserRequest,
+                                   inResponse: SignUpNewUserResponse? = nil,
+                                   decoratedCallback: @escaping (Result<AuthDataResult, Error>)
+                                     -> Void) {
     Task {
       do {
         var response: SignUpNewUserResponse
@@ -1174,15 +1161,12 @@ extension Auth: AuthInterop {
         requestConfiguration: self.requestConfiguration
       )
       #if os(iOS)
-        Task {
-          do {
-            _ = try await self.injectRecaptcha(
-              request: request,
-              action: AuthRecaptchaAction.getOobCode
-            )
-            Auth.wrapMainAsync(completion, nil)
-          } catch {
-            Auth.wrapMainAsync(completion, error)
+        self.wrapInjectRecaptcha(request: request,
+                                 action: AuthRecaptchaAction.getOobCode) { result, error in
+          if let completion {
+            DispatchQueue.main.async {
+              completion(error)
+            }
           }
         }
       #else
@@ -1250,15 +1234,12 @@ extension Auth: AuthInterop {
         requestConfiguration: self.requestConfiguration
       )
       #if os(iOS)
-        Task {
-          do {
-            _ = try await self.injectRecaptcha(
-              request: request,
-              action: AuthRecaptchaAction.getOobCode
-            )
-            Auth.wrapMainAsync(completion, nil)
-          } catch {
-            Auth.wrapMainAsync(completion, error)
+        self.wrapInjectRecaptcha(request: request,
+                                 action: AuthRecaptchaAction.getOobCode) { result, error in
+          if let completion {
+            DispatchQueue.main.async {
+              completion(error)
+            }
           }
         }
       #else
@@ -1644,7 +1625,7 @@ extension Auth: AuthInterop {
   // MARK: Internal methods
 
   init(app: FirebaseApp,
-       keychainStorageProvider: AuthKeychainStorage = AuthKeychainStorageReal.shared,
+       keychainStorageProvider: AuthKeychainStorage = AuthKeychainStorageReal(),
        backend: AuthBackend = .init(rpcIssuer: AuthBackendRPCIssuer()),
        authDispatcher: AuthDispatcher = .init()) {
     self.app = app
@@ -2308,6 +2289,21 @@ extension Auth: AuthInterop {
   }
 
   #if os(iOS)
+    private func wrapInjectRecaptcha<T: AuthRPCRequest>(request: T,
+                                                        action: AuthRecaptchaAction,
+                                                        _ callback: @escaping (
+                                                          (T.Response?, Error?) -> Void
+                                                        )) {
+      Task {
+        do {
+          let response = try await injectRecaptcha(request: request, action: action)
+          callback(response, nil)
+        } catch {
+          callback(nil, error)
+        }
+      }
+    }
+
     func injectRecaptcha<T: AuthRPCRequest>(request: T,
                                             action: AuthRecaptchaAction) async throws -> T
       .Response {
@@ -2352,7 +2348,7 @@ extension Auth: AuthInterop {
 
   /// The configuration object comprising of parameters needed to make a request to Firebase
   ///   Auth's backend.
-  let requestConfiguration: AuthRequestConfiguration
+  var requestConfiguration: AuthRequestConfiguration
 
   let backend: AuthBackend
 

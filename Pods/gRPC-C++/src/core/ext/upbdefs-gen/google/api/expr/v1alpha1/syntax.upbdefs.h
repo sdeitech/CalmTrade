@@ -3,11 +3,10 @@
  *     google/api/expr/v1alpha1/syntax.proto
  *
  * Do not edit -- your changes will be discarded when the file is
- * regenerated.
- * NO CHECKED-IN PROTOBUF GENCODE */
+ * regenerated. */
 
-#ifndef GOOGLE_API_EXPR_V1ALPHA1_SYNTAX_PROTO_UPB_H__UPBDEFS_H_
-#define GOOGLE_API_EXPR_V1ALPHA1_SYNTAX_PROTO_UPB_H__UPBDEFS_H_
+#ifndef GOOGLE_API_EXPR_V1ALPHA1_SYNTAX_PROTO_UPBDEFS_H_
+#define GOOGLE_API_EXPR_V1ALPHA1_SYNTAX_PROTO_UPBDEFS_H_
 
 #include "upb/reflection/def.h"
 #include "upb/reflection/internal/def_pool.h"
@@ -74,16 +73,6 @@ UPB_INLINE const upb_MessageDef *google_api_expr_v1alpha1_SourceInfo_getmsgdef(u
   return upb_DefPool_FindMessageByName(s, "google.api.expr.v1alpha1.SourceInfo");
 }
 
-UPB_INLINE const upb_MessageDef *google_api_expr_v1alpha1_SourceInfo_Extension_getmsgdef(upb_DefPool *s) {
-  _upb_DefPool_LoadDefInit(s, &google_api_expr_v1alpha1_syntax_proto_upbdefinit);
-  return upb_DefPool_FindMessageByName(s, "google.api.expr.v1alpha1.SourceInfo.Extension");
-}
-
-UPB_INLINE const upb_MessageDef *google_api_expr_v1alpha1_SourceInfo_Extension_Version_getmsgdef(upb_DefPool *s) {
-  _upb_DefPool_LoadDefInit(s, &google_api_expr_v1alpha1_syntax_proto_upbdefinit);
-  return upb_DefPool_FindMessageByName(s, "google.api.expr.v1alpha1.SourceInfo.Extension.Version");
-}
-
 UPB_INLINE const upb_MessageDef *google_api_expr_v1alpha1_SourceInfo_PositionsEntry_getmsgdef(upb_DefPool *s) {
   _upb_DefPool_LoadDefInit(s, &google_api_expr_v1alpha1_syntax_proto_upbdefinit);
   return upb_DefPool_FindMessageByName(s, "google.api.expr.v1alpha1.SourceInfo.PositionsEntry");
@@ -105,4 +94,4 @@ UPB_INLINE const upb_MessageDef *google_api_expr_v1alpha1_SourcePosition_getmsgd
 
 #include "upb/port/undef.inc"
 
-#endif  /* GOOGLE_API_EXPR_V1ALPHA1_SYNTAX_PROTO_UPB_H__UPBDEFS_H_ */
+#endif  /* GOOGLE_API_EXPR_V1ALPHA1_SYNTAX_PROTO_UPBDEFS_H_ */

@@ -254,7 +254,7 @@ class LocalStore : public bundle::BundleCallback {
    * Runs a single backfill operation and returns the number of documents
    * processed.
    */
-  size_t Backfill() const;
+  int Backfill() const;
 
   /**
    * Returns whether the given bundle has already been loaded and its create
