@@ -157,6 +157,8 @@ final class ProfileTabsHostViewController: UIViewController {
 
     private func makeSecurityPage() -> UIViewController {
         let vc = storyboard!.instantiateViewController(withIdentifier: "SecurityListViewController") as! SecurityListViewController
+        let handler = UserDefaults.standard.string(forKey: kLoginHandler)
+        let isEmailLogin = handler == LoginHandler.email.rawValue
         let vm = SecurityListViewModel()
         vc.viewModel = vm
 
@@ -164,12 +166,35 @@ final class ProfileTabsHostViewController: UIViewController {
             guard let self = self else { return }
             switch action {
             case .changePassword:
-                // push your ChangePassword screen
-                break
+                if isEmailLogin {
+                    let changePasswordVC = UIStoryboard(name: Constants.Storyboard.Security, bundle: nil)
+                        .instantiateViewController(withIdentifier: "ChangePasswordViewController") as! ChangePasswordViewController
+                    self.navigationController?.pushViewController(changePasswordVC)
+                } else {
+                    self.showAlert(
+                        message: "This action isn’t available for social sign-in accounts. Please use an email login to manage this setting."
+                    )
+                }
             case .changeEmail:
-                break
+                if isEmailLogin {
+                    let changeEmailVC = UIStoryboard(name: Constants.Storyboard.Security, bundle: nil)
+                        .instantiateViewController(withIdentifier: "ChangeEmailViewController") as! ChangeEmailViewController
+                    self.navigationController?.pushViewController(changeEmailVC)
+                } else {
+                    self.showAlert(
+                        message: "This action isn’t available for social sign-in accounts. Please use an email login to manage this setting."
+                    )
+                }
             case .twoFactor:
-                break
+                if isEmailLogin {
+                    let twoFactorVC = UIStoryboard(name: Constants.Storyboard.Security, bundle: nil)
+                        .instantiateViewController(withIdentifier: "TwoFactorViewController") as! TwoFactorViewController
+                    self.navigationController?.pushViewController(twoFactorVC)
+                } else {
+                    self.showAlert(
+                        message: "This action isn’t available for social sign-in accounts. Please use an email login to manage this setting."
+                    )
+                }
             case .dataManagement:
                 break
             }

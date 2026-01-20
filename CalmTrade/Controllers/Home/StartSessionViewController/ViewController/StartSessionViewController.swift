@@ -79,7 +79,7 @@ final class StartSessionViewController: UIViewController {
 
         viewModel.onSuccess = { [weak self] in
             KRProgressHUD.dismiss()
-            self?.dismiss(animated: true)
+            self?.navigationController?.popViewController()
         }
 
         viewModel.onError = { [weak self] message in

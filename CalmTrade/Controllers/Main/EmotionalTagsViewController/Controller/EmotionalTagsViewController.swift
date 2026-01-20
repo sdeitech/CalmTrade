@@ -29,10 +29,14 @@ class EmotionalTagsViewController: UIViewController, UICollectionViewDataSource,
     
     override func viewDidLoad() {
         super.viewDidLoad()
+
         setupCollectionView(positiveCollectionView)
         setupCollectionView(negativeCollectionView)
         setupCollectionView(neutralCollectionView)
         setupCollectionView(cognitiveCollectionView)
+
+        bindViewModel()
+        viewModel.fetchEmotionTags()
     }
     
     override func viewDidLayoutSubviews() {
@@ -41,6 +45,19 @@ class EmotionalTagsViewController: UIViewController, UICollectionViewDataSource,
     }
 
     // MARK: - Setup
+    private func bindViewModel() {
+        viewModel.onDataLoaded = { [weak self] in
+            guard let self else { return }
+
+            self.positiveCollectionView.reloadData()
+            self.negativeCollectionView.reloadData()
+            self.neutralCollectionView.reloadData()
+            self.cognitiveCollectionView.reloadData()
+
+            self.view.layoutIfNeeded()
+            self.updateAllCollectionViewHeights()
+        }
+    }
     
     func setupCollectionView(_ collectionView: UICollectionView) {
         collectionView.dataSource = self
@@ -138,53 +155,33 @@ class EmotionalTagsViewController: UIViewController, UICollectionViewDataSource,
     }
     
     @objc func handleSelect(_ sender: UIButton) {
-        if sender.accessibilityHint == "positiveCollectionView" {
-            let selectedEmotion = viewModel.positiveEmotions[sender.tag]
-            viewModel.toggleSelection(for: selectedEmotion, in: positiveCollectionView)
-            
-            positiveCollectionView.reloadItems(at: [IndexPath(item: sender.tag, section: 0)])
-            positiveCollectionView.layoutIfNeeded()
 
-            
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                self.updateCollectionViewHeight(self.positiveCollectionView, constraint: self.positiveCollectionViewHeight)
-            }
-        }
-        
-        if sender.accessibilityHint == "negativeCollectionView" {
-            let selectedEmotion = viewModel.negativeEmotions[sender.tag]
-            viewModel.toggleSelection(for: selectedEmotion, in: negativeCollectionView)
-            
-            negativeCollectionView.reloadItems(at: [IndexPath(item: sender.tag, section: 0)])
-            negativeCollectionView.layoutIfNeeded()
-            
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                self.updateCollectionViewHeight(self.negativeCollectionView, constraint: self.negativeCollectionViewHeight)
-            }
-        }
-        
-        if sender.accessibilityHint == "neutralCollectionView" {
-            let selectedEmotion = viewModel.neutralEmotions[sender.tag]
-            viewModel.toggleSelection(for: selectedEmotion, in: neutralCollectionView)
-            
-            neutralCollectionView.reloadItems(at: [IndexPath(item: sender.tag, section: 0)])
-            neutralCollectionView.layoutIfNeeded()
-            
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                self.updateCollectionViewHeight(self.neutralCollectionView, constraint: self.neutralCollectionViewHeight)
-            }
-        }
-        
-        if sender.accessibilityHint == "cognitiveCollectionView" {
-            let selectedEmotion = viewModel.cognitiveEmotions[sender.tag]
-            viewModel.toggleSelection(for: selectedEmotion, in: cognitiveCollectionView)
-            
-            cognitiveCollectionView.reloadItems(at: [IndexPath(item: sender.tag, section: 0)])
-            cognitiveCollectionView.layoutIfNeeded()
-            
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                self.updateCollectionViewHeight(self.cognitiveCollectionView, constraint: self.cognitiveCollectionViewHeight)
-            }
+        let index = sender.tag
+
+        switch sender.accessibilityHint {
+
+        case "positiveCollectionView":
+            viewModel.toggleSelection(category: .positive, index: index)
+            positiveCollectionView.reloadItems(at: [IndexPath(item: index, section: 0)])
+            updateCollectionViewHeight(positiveCollectionView, constraint: positiveCollectionViewHeight)
+
+        case "negativeCollectionView":
+            viewModel.toggleSelection(category: .negative, index: index)
+            negativeCollectionView.reloadItems(at: [IndexPath(item: index, section: 0)])
+            updateCollectionViewHeight(negativeCollectionView, constraint: negativeCollectionViewHeight)
+
+        case "neutralCollectionView":
+            viewModel.toggleSelection(category: .neutral, index: index)
+            neutralCollectionView.reloadItems(at: [IndexPath(item: index, section: 0)])
+            updateCollectionViewHeight(neutralCollectionView, constraint: neutralCollectionViewHeight)
+
+        case "cognitiveCollectionView":
+            viewModel.toggleSelection(category: .cognitive, index: index)
+            cognitiveCollectionView.reloadItems(at: [IndexPath(item: index, section: 0)])
+            updateCollectionViewHeight(cognitiveCollectionView, constraint: cognitiveCollectionViewHeight)
+
+        default:
+            break
         }
     }
 }

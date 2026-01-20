@@ -34,7 +34,7 @@ final class LoginViewModel: BaseViewModel {
     }
 
     private func isValidEmail(_ s: String) -> Bool {
-        let pattern = #"^\S+@\S+\.\S+$"#
+        let pattern = #"^\S+@\S+\.1\S+$"#
         return s.range(of: pattern, options: .regularExpression) != nil
     }
 
@@ -46,9 +46,9 @@ final class LoginViewModel: BaseViewModel {
 
             if let dto = dto {
 //                let user = User(from: dto)
-                self.user = dto
+//                self.user = dto
 
-//                SessionManager.shared.setCurrentUser(user, token: token)
+                SessionManager.shared.setCurrentUser(user, token: token)
                 // Connect socket after session is established
                 SocketClient.shared.connect(with: token)
                 completion(true, nil)

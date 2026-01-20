@@ -25,8 +25,11 @@ final class StartSessionViewModel {
     private var didUserEdit = false
 
     // MARK: - UserDefaults Keys
-    private let tradeKey = "ct.maxLossPerTrade"
-    private let sessionKey = "ct.maxLossPerSession"
+    let tradeKey = "ct.maxLossPerTrade"
+    let sessionKey = "ct.maxLossPerSession"
+    
+    private var defaultTradeLoss: Double?
+    private var defaultSessionLoss: Double?
 
     // MARK: - Init
     init(api: ApiServiceProtocol = APIService()) {
@@ -49,14 +52,15 @@ final class StartSessionViewModel {
 
         // Save stays disabled until user edits
         onSaveEnabled?(false)
+        fetchPreviousRiskLimits()
     }
 
     // MARK: - User Actions
     func useDefaultsTapped() {
-        let trade = UserDefaults.standard.object(forKey: tradeKey) as? Double
-        let session = UserDefaults.standard.object(forKey: sessionKey) as? Double
-
-        guard let trade, let session else { return }
+        guard
+            let trade = defaultTradeLoss,
+            let session = defaultSessionLoss
+        else { return }
 
         currentTradeLoss = trade
         currentSessionLoss = session
@@ -77,6 +81,50 @@ final class StartSessionViewModel {
         didUserEdit = true
         validateSaveState()
     }
+    
+    private func fetchPreviousRiskLimits() {
+        onLoading?(true)
+
+        api.startService(
+            with: .GET,
+            path: "session/previous-risk-limits",
+            parameters: nil,
+            files: nil,
+            modelType: PreviousRiskLimitsResponse.self
+        ) { [weak self] result in
+            DispatchQueue.main.async {
+                self?.onLoading?(false)
+
+                switch result {
+                case .Success(let response):
+                    guard
+                        response?.success == true,
+                        let data = response?.data
+                    else {
+                        self?.onUseDefaultEnabled?(false)
+                        return
+                    }
+
+                    self?.defaultTradeLoss = data.maxLossPerTrade
+                    self?.defaultSessionLoss = data.maxLossPerSession
+
+                    self?.currentTradeLoss = data.maxLossPerTrade
+                    self?.currentSessionLoss = data.maxLossPerSession
+
+                    self?.onDefaultsApplied?(
+                        "\(data.maxLossPerTrade)",
+                        "\(data.maxLossPerSession)"
+                    )
+
+                    self?.onUseDefaultEnabled?(true)
+
+                case .Error:
+                    self?.onUseDefaultEnabled?(false)
+                }
+            }
+        }
+    }
+
 
     func saveTapped() {
         guard didUserEdit else { return }
@@ -112,8 +160,8 @@ final class StartSessionViewModel {
                     }
 
                     // Persist defaults for future sessions
-                    UserDefaults.standard.set(trade, forKey: self?.tradeKey ?? "")
-                    UserDefaults.standard.set(session, forKey: self?.sessionKey ?? "")
+                    UserDefaults.standard.set(trade, forKey: self!.tradeKey)
+                    UserDefaults.standard.set(session, forKey: self!.sessionKey)
                     UserDefaults.standard.set(Date(), forKey: "ct.lastSessionSetupDate")
 
                     self?.onSuccess?()

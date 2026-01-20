@@ -34,36 +34,14 @@ final class HomeViewModel: BaseViewModel {
     private var polarObserverId: UUID?
     
     // MARK: - Emotion chips
-    var positiveEmotions: [EmotionTag] = [
-        EmotionTag(title: "Calm", isSelected: false),
-        EmotionTag(title: "Clarity", isSelected: false),
-        EmotionTag(title: "Focused", isSelected: false),
-        EmotionTag(title: "Confidence", isSelected: false),
-        EmotionTag(title: "Gratitude", isSelected: false)
-    ]
-    
-    var negativeEmotions: [EmotionTag] = [
-        EmotionTag(title: "Fear", isSelected: false),
-        EmotionTag(title: "Greed", isSelected: false),
-        EmotionTag(title: "Frustration", isSelected: false),
-        EmotionTag(title: "FOMO", isSelected: false),
-        EmotionTag(title: "Revenge", isSelected: false)
-    ]
-    
-    var neutralEmotions: [EmotionTag] = [
-        EmotionTag(title: "Boredom", isSelected: false),
-        EmotionTag(title: "Distraction", isSelected: false),
-        EmotionTag(title: "Uncertainty", isSelected: false),
-        EmotionTag(title: "Curiosity", isSelected: false)
-    ]
-    
-    var cognitiveEmotions: [EmotionTag] = [
-        EmotionTag(title: "Anticipatory High", isSelected: false),
-        EmotionTag(title: "Indecision", isSelected: false),
-        EmotionTag(title: "Execution Freeze", isSelected: false),
-        EmotionTag(title: "System Override", isSelected: false),
-        EmotionTag(title: "Spike Stress", isSelected: false)
-    ]
+    // MARK: - Backend-driven emotions
+    var positiveEmotions: [EmotionTag] = []
+    var negativeEmotions: [EmotionTag] = []
+    var neutralEmotions: [EmotionTag] = []
+    var cognitiveEmotions: [EmotionTag] = []
+
+    var onEmotionDataLoaded: (() -> Void)?
+
     
     // MARK: - Internals
     private var selectionTimers: [String: Timer] = [:]
@@ -154,6 +132,57 @@ final class HomeViewModel: BaseViewModel {
             guard let self else { return }
             if case .disconnected = state {
                 self.pushBattery(nil)
+            }
+        }
+    }
+    
+    func fetchEmotionTags() {
+        APIService().startService(
+            with: .GET,
+            path: "emotionalTags/tags",
+            parameters: nil,
+            files: nil,
+            modelType: EmotionTagsResponse.self
+        ) { [weak self] result in
+            DispatchQueue.main.async {
+                guard let self else { return }
+
+                switch result {
+                case .Success(let response):
+                    guard let categories = response?.categories else { return }
+                    self.mapEmotionCategories(categories)
+                    self.onEmotionDataLoaded?()
+
+                case .Error(let message):
+                    print("❌ Emotion tags fetch failed:", message)
+                }
+            }
+        }
+    }
+
+    private func mapEmotionCategories(_ categories: [EmotionCategoryDTO]) {
+
+        for category in categories {
+            let mappedTags = category.tags.map {
+                EmotionTag(
+                    title: $0.name,
+                    valence: $0.valence,
+                    arousal: $0.arousal,
+                    isSelected: false
+                )
+            }
+
+            switch category.name.lowercased() {
+            case "positive":
+                positiveEmotions = mappedTags
+            case "negative":
+                negativeEmotions = mappedTags
+            case "neutral":
+                neutralEmotions = mappedTags
+            case "cognitive":
+                cognitiveEmotions = mappedTags
+            default:
+                break
             }
         }
     }
@@ -350,20 +379,10 @@ final class HomeViewModel: BaseViewModel {
         trigger: String = "BeforeTrade",
         note: String? = nil
     ) {
-        guard
-            let sessionId = UserDefaults.standard.string(forKey: "ct.activeSessionId"),
-            let props = currentProps
-        else {
-            return
-        }
 
         let params: [String: Any] = [
-            "sessionId": sessionId,
             "emotionTags": [emotion.title],
             "primaryEmotion": emotion.title,
-            "calmScore": "\(Int(props.score))",
-            "trigger": trigger,
-            "note": note ?? ""
         ]
 
         APIService().startService(

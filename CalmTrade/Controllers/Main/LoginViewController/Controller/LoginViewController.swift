@@ -61,6 +61,7 @@ class LoginViewController: BaseViewController {
             
             if success {
                 // Dashboard
+                UserDefaults.standard.set(LoginHandler.email.rawValue, forKey: kLoginHandler)
                 let tabBarController = UIStoryboard(name: Constants.Storyboard.Dashboard, bundle: nil)
                     .instantiateViewController(withIdentifier: "TabbarController") as! TabbarController
                 self.navigationController?.pushViewController(tabBarController, transitionType: .reveal, duration: 0.03)
@@ -102,6 +103,7 @@ class LoginViewController: BaseViewController {
                             print("🟢 VC completion thread:", Thread.isMainThread)
                             guard let self = self else { return }
                             KRProgressHUD.dismiss()
+                            UserDefaults.standard.set(LoginHandler.google.rawValue, forKey: kLoginHandler)
                             if ok {
                                 if isFirst {
                                     let connectVC = UIStoryboard(name: Constants.Storyboard.Devices, bundle: nil)
@@ -148,6 +150,7 @@ class LoginViewController: BaseViewController {
                         guard let self = self else { return }
                         KRProgressHUD.dismiss()
                         if ok {
+                            UserDefaults.standard.set(LoginHandler.facebook.rawValue, forKey: kLoginHandler)
                             if isFirst {
                                 let connectVC = UIStoryboard(name: Constants.Storyboard.Devices, bundle: nil)
                                     .instantiateViewController(withIdentifier: "ConnectViewController") as! ConnectViewController
@@ -191,6 +194,7 @@ class LoginViewController: BaseViewController {
                         KRProgressHUD.dismiss()
                         guard let self = self else { return }
                         if ok {
+                            UserDefaults.standard.set(LoginHandler.apple.rawValue, forKey: kLoginHandler)
                             if isFirst {
                                 let connectVC = UIStoryboard(name: Constants.Storyboard.Devices, bundle: nil)
                                     .instantiateViewController(withIdentifier: "ConnectViewController") as! ConnectViewController
