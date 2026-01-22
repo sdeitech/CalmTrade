@@ -6,6 +6,7 @@
 //
 
 import UIKit
+import SwiftUI
 
 final class TimelineViewController: UIViewController {
 
@@ -102,7 +103,12 @@ extension TimelineViewController: UITableViewDataSource, UITableViewDelegate {
 
         let item = viewModel.item(at: indexPath.section)
         cell.configure(with: item)
-        cell.selectionStyle = .none
+
+        cell.onAddNoteTapped = { [weak self] in
+            guard let self, let emotionId = item._id else { return }
+            self.presentEmotionNoteSheet(emotionId: emotionId)
+        }
+
         return cell
     }
     
@@ -114,5 +120,21 @@ extension TimelineViewController: UITableViewDataSource, UITableViewDelegate {
     
     func tableView(_ tableView: UITableView, heightForFooterInSection section: Int) -> CGFloat {
         return 15.0
+    }
+    
+    private func presentEmotionNoteSheet(emotionId: String) {
+
+        let vm = EmotionNoteViewModel(emotionId: emotionId)
+        let sheet = EmotionBottomSheetView(viewModel: vm)
+
+        let host = UIHostingController(rootView: sheet)
+        host.modalPresentationStyle = .pageSheet
+
+        if let sheet = host.sheetPresentationController {
+            sheet.detents = [.medium()]
+            sheet.prefersGrabberVisible = true
+        }
+
+        present(host, animated: true)
     }
 }

@@ -23,7 +23,7 @@ struct SessionSummary: Decodable {
     let totalSessions: Int
 
     let pnl: Double
-    let pnlR: Double
+    let pnlR: Double?
     let trades: Int
 
     let calmScore: Int?
@@ -32,7 +32,7 @@ struct SessionSummary: Decodable {
     let winningTrades: Int
     let losingTrades: Int
 
-    let riskLimits: RiskLimits
+    let riskLimits: RiskLimits?
 }
 
 struct RiskLimits: Decodable {

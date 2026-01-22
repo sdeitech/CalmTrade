@@ -160,11 +160,11 @@ extension TimelineViewModel {
         }
 
         // Values
-        let maxSessionR = s.riskLimits.maxLossPerSessionR
-        let maxSessionDollar = s.riskLimits.maxLossPerSession
+        let maxSessionR = s.riskLimits?.maxLossPerSessionR ?? 0.0
+        let maxSessionDollar = s.riskLimits?.maxLossPerSession ?? 0.0
 
-        let maxTradeR = s.riskLimits.maxLossPerTradeR
-        let maxTradeDollar = s.riskLimits.maxLossPerTrade
+        let maxTradeR = s.riskLimits?.maxLossPerTradeR ?? 0.0
+        let maxTradeDollar = s.riskLimits?.maxLossPerTrade ?? 0.0
 
         // Lines
         result.append(

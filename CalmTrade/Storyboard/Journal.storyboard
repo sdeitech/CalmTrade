@@ -151,6 +151,9 @@
                                                                                     <state key="normal" title="Add a Note">
                                                                                         <color key="titleColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                                                                     </state>
+                                                                                    <connections>
+                                                                                        <action selector="addNoteTapped:" destination="aVu-pZ-X5k" eventType="touchUpInside" id="PJD-Gb-Cgc"/>
+                                                                                    </connections>
                                                                                 </button>
                                                                             </subviews>
                                                                         </stackView>

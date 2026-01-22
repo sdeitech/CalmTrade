@@ -1,0 +1,158 @@
+//
+//  ManageEmotionsViewController.swift
+//  CalmTrade
+//
+//  Created by Anas Parekh on 21/01/26.
+//
+
+import UIKit
+import SwiftUI
+
+final class ManageEmotionsViewController: UIViewController {
+
+    @IBOutlet weak var tableView: UITableView!
+
+    private let viewModel = ManageEmotionsViewModel()
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        setupTable()
+        bind()
+        viewModel.fetchTags()
+    }
+
+    private func setupTable() {
+        tableView.dataSource = self
+        tableView.delegate = self
+        tableView.rowHeight = 56
+    }
+
+    private func bind() {
+        viewModel.onReload = { [weak self] in
+            self?.tableView.reloadData()
+        }
+    }
+
+    private func presentEditor(
+        title: String,
+        colorHex: String,
+        initial: String?,
+        onSave: @escaping (String) -> Void
+    ) {
+        let sheet = UIHostingController(
+            rootView: EditEmotionSheet(
+                title: title,
+                color: Color(uiColor: .init(hex: colorHex)),
+                initialText: initial,
+                onSave: onSave
+            )
+        )
+        sheet.modalPresentationStyle = .pageSheet
+        sheet.sheetPresentationController?.detents = [.medium()]
+        present(sheet, animated: true)
+    }
+}
+
+extension ManageEmotionsViewController: UITableViewDataSource, UITableViewDelegate {
+
+    func numberOfSections(in tableView: UITableView) -> Int {
+        viewModel.numberOfSections()
+    }
+
+    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        viewModel.numberOfRows(in: section)
+    }
+
+    func tableView(
+        _ tableView: UITableView,
+        cellForRowAt indexPath: IndexPath
+    ) -> UITableViewCell {
+
+        let cell = tableView.dequeueReusableCell(
+            withIdentifier: "ManageEmotionCell",
+            for: indexPath
+        ) as! ManageEmotionCell
+
+        let category = viewModel.category(at: indexPath.section)
+        let emotion = viewModel.tag(at: indexPath)
+        let color = UIColor(hex: category.colorHex)
+
+        cell.configure(
+            emotion: emotion,
+            color: color,
+            onEdit: emotion == nil ? nil : {
+                self.presentEditor(
+                    title: category.name,
+                    colorHex: category.colorHex,
+                    initial: emotion?.name
+                ) {
+                    self.viewModel.updateTag(
+                        name: $0,
+                        section: indexPath.section,
+                        row: indexPath.row
+                    )
+                }
+            },
+            onDelete: emotion == nil ? nil : {
+                self.viewModel.deleteTag(
+                    section: indexPath.section,
+                    row: indexPath.row
+                )
+            },
+            onAdd: {
+                self.presentEditor(
+                    title: category.name,
+                    colorHex: category.colorHex,
+                    initial: nil
+                ) {
+                    self.viewModel.createTag(
+                        name: $0,
+                        section: indexPath.section
+                    )
+                }
+            }
+        )
+
+        return cell
+    }
+    
+    func tableView(_ tableView: UITableView, viewForHeaderInSection section: Int) -> UIView? {
+
+        let category = viewModel.category(at: section)
+
+        let container = UIView()
+        container.backgroundColor = .black
+
+        let label = UILabel()
+        label.translatesAutoresizingMaskIntoConstraints = false
+        switch category.name {
+        case "Positive":
+            label.text = "Positive / Flow Emotions"
+        case "Negative":
+            label.text = "Negative / Stress Emotions"
+        case "Neutral":
+            label.text = "Neutral / Ambiguous Emotions"
+        case "Cognitive":
+            label.text = "Cognitive Insight Tags"
+        default:
+            label.text = category.name
+        }
+        label.font = UIFont.systemFont(ofSize: 22, weight: .semibold)
+        label.textColor = UIColor(hex: category.colorHex)
+
+        container.addSubview(label)
+
+        NSLayoutConstraint.activate([
+            label.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 16),
+            label.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -16),
+            label.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -8),
+            label.topAnchor.constraint(equalTo: container.topAnchor, constant: 12)
+        ])
+
+        return container
+    }
+
+    func tableView(_ tableView: UITableView, heightForHeaderInSection section: Int) -> CGFloat {
+        return 60
+    }
+}

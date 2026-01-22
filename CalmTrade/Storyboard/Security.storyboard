@@ -1341,6 +1341,57 @@ isabella.ainsley@yourdomain.com </string>
             </objects>
             <point key="canvasLocation" x="-709" y="753"/>
         </scene>
+        <!--View Controller-->
+        <scene sceneID="sj1-d3-6Vk">
+            <objects>
+                <viewController id="wxo-Hj-bhB" sceneMemberID="viewController">
+                    <view key="view" contentMode="scaleToFill" id="Wti-6f-SAF">
+                        <rect key="frame" x="0.0" y="0.0" width="393" height="852"/>
+                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                        <subviews>
+                            <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" ambiguous="YES" image="Background" translatesAutoresizingMaskIntoConstraints="NO" id="w8T-CL-x7Y">
+                                <rect key="frame" x="0.0" y="0.0" width="393" height="219"/>
+                                <constraints>
+                                    <constraint firstAttribute="height" constant="219" id="NSR-On-qSF"/>
+                                </constraints>
+                            </imageView>
+                            <view contentMode="scaleToFill" ambiguous="YES" translatesAutoresizingMaskIntoConstraints="NO" id="7FU-65-gqm">
+                                <rect key="frame" x="24" y="60" width="345" height="30"/>
+                                <subviews>
+                                    <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="Eti-hW-Mw2">
+                                        <rect key="frame" x="0.0" y="0.0" width="30" height="30"/>
+                                        <constraints>
+                                            <constraint firstAttribute="width" secondItem="Eti-hW-Mw2" secondAttribute="height" id="dOq-4a-3mS"/>
+                                        </constraints>
+                                        <inset key="imageEdgeInsets" minX="0.0" minY="0.0" maxX="2.2250738585072014e-308" maxY="0.0"/>
+                                        <state key="normal" image="back"/>
+                                    </button>
+                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" ambiguous="YES" text="Change Email" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="k4w-6y-FMm">
+                                        <rect key="frame" x="113" y="4.3333333333333339" width="119" height="21.666666666666664"/>
+                                        <fontDescription key="fontDescription" name="HelveticaNeue-Bold" family="Helvetica Neue" pointSize="18"/>
+                                        <color key="textColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                        <nil key="highlightedColor"/>
+                                    </label>
+                                </subviews>
+                                <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                <constraints>
+                                    <constraint firstAttribute="height" constant="30" id="05F-kv-WtY"/>
+                                    <constraint firstAttribute="bottom" secondItem="Eti-hW-Mw2" secondAttribute="bottom" id="6W3-GS-ej7"/>
+                                    <constraint firstItem="k4w-6y-FMm" firstAttribute="centerX" secondItem="7FU-65-gqm" secondAttribute="centerX" id="Mza-u7-WD0"/>
+                                    <constraint firstItem="Eti-hW-Mw2" firstAttribute="leading" secondItem="7FU-65-gqm" secondAttribute="leading" id="QeP-ND-7tY"/>
+                                    <constraint firstItem="Eti-hW-Mw2" firstAttribute="top" secondItem="7FU-65-gqm" secondAttribute="top" id="aKw-Fn-Mm7"/>
+                                    <constraint firstItem="k4w-6y-FMm" firstAttribute="centerY" secondItem="7FU-65-gqm" secondAttribute="centerY" id="c6A-7V-eZw"/>
+                                </constraints>
+                            </view>
+                        </subviews>
+                        <viewLayoutGuide key="safeArea" id="7nY-3x-Hl3"/>
+                        <color key="backgroundColor" white="0.0" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                    </view>
+                </viewController>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="mxI-rp-84W" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
+            </objects>
+            <point key="canvasLocation" x="33" y="753"/>
+        </scene>
     </scenes>
     <resources>
         <image name="Background" width="402" height="219"/>

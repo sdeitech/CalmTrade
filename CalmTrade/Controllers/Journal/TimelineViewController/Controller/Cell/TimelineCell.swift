@@ -19,6 +19,8 @@ final class TimelineCell: UITableViewCell {
     @IBOutlet weak var btnAddNote: UIButton!
     @IBOutlet weak var lblMetrics: UILabel!
     @IBOutlet weak var lblEmotion: UILabel!
+    
+    var onAddNoteTapped: (() -> Void)?
 
     // MARK: - Configure
     func configure(with item: TimelineItem) {
@@ -29,8 +31,21 @@ final class TimelineCell: UITableViewCell {
 //        lblMetrics.isHidden = true
 //        lblEmotion.isHidden = true
 
-        // Time
-        lblTime.text = item.time ?? item.timeRange
+        // Time handling (authoritative)
+        switch item.type {
+
+        case .Trades:
+            // Prefer timestamps over backend strings
+            lblTime.text = TimelineDateFormatter.timeRange(
+                entry: item.entryTime,
+                exit: item.exitTime
+            )
+
+        default:
+            // Emotion / NoTrade / others → single timestamp
+            lblTime.text = TimelineDateFormatter.time(from: item.timestamp)
+        }
+
 
         // Entry type + title
         switch item.type {
@@ -96,5 +111,9 @@ final class TimelineCell: UITableViewCell {
         } else {
             lblEmotion.isHidden = true
         }
+    }
+    
+    @IBAction func addNoteTapped(_ sender: UIButton) {
+        onAddNoteTapped?()
     }
 }

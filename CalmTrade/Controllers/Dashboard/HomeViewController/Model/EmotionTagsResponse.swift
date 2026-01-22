@@ -22,6 +22,7 @@ struct EmotionCategoryDTO: Decodable {
 }
 
 struct EmotionTagDTO: Decodable {
+    let id: String?
     let name: String
     let valence: Double
     let arousal: Double

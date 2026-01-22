@@ -136,9 +136,11 @@ final class ProfileTabsHostViewController: UIViewController {
                 let balanceVC = UIStoryboard(name: Constants.Storyboard.Profile, bundle: nil).instantiateViewController(withIdentifier: "SetBalanceViewController") as! SetBalanceViewController
                 self.navigationController?.pushViewController(balanceVC, transitionType: .moveIn(direction: .fromLeft))
             case .emotionalTags:
-                UserDefaults.standard.removeObject(forKey: "accessToken")
-                self.navigationController?.pushViewController(UIStoryboard(name: Constants.Storyboard.Main, bundle: nil).instantiateViewController(withIdentifier: "LoginViewController") as! LoginViewController, transitionType: .pop(from: .fromLeft))
-                SocketClient.shared.disconnect()
+//                UserDefaults.standard.removeObject(forKey: "accessToken")
+//                self.navigationController?.pushViewController(UIStoryboard(name: Constants.Storyboard.Main, bundle: nil).instantiateViewController(withIdentifier: "LoginViewController") as! LoginViewController, transitionType: .pop(from: .fromLeft))
+//                SocketClient.shared.disconnect()
+                let manageEmotionVC = UIStoryboard(name: Constants.Storyboard.Profile, bundle: nil).instantiateViewController(withIdentifier: "ManageEmotionsViewController") as! ManageEmotionsViewController
+                self.navigationController?.pushViewController(manageEmotionVC, transitionType: .moveIn(direction: .fromLeft))
             case .accountDetails:
                 let accountDetailVC = UIStoryboard(name: Constants.Storyboard.Profile, bundle: nil).instantiateViewController(withIdentifier: "AccountDetailsViewController") as! AccountDetailsViewController
                 accountDetailVC.configure(accessToken: UserDefaults.standard.string(forKey: "access_token") ?? "")
