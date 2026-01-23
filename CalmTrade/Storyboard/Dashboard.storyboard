@@ -20,7 +20,7 @@
         <!--Journal-->
         <scene sceneID="s0d-6b-0kx">
             <objects>
-                <viewController id="Y6W-OH-hqX" sceneMemberID="viewController">
+                <viewController storyboardIdentifier="JournalTabsHostViewController" id="Y6W-OH-hqX" customClass="JournalTabsHostViewController" customModule="CalmTrade" customModuleProvider="target" sceneMemberID="viewController">
                     <view key="view" contentMode="scaleToFill" id="5EZ-qb-Rvc">
                         <rect key="frame" x="0.0" y="0.0" width="414" height="779"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
@@ -82,15 +82,49 @@
                                                         <inset key="imageEdgeInsets" minX="0.0" minY="0.0" maxX="2.2250738585072014e-308" maxY="0.0"/>
                                                         <state key="normal" image="profile"/>
                                                     </button>
+                                                    <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="bSz-Gg-eY4">
+                                                        <rect key="frame" x="0.0" y="0.0" width="92" height="40"/>
+                                                        <subviews>
+                                                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Label" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="fib-Jf-m4x">
+                                                                <rect key="frame" x="12" y="11.5" width="36" height="17"/>
+                                                                <fontDescription key="fontDescription" name="HelveticaNeue-Medium" family="Helvetica Neue" pointSize="14"/>
+                                                                <color key="textColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                                                <nil key="highlightedColor"/>
+                                                            </label>
+                                                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="7Dg-5J-iof">
+                                                                <rect key="frame" x="57" y="8" width="24" height="24"/>
+                                                                <constraints>
+                                                                    <constraint firstAttribute="width" constant="24" id="FkA-Em-eqM"/>
+                                                                    <constraint firstAttribute="width" secondItem="7Dg-5J-iof" secondAttribute="height" multiplier="1:1" id="fJh-6p-GGc"/>
+                                                                </constraints>
+                                                                <inset key="imageEdgeInsets" minX="0.0" minY="0.0" maxX="2.2250738585072014e-308" maxY="0.0"/>
+                                                                <state key="normal" image="Calendar - Iconly Pro 1"/>
+                                                                <connections>
+                                                                    <action selector="calendarTapped:" destination="Y6W-OH-hqX" eventType="touchUpInside" id="ifK-fy-wQh"/>
+                                                                </connections>
+                                                            </button>
+                                                        </subviews>
+                                                        <color key="backgroundColor" red="0.17254901960784313" green="0.17254901960784313" blue="0.18431372549019609" alpha="1" colorSpace="custom" customColorSpace="displayP3"/>
+                                                        <constraints>
+                                                            <constraint firstItem="fib-Jf-m4x" firstAttribute="leading" secondItem="bSz-Gg-eY4" secondAttribute="leading" constant="12" id="523-LD-MFB"/>
+                                                            <constraint firstItem="fib-Jf-m4x" firstAttribute="centerY" secondItem="bSz-Gg-eY4" secondAttribute="centerY" id="7yF-tx-caT"/>
+                                                            <constraint firstItem="7Dg-5J-iof" firstAttribute="centerY" secondItem="bSz-Gg-eY4" secondAttribute="centerY" id="G7O-qe-dDV"/>
+                                                            <constraint firstAttribute="trailing" secondItem="7Dg-5J-iof" secondAttribute="trailing" constant="11" id="GAj-Oq-Okn"/>
+                                                            <constraint firstItem="7Dg-5J-iof" firstAttribute="leading" secondItem="fib-Jf-m4x" secondAttribute="trailing" constant="9" id="il4-gt-vwX"/>
+                                                        </constraints>
+                                                    </view>
                                                 </subviews>
                                                 <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                                 <constraints>
                                                     <constraint firstAttribute="bottom" secondItem="rme-z6-4rR" secondAttribute="bottom" id="8A6-p4-O3X"/>
                                                     <constraint firstItem="JkT-AF-ruJ" firstAttribute="leading" secondItem="oAI-Um-PDe" secondAttribute="trailing" constant="10" id="MIZ-e0-EQV"/>
+                                                    <constraint firstItem="bSz-Gg-eY4" firstAttribute="top" secondItem="447-dC-wng" secondAttribute="top" id="NlV-ha-zYX"/>
                                                     <constraint firstItem="oAI-Um-PDe" firstAttribute="top" secondItem="447-dC-wng" secondAttribute="top" id="SbM-JG-U0x"/>
                                                     <constraint firstAttribute="bottom" secondItem="JkT-AF-ruJ" secondAttribute="bottom" id="T5I-03-9kU"/>
                                                     <constraint firstItem="rme-z6-4rR" firstAttribute="top" secondItem="447-dC-wng" secondAttribute="top" id="Ur4-uc-xc0"/>
                                                     <constraint firstAttribute="trailing" secondItem="rme-z6-4rR" secondAttribute="trailing" id="XNI-Sb-ebp"/>
+                                                    <constraint firstItem="bSz-Gg-eY4" firstAttribute="leading" secondItem="447-dC-wng" secondAttribute="leading" id="bFx-Uq-bfB"/>
+                                                    <constraint firstAttribute="bottom" secondItem="bSz-Gg-eY4" secondAttribute="bottom" id="bdQ-N5-t3z"/>
                                                     <constraint firstItem="rme-z6-4rR" firstAttribute="leading" secondItem="JkT-AF-ruJ" secondAttribute="trailing" constant="10" id="cGU-Xu-Zjf"/>
                                                     <constraint firstItem="JkT-AF-ruJ" firstAttribute="top" secondItem="447-dC-wng" secondAttribute="top" id="cX9-lM-Hlw"/>
                                                     <constraint firstAttribute="height" constant="40" id="iah-L4-QLX"/>
@@ -112,6 +146,7 @@
                                                 <color key="tintColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                                 <color key="selectedSegmentTintColor" red="0.35294117650000001" green="0.35294117650000001" blue="0.37254901959999998" alpha="1" colorSpace="custom" customColorSpace="displayP3"/>
                                                 <connections>
+                                                    <action selector="segmentedChanged:" destination="Y6W-OH-hqX" eventType="valueChanged" id="dLZ-ur-8ol"/>
                                                     <action selector="segmentedChanged:" destination="PuA-7f-O7a" eventType="valueChanged" id="jz6-jJ-Y3w"/>
                                                 </connections>
                                             </segmentedControl>
@@ -164,6 +199,12 @@
                         </constraints>
                     </view>
                     <tabBarItem key="tabBarItem" title="Journal" image="journal" id="7QN-NF-uW8"/>
+                    <connections>
+                        <outlet property="btnCalendar" destination="7Dg-5J-iof" id="gkz-qR-dc2"/>
+                        <outlet property="containerView" destination="C46-vy-64j" id="WvB-Es-8i4"/>
+                        <outlet property="lblDate" destination="fib-Jf-m4x" id="94K-H0-zTs"/>
+                        <outlet property="segmentedControl" destination="JXA-wj-g2Z" id="6a2-eh-fLB"/>
+                    </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="Ief-a0-LHa" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
             </objects>
@@ -3687,10 +3728,10 @@
             </objects>
             <point key="canvasLocation" x="1112" y="696"/>
         </scene>
-        <!--Page View Controller-->
+        <!--Journal Page View Controller-->
         <scene sceneID="oYt-Tb-xiX">
             <objects>
-                <pageViewController autoresizesArchivedViewToFullSize="NO" transitionStyle="scroll" navigationOrientation="horizontal" spineLocation="none" id="EBw-1C-jCy" sceneMemberID="viewController"/>
+                <pageViewController storyboardIdentifier="JournalPageViewController" autoresizesArchivedViewToFullSize="NO" transitionStyle="scroll" navigationOrientation="horizontal" spineLocation="none" id="EBw-1C-jCy" customClass="JournalPageViewController" customModule="CalmTrade" customModuleProvider="target" sceneMemberID="viewController"/>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="36x-Dn-D7m" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
             </objects>
             <point key="canvasLocation" x="1110" y="-99"/>
@@ -3701,6 +3742,7 @@
         <image name="Arrow - Up 2 - Iconly Pro" width="97" height="97"/>
         <image name="Avatar Image Frame (1)" width="192" height="192"/>
         <image name="Background" width="402" height="219"/>
+        <image name="Calendar - Iconly Pro 1" width="24" height="24"/>
         <image name="Close Square - Iconly Pro" width="88" height="88"/>
         <image name="Frame (1)" width="160" height="160"/>
         <image name="Frame 1000009864" width="1420" height="1084"/>

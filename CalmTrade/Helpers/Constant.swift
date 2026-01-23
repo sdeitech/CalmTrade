@@ -63,5 +63,16 @@ public struct Constants {
         static let Profile = "Profile"
         static let Analytics = "Analytics"
         static let Home = "Home"
+        static let Security = "Security"
+        static let Journal = "Journal"
     }
 }
+
+enum LoginHandler: String {
+    case email
+    case google
+    case apple
+    case facebook
+}
+
+public let kLoginHandler = "login_handler"

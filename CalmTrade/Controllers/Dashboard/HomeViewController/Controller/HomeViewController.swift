@@ -68,11 +68,10 @@ class HomeViewController: BaseViewController, UICollectionViewDataSource, UIColl
 
         setupSwiftUIGauge()
         setupViewModelBindings()
-        viewModel.determineButtonState()
         setupCollectionViews()
 
-        // Start with HR hidden; will show when streaming starts
-//        viewHR.isHidden = true
+        viewModel.fetchEmotionTags()
+        viewModel.determineButtonState()
 
         showCategory(.positive)
     }
@@ -80,11 +79,11 @@ class HomeViewController: BaseViewController, UICollectionViewDataSource, UIColl
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         enforceDailySessionSetupIfNeeded()
+        refreshUserProfileIfNeeded()
     }
      
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
-        refreshUserProfileIfNeeded()
         viewModel.startLiveUpdates()
     }
 
@@ -180,6 +179,22 @@ class HomeViewController: BaseViewController, UICollectionViewDataSource, UIColl
                 )
             }
         }
+        
+        viewModel.onEmotionDataLoaded = { [weak self] in
+            guard let self else { return }
+
+            // Reload all (data)
+            self.allCollectionViews.forEach { $0.reloadData() }
+
+            // Force layout only for visible category
+            let activeCV = self.allCollectionViews[self.selectedCategory.rawValue]
+            activeCV.isHidden = false
+            activeCV.layoutIfNeeded()
+
+            DispatchQueue.main.async {
+                self.updateContainerHeight(for: self.selectedCategory)
+            }
+        }
 
         // 👇 NEW: HR block visibility + labels
 //        viewModel.onHRVisibility = { [weak self] visible in
@@ -217,11 +232,13 @@ class HomeViewController: BaseViewController, UICollectionViewDataSource, UIColl
             cv.tag = index
             cv.register(nib, forCellWithReuseIdentifier: "EmotionTagCell")
 
-            let layout = UICollectionViewFlowLayout()
+            let layout = LeftAlignedCollectionViewFlowLayout()
             layout.scrollDirection = .vertical
             layout.estimatedItemSize = UICollectionViewFlowLayout.automaticSize
             layout.minimumInteritemSpacing = 10
             layout.minimumLineSpacing = 10
+            layout.sectionInset = .zero
+
             cv.collectionViewLayout = layout
         }
     }
@@ -278,7 +295,7 @@ class HomeViewController: BaseViewController, UICollectionViewDataSource, UIColl
         }
 
         // Force user to set session
-//        navigateToStartSession(showsBackButton: true)
+        navigateToStartSession(showsBackButton: true)
     }
     
     private func navigateToStartSession(showsBackButton: Bool) {

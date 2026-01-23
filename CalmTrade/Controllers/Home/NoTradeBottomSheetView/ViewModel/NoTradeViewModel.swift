@@ -12,6 +12,7 @@ final class NoTradeViewModel: ObservableObject {
 
     // MARK: - Inputs
     @Published var symbol: String = ""
+    @Published var entryPrice: String = ""
     @Published var reason: String = ""
 
     // MARK: - Outputs
@@ -30,7 +31,7 @@ final class NoTradeViewModel: ObservableObject {
 
     // MARK: - Actions
     func save() {
-        guard !symbol.isEmpty, !reason.isEmpty else {
+        guard !symbol.isEmpty/*, !reason.isEmpty*/ else {
             errorMessage = "Please fill all fields"
             return
         }
@@ -39,7 +40,7 @@ final class NoTradeViewModel: ObservableObject {
         errorMessage = nil
 
         let params: [String: Any] = [
-//            "sessionId": sessionId,
+            "entryPrice": entryPrice,
             "symbol": symbol,
             "reason": reason
         ]

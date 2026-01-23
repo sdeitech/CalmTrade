@@ -103,19 +103,19 @@ final class EmotionTagCell: UICollectionViewCell {
             titleLabel.textColor = .white
 
             // Add gradient border if not present
-            if gradientLayer.superlayer == nil {
-                gradientLayer.name = "gradientBorder"
-                gradientLayer.colors = [
-                    selectionColor.cgColor,
-                    selectionColor.cgColor
+//            if gradientLayer.superlayer == nil {
+//                gradientLayer.name = "gradientBorder"
+//                gradientLayer.colors = [
 //                    selectionColor.cgColor,
-//                    UIColor.white.cgColor
-                ]
-                gradientLayer.startPoint = CGPoint(x: 0, y: 0.5)
-                gradientLayer.endPoint   = CGPoint(x: 1, y: 0.5)
-                gradientLayer.mask = borderMask
-                mainView.layer.addSublayer(gradientLayer)
-            }
+//                    selectionColor.cgColor
+////                    selectionColor.cgColor,
+////                    UIColor.white.cgColor
+//                ]
+//                gradientLayer.startPoint = CGPoint(x: 0, y: 0.5)
+//                gradientLayer.endPoint   = CGPoint(x: 1, y: 0.5)
+//                gradientLayer.mask = borderMask
+//                mainView.layer.addSublayer(gradientLayer)
+//            }
 
             // make sure layout is refreshed and animation starts after layout pass
             setNeedsLayout()
@@ -260,4 +260,23 @@ final class EmotionTagCell: UICollectionViewCell {
     }
 }
 
+final class LeftAlignedCollectionViewFlowLayout: UICollectionViewFlowLayout {
 
+    override func layoutAttributesForElements(in rect: CGRect) -> [UICollectionViewLayoutAttributes]? {
+        guard let attributes = super.layoutAttributesForElements(in: rect) else { return nil }
+
+        var leftMargin = sectionInset.left
+        var maxY: CGFloat = -1.0
+
+        for attr in attributes {
+            if attr.frame.origin.y >= maxY {
+                leftMargin = sectionInset.left
+            }
+
+            attr.frame.origin.x = leftMargin
+            leftMargin += attr.frame.width + minimumInteritemSpacing
+            maxY = max(attr.frame.maxY, maxY)
+        }
+        return attributes
+    }
+}

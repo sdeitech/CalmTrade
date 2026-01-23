@@ -106,7 +106,7 @@ final class SocketClient: NSObject {
 
     /// Sends a message with your `{key, data}` schema over Socket.IO
     func send(key: String, payload: [String: Any]? = nil) {
-//        emit(key: key, payload: payload ?? [:])
+        emit(key: key, payload: payload ?? [:])
     }
 
     // MARK: - Internal emit helper

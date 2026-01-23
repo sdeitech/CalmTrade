@@ -14,7 +14,7 @@ import os.log
 // MARK: - HTTP
 
 public enum HttpMethod: String {
-    case POST, GET, PUT, DELETE
+    case POST, GET, PUT, DELETE, PATCH
 }
 
 private enum ResponseCode: Int {
@@ -176,6 +176,46 @@ public extension APIService {
             // Often either query params or JSON body; using JSON body here if params present
             req = URLRequest(url: url)
             if let params = parameters, !params.isEmpty {
+                req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+                req.httpBody = try? JSONSerialization.data(withJSONObject: params, options: [])
+            }
+        case .PATCH:
+            req = URLRequest(url: url)
+
+            if let images = files, !images.isEmpty {
+                // Multipart (rare for PATCH, but supported)
+                let boundary = "Boundary-\(UUID().uuidString)"
+                req.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+
+                let body = NSMutableData()
+
+                if let params = parameters, !params.isEmpty {
+                    for (key, value) in params {
+                        body.append("--\(boundary)\r\n".nsdata)
+                        body.append("Content-Disposition: form-data; name=\"\(key)\"\r\n\r\n".nsdata)
+                        body.append("\(value)\r\n".nsdata)
+                    }
+                }
+
+                for file in images {
+                    guard let name = file.name,
+                          let filename = file.filename,
+                          let data = file.data else { continue }
+
+                    let mime = file.mimeType ?? "application/octet-stream"
+
+                    body.append("--\(boundary)\r\n".nsdata)
+                    body.append("Content-Disposition: form-data; name=\"\(name)\"; filename=\"\(filename)\"\r\n".nsdata)
+                    body.append("Content-Type: \(mime)\r\n\r\n".nsdata)
+                    body.append(data)
+                    body.append("\r\n".nsdata)
+                }
+
+                body.append("--\(boundary)--\r\n".nsdata)
+                req.httpBody = body as Data
+
+            } else if let params = parameters, !params.isEmpty {
+                // JSON body (most common PATCH use)
                 req.setValue("application/json", forHTTPHeaderField: "Content-Type")
                 req.httpBody = try? JSONSerialization.data(withJSONObject: params, options: [])
             }

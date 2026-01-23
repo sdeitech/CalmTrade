@@ -347,7 +347,7 @@ private extension AppDelegate {
     
     private func initialRootViewController() -> UIViewController {
         
-//        if isLoggedIn() {
+        if isLoggedIn() {
             // Go straight to dashboard
             let tab = UIStoryboard(name: Constants.Storyboard.Dashboard, bundle: nil).instantiateViewController(withIdentifier: "TabbarController") as! TabbarController
             tab.navigationController?.navigationBar.isHidden = true
@@ -357,14 +357,14 @@ private extension AppDelegate {
                 SocketClient.shared.connect(with: token)
             }
             return nav
-//        } else {
-//            // Show splash/login flow
-//            let splash = UIStoryboard(name: Constants.Storyboard.Main, bundle: nil).instantiateViewController(withIdentifier: "SplashViewController") as! SplashViewController
-//            splash.navigationController?.navigationBar.isHidden = true
-//            let nav = UINavigationController(rootViewController: splash)
-//            nav.navigationBar.isHidden = true
-//            return nav
-//        }
+        } else {
+            // Show splash/login flow
+            let splash = UIStoryboard(name: Constants.Storyboard.Main, bundle: nil).instantiateViewController(withIdentifier: "SplashViewController") as! SplashViewController
+            splash.navigationController?.navigationBar.isHidden = true
+            let nav = UINavigationController(rootViewController: splash)
+            nav.navigationBar.isHidden = true
+            return nav
+        }
     }
     
 }

@@ -22,6 +22,7 @@ public struct UserProfileDTO: Decodable {
     public let email: String?
     public let photoURL: String?
     public let accountId: String?
+    public let twoFactorEnabled: Bool?
 
     // Dates come as ISO8601 strings from server; parse in VM
     public let createdAt: String?
@@ -40,6 +41,7 @@ public struct UserProfileDTO: Decodable {
         case createdAt
         case lastLoginAt
         case accountId
+        case twoFactorEnabled
     }
 }
 

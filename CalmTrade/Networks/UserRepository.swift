@@ -80,6 +80,7 @@ struct User: Codable {
     let photoURL: String?
     let createdAt: Date?
     let lastLoginAt: Date?
+    let twoFactorEnabled: Bool?
 
     var heightCm: Double?
     var weightKg: Double?
@@ -95,6 +96,7 @@ struct User: Codable {
         self.createdAt = User.parse(dto.createdAt)
         self.lastLoginAt = User.parse(dto.lastLoginAt)
         self.accountId = dto.accountId ?? ""
+        self.twoFactorEnabled = dto.twoFactorEnabled
     }
 
     private static func parse(_ iso: String?) -> Date? {

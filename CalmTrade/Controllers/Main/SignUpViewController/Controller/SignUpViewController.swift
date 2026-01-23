@@ -130,6 +130,7 @@ final class SignUpViewController: BaseViewController {
                             guard let self = self else { return }
                             KRProgressHUD.dismiss()
                             if ok {
+                                UserDefaults.standard.set(LoginHandler.google.rawValue, forKey: kLoginHandler)
                                 if isFirst {
                                     let connectVC = UIStoryboard(name: Constants.Storyboard.Devices, bundle: nil)
                                         .instantiateViewController(withIdentifier: "ConnectViewController") as! ConnectViewController
@@ -175,6 +176,7 @@ final class SignUpViewController: BaseViewController {
                         guard let self = self else { return }
                         KRProgressHUD.dismiss()
                         if ok {
+                            UserDefaults.standard.set(LoginHandler.facebook.rawValue, forKey: kLoginHandler)
                             if isFirst {
                                 let connectVC = UIStoryboard(name: Constants.Storyboard.Devices, bundle: nil)
                                     .instantiateViewController(withIdentifier: "ConnectViewController") as! ConnectViewController
@@ -218,6 +220,7 @@ final class SignUpViewController: BaseViewController {
                         KRProgressHUD.dismiss()
                         guard let self = self else { return }
                         if ok {
+                            UserDefaults.standard.set(LoginHandler.apple.rawValue, forKey: kLoginHandler)
                             if isFirst {
                                 let connectVC = UIStoryboard(name: Constants.Storyboard.Devices, bundle: nil)
                                     .instantiateViewController(withIdentifier: "ConnectViewController") as! ConnectViewController

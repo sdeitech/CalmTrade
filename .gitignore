@@ -1,2 +1,92 @@
-/Pods
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
 
+# Directories
+*/build/*
+*.xcodeproj/*.moved-aside
+DerivedData/
+
+# User-specific files
+*.xcuserdatad/
+*.xcuserdata/
+*.xcodeproj/project.xcworkspace/xcuserdata/
+*.xcodeproj/project.xcworkspace/contents.xcworkspacedata
+*.xcodeproj/xcshareddata/xcschemes/*.xcscheme
+
+# Generated files
+*.ipa
+*.app
+
+# CocoaPods
+Pods/
+Podfile.lock
+
+# Carthage
+Carthage/
+
+# Swift Package Manager
+.swiftpm/
+
+# Firebase
+GoogleService-Info.plist
+
+# Build
+build/
+*.app.dSYM.zip
+*.app.dSYM/
+
+# Simulator
+*.app/Wrapper/
+*.app/Symbols/
+
+# Testing
+*.xctestrun
+
+# Swift
+.swift-version
+
+# Environment specific
+.env
+config.plist
+
+# Temporary files
+*.tmp
+*.temp
+*.log
+
+# iOS specific
+*.mobileprovision
+*.provisionprofile
+
+# Core Data
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+
+# Crashlytics
+Fabric.framework/
+
+# Documents
+*.pdf
+*.doc
+*.docx
+*.xls
+*.xlsx
+
+# IDE
+.vscode/
+.idea/
+
+# Archive
+*.zip
+*.tar
+*.gz
+
+# Secrets
+# Add any secret files that should not be committed
+PrivateKey.p8
+AuthKey_*.p8
+*.p12
+*.cer
