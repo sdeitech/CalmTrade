@@ -14,9 +14,9 @@ target 'CalmTrade' do
 
   # Other dependencies
   pod 'GoogleSignIn'
-  pod 'FBSDKLoginKit'
+  pod 'FBSDKLoginKit', '18.0.1'
   pod 'IQKeyboardManagerSwift'
-  pod 'SwiftGifOrigin', '~> 1.7.0'
+  pod 'SwiftyGif'
   pod 'PolarBleSdk', '~> 6.7'
   pod 'KRProgressHUD'
   pod 'Socket.IO-Client-Swift'

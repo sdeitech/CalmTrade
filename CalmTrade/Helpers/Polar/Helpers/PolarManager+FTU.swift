@@ -113,7 +113,9 @@ extension PolarManager {
             if restartAfter {
                 await MainActor.run { self.onFtuProgress?("Restarting…") }
                 do { _ = try await api.doRestart(id, preservePairingInformation: true).value }
-                catch let gatt as BleGattException where gatt == .gattDisconnected { }
+                catch BleGattException.gattDisconnected {
+                    // ignore disconnect during restart
+                }
             }
             await MainActor.run { self.onFtuCompleted?() }
         }
