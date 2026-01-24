@@ -334,8 +334,8 @@
             filePath = "CalmTrade/Controllers/Journal/TimelineViewController/Controller/Cell/TimelineCell.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "34"
-            endingLineNumber = "34"
+            startingLineNumber = "35"
+            endingLineNumber = "35"
             landmarkName = "configure(with:)"
             landmarkType = "7">
          </BreakpointContent>

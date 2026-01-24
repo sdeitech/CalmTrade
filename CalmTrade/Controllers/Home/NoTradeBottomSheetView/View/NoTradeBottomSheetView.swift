@@ -32,7 +32,10 @@ struct NoTradeBottomSheetView: View {
                         .font(.custom("Helvetica Neue", size: 13))
                         .foregroundColor(.gray)
 
-                    TextField("TSLA", text: $viewModel.symbol)
+                    TextField("TSLA", text: Binding(
+                        get: { viewModel.symbol },
+                        set: { viewModel.symbol = $0.uppercased() }
+                    ))
                         .font(.custom("Helvetica Neue", size: 16))
                         .foregroundColor(.white)
                         .padding(12)
@@ -40,6 +43,8 @@ struct NoTradeBottomSheetView: View {
                             RoundedRectangle(cornerRadius: 10)
                                 .stroke(Color.gray.opacity(0.4), lineWidth: 1)
                         )
+                        .autocorrectionDisabled(true)
+                        .textInputAutocapitalization(.characters)
                 }
                 
                 // Entry Price field

@@ -11,6 +11,7 @@ import SwiftUI
 struct EmotionBottomSheetView: View {
 
     @ObservedObject var viewModel: EmotionNoteViewModel
+    let onSaved: () -> Void
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
@@ -20,7 +21,7 @@ struct EmotionBottomSheetView: View {
             VStack(alignment: .leading, spacing: 16) {
 
                 // Title
-                Text("Emotion Note")
+                Text("Add Note")
                     .font(.custom("Helvetica Neue", size: 20))
                     .fontWeight(.medium)
                     .foregroundColor(.white)
@@ -85,8 +86,8 @@ struct EmotionBottomSheetView: View {
         .onChange(of: viewModel.didSave) { saved in
             if saved {
                 dismiss()
+                onSaved()
             }
         }
     }
 }
-

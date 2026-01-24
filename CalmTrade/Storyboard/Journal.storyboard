@@ -129,7 +129,7 @@
                                                                 <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" distribution="equalSpacing" spacing="8" translatesAutoresizingMaskIntoConstraints="NO" id="SEv-lc-hJp">
                                                                     <rect key="frame" x="8" y="45" width="377" height="110"/>
                                                                     <subviews>
-                                                                        <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="SPY+0.8R+$135" textAlignment="natural" lineBreakMode="tailTruncation" numberOfLines="0" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="gg0-BN-PBp">
+                                                                        <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="0.8R+$135" textAlignment="natural" lineBreakMode="tailTruncation" numberOfLines="0" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="gg0-BN-PBp">
                                                                             <rect key="frame" x="0.0" y="0.0" width="377" height="17"/>
                                                                             <fontDescription key="fontDescription" name="HelveticaNeue-Medium" family="Helvetica Neue" pointSize="14"/>
                                                                             <color key="textColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
@@ -172,6 +172,12 @@
                                                                     </subviews>
                                                                     <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                                                 </stackView>
+                                                                <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="TSLA" textAlignment="natural" lineBreakMode="tailTruncation" numberOfLines="0" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="Vw8-UT-um6">
+                                                                    <rect key="frame" x="65" y="12.666666666666664" width="35.666666666666657" height="17"/>
+                                                                    <fontDescription key="fontDescription" name="HelveticaNeue-Bold" family="Helvetica Neue" pointSize="14"/>
+                                                                    <color key="textColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                                                    <nil key="highlightedColor"/>
+                                                                </label>
                                                             </subviews>
                                                             <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                                             <constraints>
@@ -181,6 +187,8 @@
                                                                 <constraint firstAttribute="bottom" secondItem="SEv-lc-hJp" secondAttribute="bottom" constant="10" id="OKP-da-Ndf"/>
                                                                 <constraint firstItem="VvZ-24-NZD" firstAttribute="top" secondItem="u9x-Ct-fyB" secondAttribute="top" constant="11" id="OcZ-Fd-mGn"/>
                                                                 <constraint firstItem="VvZ-24-NZD" firstAttribute="leading" secondItem="u9x-Ct-fyB" secondAttribute="leading" constant="8" id="S5f-aO-nu8"/>
+                                                                <constraint firstItem="Vw8-UT-um6" firstAttribute="centerY" secondItem="VvZ-24-NZD" secondAttribute="centerY" id="bvY-qJ-62d"/>
+                                                                <constraint firstItem="Vw8-UT-um6" firstAttribute="leading" secondItem="VvZ-24-NZD" secondAttribute="trailing" constant="10" id="coM-95-DdO"/>
                                                                 <constraint firstAttribute="trailing" secondItem="wzH-b2-eyh" secondAttribute="trailing" constant="8" id="grR-iB-5jp"/>
                                                                 <constraint firstAttribute="trailing" secondItem="SEv-lc-hJp" secondAttribute="trailing" constant="8" id="rYy-CA-z42"/>
                                                             </constraints>
@@ -206,6 +214,7 @@
                                                     <outlet property="lblEntryType" destination="wxi-m2-CQh" id="wYG-dj-fZb"/>
                                                     <outlet property="lblMetrics" destination="6Ts-8I-WzC" id="nCk-pb-khT"/>
                                                     <outlet property="lblNote" destination="s9y-mT-0Do" id="Bef-pb-cvw"/>
+                                                    <outlet property="lblSymbol" destination="Vw8-UT-um6" id="spi-Kz-lMG"/>
                                                     <outlet property="lblTime" destination="wzH-b2-eyh" id="qp1-5Z-LcH"/>
                                                     <outlet property="lblTitle" destination="gg0-BN-PBp" id="neJ-GE-iyy"/>
                                                 </connections>

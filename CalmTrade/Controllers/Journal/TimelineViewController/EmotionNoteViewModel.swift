@@ -11,14 +11,16 @@ import Foundation
 final class EmotionNoteViewModel: ObservableObject {
 
     let emotionId: String
+    let typeString: String
 
     @Published var content: String = ""
     @Published var isLoading = false
     @Published var errorMessage: String?
     @Published var didSave = false
 
-    init(emotionId: String) {
+    init(emotionId: String, typeString: String) {
         self.emotionId = emotionId
+        self.typeString = typeString
     }
 
     func save() {
@@ -33,7 +35,7 @@ final class EmotionNoteViewModel: ObservableObject {
 
         EmotionNoteService.addNote(
             emotionId: emotionId,
-            content: trimmed
+            content: trimmed, typeString: typeString
         ) { [weak self] success, message in
             DispatchQueue.main.async {
                 self?.isLoading = false
@@ -52,11 +54,12 @@ enum EmotionNoteService {
     static func addNote(
         emotionId: String,
         content: String,
+        typeString: String,
         completion: @escaping (Bool, String?) -> Void
     ) {
 
         let api: ApiServiceProtocol = APIService()
-        let path = "session/emotion/\(emotionId)/notes"
+        let path = "session/\(typeString)/\(emotionId)/notes"
 
         let params: [String: Any] = [
             "content": content,
