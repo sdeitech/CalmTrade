@@ -7,9 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		9859E789EDBB92812A07EF5A /* Pods_CalmTrade_CalmTradeUITests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B2231FCD143F91BF1023E30D /* Pods_CalmTrade_CalmTradeUITests.framework */; };
-		CF13DE24A6D0E5300E224238 /* Pods_CalmTrade.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E77AE29738C7335E47C1CDEB /* Pods_CalmTrade.framework */; };
-		D5E0DFC412C895AF85356079 /* Pods_CalmTradeTests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D0227C9A0C5DF780E733FB1C /* Pods_CalmTradeTests.framework */; };
+		4059C6D21FD5C4191F4F41E2 /* Pods_CalmTradeTests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 05675A40A45DCF00A971215B /* Pods_CalmTradeTests.framework */; };
+		71FBC2863CAC04152F0171A5 /* Pods_CalmTrade_CalmTradeUITests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B145774A2286C5B33A816EF2 /* Pods_CalmTrade_CalmTradeUITests.framework */; };
+		FCFE5D8DDE70ED3BD336EF2F /* Pods_CalmTrade.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F6D64D473711E0585750F4C5 /* Pods_CalmTrade.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -30,18 +30,18 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		0F56B44C836ECD822017FDB5 /* Pods-CalmTrade-CalmTradeUITests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-CalmTrade-CalmTradeUITests.debug.xcconfig"; path = "Target Support Files/Pods-CalmTrade-CalmTradeUITests/Pods-CalmTrade-CalmTradeUITests.debug.xcconfig"; sourceTree = "<group>"; };
-		1D2E3D31DFAD240D6048C741 /* Pods-CalmTrade.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-CalmTrade.release.xcconfig"; path = "Target Support Files/Pods-CalmTrade/Pods-CalmTrade.release.xcconfig"; sourceTree = "<group>"; };
-		42C1C4F0855BE32D92A7901B /* Pods-CalmTrade-CalmTradeUITests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-CalmTrade-CalmTradeUITests.release.xcconfig"; path = "Target Support Files/Pods-CalmTrade-CalmTradeUITests/Pods-CalmTrade-CalmTradeUITests.release.xcconfig"; sourceTree = "<group>"; };
-		7AB8F1938B95DAB1912D7B00 /* Pods-CalmTrade.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-CalmTrade.debug.xcconfig"; path = "Target Support Files/Pods-CalmTrade/Pods-CalmTrade.debug.xcconfig"; sourceTree = "<group>"; };
-		B2231FCD143F91BF1023E30D /* Pods_CalmTrade_CalmTradeUITests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_CalmTrade_CalmTradeUITests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		B38C10CFE44428FFCD1262E9 /* Pods-CalmTradeTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-CalmTradeTests.debug.xcconfig"; path = "Target Support Files/Pods-CalmTradeTests/Pods-CalmTradeTests.debug.xcconfig"; sourceTree = "<group>"; };
-		BAFA96FEA11DF37561022B06 /* Pods-CalmTradeTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-CalmTradeTests.release.xcconfig"; path = "Target Support Files/Pods-CalmTradeTests/Pods-CalmTradeTests.release.xcconfig"; sourceTree = "<group>"; };
-		D0227C9A0C5DF780E733FB1C /* Pods_CalmTradeTests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_CalmTradeTests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		05675A40A45DCF00A971215B /* Pods_CalmTradeTests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_CalmTradeTests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		5E339216E466CE833DE2479D /* Pods-CalmTradeTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-CalmTradeTests.debug.xcconfig"; path = "Target Support Files/Pods-CalmTradeTests/Pods-CalmTradeTests.debug.xcconfig"; sourceTree = "<group>"; };
+		689555F65A9F410F7830F654 /* Pods-CalmTrade.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-CalmTrade.debug.xcconfig"; path = "Target Support Files/Pods-CalmTrade/Pods-CalmTrade.debug.xcconfig"; sourceTree = "<group>"; };
+		6F7773150E74D7060C979C74 /* Pods-CalmTrade-CalmTradeUITests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-CalmTrade-CalmTradeUITests.debug.xcconfig"; path = "Target Support Files/Pods-CalmTrade-CalmTradeUITests/Pods-CalmTrade-CalmTradeUITests.debug.xcconfig"; sourceTree = "<group>"; };
+		903CFAD583E90BC6601D714E /* Pods-CalmTrade-CalmTradeUITests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-CalmTrade-CalmTradeUITests.release.xcconfig"; path = "Target Support Files/Pods-CalmTrade-CalmTradeUITests/Pods-CalmTrade-CalmTradeUITests.release.xcconfig"; sourceTree = "<group>"; };
+		B145774A2286C5B33A816EF2 /* Pods_CalmTrade_CalmTradeUITests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_CalmTrade_CalmTradeUITests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		D66CA8472E5CA2FB0019DC20 /* CalmTrade.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CalmTrade.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		D66CA8602E5CA2FB0019DC20 /* CalmTradeTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CalmTradeTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		D66CA86A2E5CA2FB0019DC20 /* CalmTradeUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CalmTradeUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		E77AE29738C7335E47C1CDEB /* Pods_CalmTrade.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_CalmTrade.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		DF0B3939E048C20AE49BDB6E /* Pods-CalmTradeTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-CalmTradeTests.release.xcconfig"; path = "Target Support Files/Pods-CalmTradeTests/Pods-CalmTradeTests.release.xcconfig"; sourceTree = "<group>"; };
+		F1249E5901CB754C07D8B89B /* Pods-CalmTrade.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-CalmTrade.release.xcconfig"; path = "Target Support Files/Pods-CalmTrade/Pods-CalmTrade.release.xcconfig"; sourceTree = "<group>"; };
+		F6D64D473711E0585750F4C5 /* Pods_CalmTrade.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_CalmTrade.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -80,7 +80,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				CF13DE24A6D0E5300E224238 /* Pods_CalmTrade.framework in Frameworks */,
+				FCFE5D8DDE70ED3BD336EF2F /* Pods_CalmTrade.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -88,7 +88,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				D5E0DFC412C895AF85356079 /* Pods_CalmTradeTests.framework in Frameworks */,
+				4059C6D21FD5C4191F4F41E2 /* Pods_CalmTradeTests.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -96,7 +96,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				9859E789EDBB92812A07EF5A /* Pods_CalmTrade_CalmTradeUITests.framework in Frameworks */,
+				71FBC2863CAC04152F0171A5 /* Pods_CalmTrade_CalmTradeUITests.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -106,22 +106,22 @@
 		09B1352215CCD568A111514C /* Pods */ = {
 			isa = PBXGroup;
 			children = (
-				7AB8F1938B95DAB1912D7B00 /* Pods-CalmTrade.debug.xcconfig */,
-				1D2E3D31DFAD240D6048C741 /* Pods-CalmTrade.release.xcconfig */,
-				0F56B44C836ECD822017FDB5 /* Pods-CalmTrade-CalmTradeUITests.debug.xcconfig */,
-				42C1C4F0855BE32D92A7901B /* Pods-CalmTrade-CalmTradeUITests.release.xcconfig */,
-				B38C10CFE44428FFCD1262E9 /* Pods-CalmTradeTests.debug.xcconfig */,
-				BAFA96FEA11DF37561022B06 /* Pods-CalmTradeTests.release.xcconfig */,
+				689555F65A9F410F7830F654 /* Pods-CalmTrade.debug.xcconfig */,
+				F1249E5901CB754C07D8B89B /* Pods-CalmTrade.release.xcconfig */,
+				6F7773150E74D7060C979C74 /* Pods-CalmTrade-CalmTradeUITests.debug.xcconfig */,
+				903CFAD583E90BC6601D714E /* Pods-CalmTrade-CalmTradeUITests.release.xcconfig */,
+				5E339216E466CE833DE2479D /* Pods-CalmTradeTests.debug.xcconfig */,
+				DF0B3939E048C20AE49BDB6E /* Pods-CalmTradeTests.release.xcconfig */,
 			);
 			path = Pods;
 			sourceTree = "<group>";
 		};
-		68F2C4EBA5E8CC1B798459A3 /* Frameworks */ = {
+		A6038FF24E3C99126AA0EE22 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				E77AE29738C7335E47C1CDEB /* Pods_CalmTrade.framework */,
-				B2231FCD143F91BF1023E30D /* Pods_CalmTrade_CalmTradeUITests.framework */,
-				D0227C9A0C5DF780E733FB1C /* Pods_CalmTradeTests.framework */,
+				F6D64D473711E0585750F4C5 /* Pods_CalmTrade.framework */,
+				B145774A2286C5B33A816EF2 /* Pods_CalmTrade_CalmTradeUITests.framework */,
+				05675A40A45DCF00A971215B /* Pods_CalmTradeTests.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -134,7 +134,7 @@
 				D66CA86D2E5CA2FB0019DC20 /* CalmTradeUITests */,
 				D66CA8482E5CA2FB0019DC20 /* Products */,
 				09B1352215CCD568A111514C /* Pods */,
-				68F2C4EBA5E8CC1B798459A3 /* Frameworks */,
+				A6038FF24E3C99126AA0EE22 /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -155,12 +155,12 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = D66CA8732E5CA2FB0019DC20 /* Build configuration list for PBXNativeTarget "CalmTrade" */;
 			buildPhases = (
+				C78E32A86DD5777EFC9077F7 /* [CP] Check Pods Manifest.lock */,
 				D66CA8432E5CA2FB0019DC20 /* Sources */,
 				D66CA8442E5CA2FB0019DC20 /* Frameworks */,
-				0C26EED9DEC1B9DE837FB008 /* [CP] Embed Pods Frameworks */,
 				D6CEFFF82ECEDB55004DD04E /* ShellScript */,
 				D66CA8452E5CA2FB0019DC20 /* Resources */,
-				1390C8631E8F2C6F26C923A6 /* [CP] Check Pods Manifest.lock */,
+				42A8F2CE1637A3EAC1A22E83 /* [CP] Embed Pods Frameworks */,
 			);
 			buildRules = (
 			);
@@ -178,7 +178,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = D66CA8782E5CA2FB0019DC20 /* Build configuration list for PBXNativeTarget "CalmTradeTests" */;
 			buildPhases = (
-				0487C2D271E65CABD2C3C685 /* [CP] Check Pods Manifest.lock */,
+				DEEB5AED90EAA9479FCEAD98 /* [CP] Check Pods Manifest.lock */,
 				D66CA85C2E5CA2FB0019DC20 /* Sources */,
 				D66CA85D2E5CA2FB0019DC20 /* Frameworks */,
 				D66CA85E2E5CA2FB0019DC20 /* Resources */,
@@ -200,11 +200,11 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = D66CA87B2E5CA2FB0019DC20 /* Build configuration list for PBXNativeTarget "CalmTradeUITests" */;
 			buildPhases = (
-				458E7031107292EB88A8BD13 /* [CP] Check Pods Manifest.lock */,
+				C3D33994BA861D8B1A9ADDC2 /* [CP] Check Pods Manifest.lock */,
 				D66CA8662E5CA2FB0019DC20 /* Sources */,
 				D66CA8672E5CA2FB0019DC20 /* Frameworks */,
 				D66CA8682E5CA2FB0019DC20 /* Resources */,
-				58D13679DBF58822C4520C99 /* [CP] Embed Pods Frameworks */,
+				FC61699710923F017E6DEF7D /* [CP] Embed Pods Frameworks */,
 			);
 			buildRules = (
 			);
@@ -288,29 +288,7 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
-		0487C2D271E65CABD2C3C685 /* [CP] Check Pods Manifest.lock */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-			);
-			inputPaths = (
-				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
-				"${PODS_ROOT}/Manifest.lock",
-			);
-			name = "[CP] Check Pods Manifest.lock";
-			outputFileListPaths = (
-			);
-			outputPaths = (
-				"$(DERIVED_FILE_DIR)/Pods-CalmTradeTests-checkManifestLockResult.txt",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
-			showEnvVarsInLog = 0;
-		};
-		0C26EED9DEC1B9DE837FB008 /* [CP] Embed Pods Frameworks */ = {
+		42A8F2CE1637A3EAC1A22E83 /* [CP] Embed Pods Frameworks */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -318,42 +296,16 @@
 			inputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-CalmTrade/Pods-CalmTrade-frameworks-${CONFIGURATION}-input-files.xcfilelist",
 			);
-			inputPaths = (
-			);
 			name = "[CP] Embed Pods Frameworks";
 			outputFileListPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-CalmTrade/Pods-CalmTrade-frameworks-${CONFIGURATION}-output-files.xcfilelist",
-			);
-			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-CalmTrade/Pods-CalmTrade-frameworks.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
-		1390C8631E8F2C6F26C923A6 /* [CP] Check Pods Manifest.lock */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-			);
-			inputPaths = (
-				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
-				"${PODS_ROOT}/Manifest.lock",
-			);
-			name = "[CP] Check Pods Manifest.lock";
-			outputFileListPaths = (
-			);
-			outputPaths = (
-				"$(DERIVED_FILE_DIR)/Pods-CalmTrade-checkManifestLockResult.txt",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
-			showEnvVarsInLog = 0;
-		};
-		458E7031107292EB88A8BD13 /* [CP] Check Pods Manifest.lock */ = {
+		C3D33994BA861D8B1A9ADDC2 /* [CP] Check Pods Manifest.lock */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -375,25 +327,26 @@
 			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
 			showEnvVarsInLog = 0;
 		};
-		58D13679DBF58822C4520C99 /* [CP] Embed Pods Frameworks */ = {
+		C78E32A86DD5777EFC9077F7 /* [CP] Check Pods Manifest.lock */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 			);
 			inputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-CalmTrade-CalmTradeUITests/Pods-CalmTrade-CalmTradeUITests-frameworks-${CONFIGURATION}-input-files.xcfilelist",
 			);
 			inputPaths = (
+				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
+				"${PODS_ROOT}/Manifest.lock",
 			);
-			name = "[CP] Embed Pods Frameworks";
+			name = "[CP] Check Pods Manifest.lock";
 			outputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-CalmTrade-CalmTradeUITests/Pods-CalmTrade-CalmTradeUITests-frameworks-${CONFIGURATION}-output-files.xcfilelist",
 			);
 			outputPaths = (
+				"$(DERIVED_FILE_DIR)/Pods-CalmTrade-checkManifestLockResult.txt",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-CalmTrade-CalmTradeUITests/Pods-CalmTrade-CalmTradeUITests-frameworks.sh\"\n";
+			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
 			showEnvVarsInLog = 0;
 		};
 		D6CEFFF82ECEDB55004DD04E /* ShellScript */ = {
@@ -413,6 +366,45 @@
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "\"${PODS_ROOT}/FirebaseCrashlytics/upload-symbols\" \\\n  -gsp \"${PROJECT_DIR}/CalmTrade/Resources/GoogleService-Info.plist\" \\\n  -p ios \\\n  \"${DWARF_DSYM_FOLDER_PATH}/${DWARF_DSYM_FILE_NAME}\"\n";
+		};
+		DEEB5AED90EAA9479FCEAD98 /* [CP] Check Pods Manifest.lock */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
+				"${PODS_ROOT}/Manifest.lock",
+			);
+			name = "[CP] Check Pods Manifest.lock";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(DERIVED_FILE_DIR)/Pods-CalmTradeTests-checkManifestLockResult.txt",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
+			showEnvVarsInLog = 0;
+		};
+		FC61699710923F017E6DEF7D /* [CP] Embed Pods Frameworks */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-CalmTrade-CalmTradeUITests/Pods-CalmTrade-CalmTradeUITests-frameworks-${CONFIGURATION}-input-files.xcfilelist",
+			);
+			name = "[CP] Embed Pods Frameworks";
+			outputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-CalmTrade-CalmTradeUITests/Pods-CalmTrade-CalmTradeUITests-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-CalmTrade-CalmTradeUITests/Pods-CalmTrade-CalmTradeUITests-frameworks.sh\"\n";
+			showEnvVarsInLog = 0;
 		};
 /* End PBXShellScriptBuildPhase section */
 
@@ -456,7 +448,7 @@
 /* Begin XCBuildConfiguration section */
 		D66CA8742E5CA2FB0019DC20 /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 7AB8F1938B95DAB1912D7B00 /* Pods-CalmTrade.debug.xcconfig */;
+			baseConfigurationReference = 689555F65A9F410F7830F654 /* Pods-CalmTrade.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -594,8 +586,6 @@
 					"-framework",
 					"\"Security\"",
 					"-framework",
-					"\"SwiftGifOrigin\"",
-					"-framework",
 					"\"SwiftProtobuf\"",
 					"-framework",
 					"\"SystemConfiguration\"",
@@ -637,7 +627,7 @@
 		};
 		D66CA8752E5CA2FB0019DC20 /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 1D2E3D31DFAD240D6048C741 /* Pods-CalmTrade.release.xcconfig */;
+			baseConfigurationReference = F1249E5901CB754C07D8B89B /* Pods-CalmTrade.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -773,8 +763,6 @@
 					"\"SafariServices\"",
 					"-framework",
 					"\"Security\"",
-					"-framework",
-					"\"SwiftGifOrigin\"",
 					"-framework",
 					"\"SwiftProtobuf\"",
 					"-framework",
@@ -936,7 +924,7 @@
 		};
 		D66CA8792E5CA2FB0019DC20 /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = B38C10CFE44428FFCD1262E9 /* Pods-CalmTradeTests.debug.xcconfig */;
+			baseConfigurationReference = 5E339216E466CE833DE2479D /* Pods-CalmTradeTests.debug.xcconfig */;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
@@ -955,7 +943,7 @@
 		};
 		D66CA87A2E5CA2FB0019DC20 /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = BAFA96FEA11DF37561022B06 /* Pods-CalmTradeTests.release.xcconfig */;
+			baseConfigurationReference = DF0B3939E048C20AE49BDB6E /* Pods-CalmTradeTests.release.xcconfig */;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
@@ -974,7 +962,7 @@
 		};
 		D66CA87C2E5CA2FB0019DC20 /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 0F56B44C836ECD822017FDB5 /* Pods-CalmTrade-CalmTradeUITests.debug.xcconfig */;
+			baseConfigurationReference = 6F7773150E74D7060C979C74 /* Pods-CalmTrade-CalmTradeUITests.debug.xcconfig */;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
@@ -991,7 +979,7 @@
 		};
 		D66CA87D2E5CA2FB0019DC20 /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 42C1C4F0855BE32D92A7901B /* Pods-CalmTrade-CalmTradeUITests.release.xcconfig */;
+			baseConfigurationReference = 903CFAD583E90BC6601D714E /* Pods-CalmTrade-CalmTradeUITests.release.xcconfig */;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
