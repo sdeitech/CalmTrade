@@ -38,25 +38,43 @@ public final class HealthKitService {
 
     // MARK: Background mirroring (Observer + Anchored)
     public func startBackgroundMirroring() {
+        stopBackgroundMirroring() // Clean up any existing observers first
+
         let types: [HKSampleType] = [hrType, hrvSDNNType, restingHRType, stepsType, sleepType]
         types.forEach(registerObserver)
     }
 
     public func stopBackgroundMirroring() {
-        observers.forEach { healthStore.stop($0) }
-        observers.removeAll()
+        // Stop all observers and background deliveries
+        for (type, query) in typeToObserverMap {
+            healthStore.stop(query)
+            healthStore.disableBackgroundDelivery(for: type) { _, _ in }
+        }
+        typeToObserverMap.removeAll()
     }
 
-    private var observers: [HKObserverQuery] = []
+    private var typeToObserverMap: [HKSampleType: HKObserverQuery] = [:]
+
+    deinit {
+        // Ensure all observers are properly cleaned up when the service is deallocated
+        stopBackgroundMirroring()
+    }
 
     private func registerObserver(for type: HKSampleType) {
+        // Remove any existing observer for this type
+        if let existingQuery = typeToObserverMap[type] {
+            healthStore.stop(existingQuery)
+            healthStore.disableBackgroundDelivery(for: type) { _, _ in }
+        }
+
         let q = HKObserverQuery(sampleType: type, predicate: nil) { [weak self] _, completion, _ in
             self?.pullDeltas(for: type) {
                 completion()
             }
         }
         healthStore.execute(q)
-        observers.append(q)
+        typeToObserverMap[type] = q
+
         healthStore.enableBackgroundDelivery(for: type, frequency: .immediate) { _, _ in }
         pullDeltas(for: type, completion: {}) // initial sync
     }

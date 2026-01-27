@@ -90,27 +90,35 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
         _ application: UIApplication,
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
     ) -> Bool {
-        
-        // 1. FASTEST POSSIBLE UI SETUP
-        let win = UIWindow(frame: UIScreen.main.bounds)
-        win.rootViewController = initialRootViewController()
-        win.makeKeyAndVisible()
-        self.window = win
-        
-        let center = UNUserNotificationCenter.current()
-                center.delegate = self    // REQUIRED
-                center.requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
-                    print("Notification permission granted: \(granted)")
-                }
-        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
-            print("Notification permission granted: \(granted)")
+
+        // EARLIEST INITIALIZATION - Firebase must be configured before any other Firebase services are accessed
+        // Only configure Firebase if it hasn't been configured elsewhere (e.g., SceneDelegate for iOS 13+)
+        if FirebaseApp.app() == nil {
+            FirebaseApp.configure()
         }
-        
-        // 2. LIGHTWEIGHT CRITICAL INITIALIZATION
-        FirebaseApp.configure()
         Crashlytics.crashlytics().setCrashlyticsCollectionEnabled(true)
+
+        // Initialize other lightweight services
         IQKeyboardManager.shared.enableAutoToolbar = true
         IQKeyboardManager.shared.isEnabled = true
+
+        // Request notification permissions
+        let center = UNUserNotificationCenter.current()
+        center.delegate = self    // REQUIRED
+        center.requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
+            print("Notification permission granted: \(granted)")
+        }
+
+        // Check if we're running on iOS 13+ and should defer UI setup to SceneDelegate
+        if #available(iOS 13.0, *) {
+            // On iOS 13+, UI setup is handled by SceneDelegate
+        } else {
+            // On iOS 12 and earlier, setup UI in AppDelegate
+            let win = UIWindow(frame: UIScreen.main.bounds)
+            win.rootViewController = initialRootViewController()
+            win.makeKeyAndVisible()
+            self.window = win
+        }
 
         // 3. DEFER ALL HEAVY WORK (runs after UI is visible)
         DispatchQueue.global(qos: .userInitiated).async {
@@ -125,65 +133,83 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
         _ application: UIApplication,
         launchOptions: [UIApplication.LaunchOptionsKey: Any]?
     ) {
-        // Polar ingestion setup
-        let polarSleepSource = PolarBleSleepSource()
-        Polar360SleepIngestor.shared.configure(source: polarSleepSource)
+        // Initialize Core Data in background to prevent blocking main thread
+        DispatchQueue.global(qos: .utility).async {
+            _ = self.persistentContainer.viewContext
+        }
 
-        PolarManager.shared.on360OfflinePpg = { ppg, start in
-            guard let devId = PolarManager.shared.connectedDevice?.id else { return }
-            _ = OfflinePPGIngestor.shared.ingest(
-                deviceId: devId,
-                start: start,
-                ppg: ppg,
-                sampleRateHz: 40
+        // Initialize Polar ingestion services
+        DispatchQueue.global(qos: .background).async {
+            let polarSleepSource = PolarBleSleepSource()
+            Polar360SleepIngestor.shared.configure(source: polarSleepSource)
+
+            PolarManager.shared.on360OfflinePpg = { ppg, start in
+                guard let devId = PolarManager.shared.connectedDevice?.id else { return }
+                _ = OfflinePPGIngestor.shared.ingest(
+                    deviceId: devId,
+                    start: start,
+                    ppg: ppg,
+                    sampleRateHz: 40
+                )
+            }
+        }
+
+        // Initialize Facebook SDK asynchronously to prevent blocking
+        DispatchQueue.global(qos: .background).async {
+            ApplicationDelegate.shared.application(
+                application,
+                didFinishLaunchingWithOptions: launchOptions
             )
         }
 
-        // Facebook SDK (non-essential)
-        ApplicationDelegate.shared.application(
-            application,
-            didFinishLaunchingWithOptions: launchOptions
-        )
+        // Register background tasks
+        DispatchQueue.global(qos: .background).async {
+            BGTaskScheduler.shared.register(
+                forTaskWithIdentifier: "com.calmtrade.calmScore.refresh",
+                using: nil
+            ) { task in
+                self.handleCalmScoreRefresh(task: task as! BGAppRefreshTask)
+            }
 
-        // Background task registration
-        BGTaskScheduler.shared.register(
-            forTaskWithIdentifier: "com.calmtrade.calmScore.refresh",
-            using: nil
-        ) { task in
-            self.handleCalmScoreRefresh(task: task as! BGAppRefreshTask)
+            BGTaskScheduler.shared.register(
+                forTaskWithIdentifier: "com.calmtrade.calmScore.processing",
+                using: nil
+            ) { task in
+                self.handleCalmScoreProcessing(task: task as! BGProcessingTask)
+            }
+
+            self.scheduleCalmScoreRefresh()
         }
-        
-        BGTaskScheduler.shared.register(
-            forTaskWithIdentifier: "com.calmtrade.calmScore.processing",
-            using: nil
-        ) { task in
-            self.handleCalmScoreProcessing(task: task as! BGProcessingTask)
-        }
-
-        self.scheduleCalmScoreRefresh()
-
-        // Pre-warm Core Data in background
-        _ = self.persistentContainer.viewContext
     }
     
     func applicationWillResignActive(_ application: UIApplication) {
         // Sent when the application is about to move from active to inactive state. This can occur for certain types of temporary interruptions (such as an incoming phone call or SMS message) or when the user quits the application and it begins the transition to the background state.
         // Use this method to pause ongoing tasks, disable timers, and invalidate graphics rendering callbacks. Games should use this method to pause the game.
     }
-    
+
     func applicationDidEnterBackground(_ application: UIApplication) {
         // Use this method to release shared resources, save user data, invalidate timers, and store enough application state information to restore your application to its current state in case it is terminated later.
         // If your application supports background execution, this method is called instead of applicationWillTerminate: when the user quits.
+
+        // Stop unnecessary background activity to preserve battery and avoid hanging
+        CalmScoreHub.shared.stop()  // Stop the continuous heartbeat in background
+        // NOTE: HealthKitService keeps running in background for background delivery
+
         scheduleCalmScoreRefresh()
     }
     
     func applicationWillEnterForeground(_ application: UIApplication) {
         // Called as part of the transition from the background to the active state; here you can undo many of the changes made on entering the background.
+
+        // Restart services when entering foreground
+        CalmScoreHub.shared.start()  // Restart calm score calculations
+        HealthKitService.shared.startBackgroundMirroring()  // Resume HealthKit monitoring
+
         PolarManager.shared.resumeAutoReconnectOnForeground()
         if let token = UserDefaults.standard.string(forKey: "accessToken"), !token.isEmpty {
             SocketClient.shared.connect(with: token)
         }
-        
+
         // Ask PolarManager to keep the BLE session warm during transition
                 bgTask = application.beginBackgroundTask(withName: "BLEStreamStabilize") { [weak self] in
                     // Expiration handler: end task if the system is done with us
@@ -213,14 +239,21 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
     
     
     func application(_ app: UIApplication, open url: URL, options: [UIApplication.OpenURLOptionsKey : Any] = [:]) -> Bool {
-        // Handle Facebook URL
-        ApplicationDelegate.shared.application(app, open: url, options: options)
-        
+        #if !targetEnvironment(macCatalyst)
+        // Handle Facebook URL (only on iOS, not Mac Catalyst)
+        if ApplicationDelegate.shared.application(app, open: url, options: options) {
+            return true
+        }
+        #endif
+
         // Handle Google URL
-        GIDSignIn.sharedInstance.handle(url)
-        
+        if GIDSignIn.sharedInstance.handle(url) {
+            return true
+        }
+
+        // Handle deep links
         DeepLinkRouter.shared.handle(url: url)
-        
+
         return true
     }
     

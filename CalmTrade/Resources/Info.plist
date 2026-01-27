@@ -42,6 +42,8 @@
 	<string>893bcbdd5f41249f62748adba97e1687</string>
 	<key>FacebookDisplayName</key>
 	<string>CalmTrade</string>
+	<key>FacebookAdvertiserIDCollectionEnabled</key>
+	<false/>
 	<key>GIDClientID</key>
 	<string>206278247451-k3bfkkfp4q2spec80napovapbno0tlih.apps.googleusercontent.com</string>
 	<key>LSApplicationQueriesSchemes</key>
@@ -81,5 +83,24 @@
 		<string>bluetooth-central</string>
 		<string>remote-notification</string>
 	</array>
+	<key>UIApplicationSceneManifest</key>
+	<dict>
+		<key>UIApplicationSupportsMultipleScenes</key>
+		<false/>
+		<key>UISceneConfigurations</key>
+		<dict>
+			<key>UIWindowSceneSessionRoleApplication</key>
+			<array>
+				<dict>
+					<key>UISceneConfigurationName</key>
+					<string>Default Configuration</string>
+					<key>UISceneDelegateClassName</key>
+					<string>$(PRODUCT_MODULE_NAME).SceneDelegate</string>
+					<key>UISceneStoryboardFile</key>
+					<string>Main</string>
+				</dict>
+			</array>
+		</dict>
+	</dict>
 </dict>
 </plist>

@@ -34,6 +34,12 @@ final class CalmScoreHub {
 
     var onScore: ((CalmScoreSession) -> Void)?
 
+    deinit {
+        // Clean up resources when hub is deallocated
+        stop()
+        NotificationCenter.default.removeObserver(self)
+    }
+
     private var isStarted = false
     private var observeTokens: [NSObjectProtocol] = []
     private var currentPhase: CalmScorePhase = .during
@@ -93,10 +99,15 @@ final class CalmScoreHub {
         observeTokens.append(contentsOf: [tok1, tok2])
     }
 
+    private var lastActiveTime: Date = Date()
+    private let heartbeatInterval: TimeInterval = 1.0
+    private let inactiveTimeout: TimeInterval = 300 // 5 minutes of inactivity before reducing heartbeat
+
     private func startHeartbeat() {
         heartbeat?.invalidate()
-        heartbeat = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
+        heartbeat = Timer.scheduledTimer(withTimeInterval: heartbeatInterval, repeats: true) { [weak self] _ in
             self?.pollAndMaybePublish()
+            self?.lastActiveTime = Date() // Update last active time with each poll
         }
     }
 

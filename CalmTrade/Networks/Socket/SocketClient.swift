@@ -12,6 +12,10 @@ final class SocketClient: NSObject {
     static let shared = SocketClient()
     private override init() {}
 
+    deinit {
+        disconnect()  // Ensure cleanup when SocketClient is deallocated
+    }
+
     // MARK: - Config
     private var baseURL: URL { BuildConfig.websocketURL }  // keep using your existing config
 
@@ -97,7 +101,9 @@ final class SocketClient: NSObject {
         // Emit your logical disconnect (server can listen to this)
         emit(key: "disconnect", payload: ["ts": Int(Date().timeIntervalSince1970)])
 
+        // Clean up the socket and manager
         socket?.disconnect()
+        socket?.removeAllHandlers()  // Remove all event handlers to prevent memory leaks
         manager = nil
         socket  = nil
         token   = nil
