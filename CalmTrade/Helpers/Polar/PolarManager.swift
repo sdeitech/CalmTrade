@@ -69,6 +69,9 @@ final class PolarManager: NSObject,
     var reconnectRetryWork: DispatchWorkItem?
     var isAutoReconnectInFlight = false
 
+    // Track when we were last disconnected to help with reconnection logic
+    var lastDisconnectTime: Date?
+
     var lastBatteryLevel: UInt?
     var lastFirmwareVersion: String?
     var lastChargingState: BleBasClient.ChargeState?

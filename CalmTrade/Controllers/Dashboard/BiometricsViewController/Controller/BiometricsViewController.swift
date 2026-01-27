@@ -64,6 +64,22 @@ final class BiometricsViewController: UIViewController {
         setupSwiftUIGauge()
         setupSleepScoreTileAccessibility()
         bindViewModel()
+
+        // Add notification observers for app lifecycle
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(appWillEnterForeground),
+            name: UIApplication.willEnterForegroundNotification,
+            object: nil
+        )
+
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(appDidBecomeActive),
+            name: UIApplication.didBecomeActiveNotification,
+            object: nil
+        )
+
         viewModel.start()
     }
 
@@ -152,9 +168,28 @@ final class BiometricsViewController: UIViewController {
         lblRmssdLatest.text = data.rmssdLatest
         lblRmssdTimestamp.text = data.rmssdTimestamp
 
+        // Highlight stale RMSSD data
+        if data.isRmssdDataStale {
+            lblRmssdLatest.textColor = .systemRed
+            lblRmssdAverage.textColor = .systemRed
+            lblRmssdTimestamp.text = data.rmssdTimestamp
+        } else {
+            lblRmssdLatest.textColor = .label
+            lblRmssdAverage.textColor = .label
+        }
+
         lblSdnnAverage.text = data.sdnnAverage
         lblSdnnLatest.text = data.sdnnLatest
 //        lblSdnnTimestamp.text = data.sdnnTimestamp
+
+        // Highlight stale SDNN data
+        if data.isSdnnDataStale {
+            lblSdnnLatest.textColor = .systemRed
+            lblSdnnAverage.textColor = .systemRed
+        } else {
+            lblSdnnLatest.textColor = .label
+            lblSdnnAverage.textColor = .label
+        }
 
         lblRestingHrAverage.text = data.restingHeartRateAverage
         lblRestingHrLatest.text = data.restingHeartRateLatest
@@ -224,7 +259,16 @@ final class BiometricsViewController: UIViewController {
         )
     }
 
+    @objc private func appWillEnterForeground() {
+        viewModel.handleAppWillEnterForeground()
+    }
+
+    @objc private func appDidBecomeActive() {
+        viewModel.handleAppDidBecomeActive()
+    }
+
     deinit {
+        NotificationCenter.default.removeObserver(self)
         viewModel.stop()
     }
 
