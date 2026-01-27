@@ -71,8 +71,7 @@ final class ProfileTabsHostViewController: UIViewController {
                 makeProfilePage(),
                 makeSecurityPage(),
                 makePolarUpgradePage(),
-                makeSecurityPage()
-//                makeSettingsPage()
+                makeSettingPage()
             ]
             currentIndex = tabsVM.selectedIndex
 
@@ -136,9 +135,6 @@ final class ProfileTabsHostViewController: UIViewController {
                 let balanceVC = UIStoryboard(name: Constants.Storyboard.Profile, bundle: nil).instantiateViewController(withIdentifier: "SetBalanceViewController") as! SetBalanceViewController
                 self.navigationController?.pushViewController(balanceVC, transitionType: .moveIn(direction: .fromLeft))
             case .emotionalTags:
-//                UserDefaults.standard.removeObject(forKey: "accessToken")
-//                self.navigationController?.pushViewController(UIStoryboard(name: Constants.Storyboard.Main, bundle: nil).instantiateViewController(withIdentifier: "LoginViewController") as! LoginViewController, transitionType: .pop(from: .fromLeft))
-//                SocketClient.shared.disconnect()
                 let manageEmotionVC = UIStoryboard(name: Constants.Storyboard.Profile, bundle: nil).instantiateViewController(withIdentifier: "ManageEmotionsViewController") as! ManageEmotionsViewController
                 self.navigationController?.pushViewController(manageEmotionVC, transitionType: .moveIn(direction: .fromLeft))
             case .accountDetails:
@@ -199,6 +195,47 @@ final class ProfileTabsHostViewController: UIViewController {
                 }
             case .dataManagement:
                 break
+            }
+        }
+        return vc
+    }
+    
+    private func makeSettingPage() -> UIViewController {
+        let vc = storyboard!.instantiateViewController(withIdentifier: "AppSettingViewController") as! AppSettingViewController
+        let handler = UserDefaults.standard.string(forKey: kLoginHandler)
+        let isEmailLogin = handler == LoginHandler.email.rawValue
+        let vm = AppSettingViewModel()
+        vc.viewModel = vm
+
+        vm.onRoute = { [weak self] action in
+            guard let self = self else { return }
+            switch action {
+            case .notification:
+                break
+            case .connectWearable:
+                let twoFactorVC = UIStoryboard(name: Constants.Storyboard.Devices, bundle: nil)
+                    .instantiateViewController(withIdentifier: "PolarConnectionViewController") as! PolarConnectionViewController
+                self.navigationController?.pushViewController(twoFactorVC)
+            case .deleteAccount:
+                break
+            case .logout:
+                let sheet = LogoutBottomSheetViewController()
+                sheet.modalPresentationStyle = .overFullScreen
+                sheet.modalTransitionStyle = .crossDissolve
+
+                sheet.onConfirm = { [weak self] in
+                    UserDefaults.standard.removeObject(forKey: "accessToken")
+                    SocketClient.shared.disconnect()
+
+                    let loginVC = UIStoryboard(
+                        name: Constants.Storyboard.Main,
+                        bundle: nil
+                    ).instantiateViewController(withIdentifier: "LoginViewController") as! LoginViewController
+
+                    self?.navigationController?.setViewControllers([loginVC], animated: true)
+                }
+
+                present(sheet, animated: true)
             }
         }
         return vc

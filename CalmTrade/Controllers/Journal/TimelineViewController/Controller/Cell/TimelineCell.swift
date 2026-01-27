@@ -15,6 +15,7 @@ final class TimelineCell: UITableViewCell {
 
     @IBOutlet weak var lblTime: UILabel!
     @IBOutlet weak var lblTitle: UILabel!
+    @IBOutlet weak var lblSymbol: UILabel!
     @IBOutlet weak var lblNote: UILabel!
     @IBOutlet weak var btnAddNote: UIButton!
     @IBOutlet weak var lblMetrics: UILabel!
@@ -52,26 +53,31 @@ final class TimelineCell: UITableViewCell {
 
         case .Trades:
             lblEntryType.text = "Trade"
+            lblSymbol.text = item.symbol
             if let p = item.result {
                 if let r = item.resultR {
-                    lblTitle.text = item.symbol! + "+\(r)+\(p)"
+                    lblTitle.text = "\(r)+\(p)"
                 } else {
-                    lblTitle.text = item.symbol! + "+\(p)"
+                    lblTitle.text = p
                 }
-            } else {
-                lblTitle.text = item.symbol
             }
             let isLoss = item.result?.contains("-") == true
             entryTypeView.backgroundColor = isLoss ? .systemRed : .systemGreen
 
         case .Emotion:
             lblEntryType.text = "Emotion"
-            lblTitle.text = item.emotion
+            lblSymbol.text = item.emotion
+            lblTitle.isHidden = true
             entryTypeView.backgroundColor = UIColor.init(hex: item.colorCode ?? "245E2B")
 
         case .NoTrade:
             lblEntryType.text = "No Trade"
-            lblTitle.text = "\(item.symbol ?? "") @ $\(item.entryPrice ?? 0.0)"
+            lblTitle.isHidden = true
+            if let entryPrice = item.entryPrice {
+                lblSymbol.text = "\(item.symbol ?? "") $\(entryPrice)"
+            } else {
+                lblSymbol.text = item.symbol
+            }
             entryTypeView.backgroundColor = .systemBlue
         }
 

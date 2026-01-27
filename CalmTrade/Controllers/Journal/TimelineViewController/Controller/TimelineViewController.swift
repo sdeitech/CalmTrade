@@ -106,7 +106,7 @@ extension TimelineViewController: UITableViewDataSource, UITableViewDelegate {
 
         cell.onAddNoteTapped = { [weak self] in
             guard let self, let emotionId = item._id else { return }
-            self.presentEmotionNoteSheet(emotionId: emotionId)
+            self.presentEmotionNoteSheet(emotionId: emotionId, type: item.type)
         }
 
         return cell
@@ -122,10 +122,23 @@ extension TimelineViewController: UITableViewDataSource, UITableViewDelegate {
         return 15.0
     }
     
-    private func presentEmotionNoteSheet(emotionId: String) {
+    private func presentEmotionNoteSheet(emotionId: String, type: TimelineItemType) {
 
-        let vm = EmotionNoteViewModel(emotionId: emotionId)
-        let sheet = EmotionBottomSheetView(viewModel: vm)
+        var typeString: String = ""
+        switch type {
+        case .Trades:
+            typeString = "trade"
+        case .Emotion:
+            typeString = "emotion"
+        case .NoTrade:
+            typeString = "no-trade"
+        }
+        let vm = EmotionNoteViewModel(emotionId: emotionId, typeString: typeString)
+        let sheet = EmotionBottomSheetView(
+            viewModel: vm,
+            onSaved: { [weak self] in
+            self?.viewModel.fetch()
+        })
 
         let host = UIHostingController(rootView: sheet)
         host.modalPresentationStyle = .pageSheet
