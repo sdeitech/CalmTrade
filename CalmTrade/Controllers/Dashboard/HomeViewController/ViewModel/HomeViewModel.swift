@@ -84,33 +84,45 @@ final class HomeViewModel: BaseViewModel {
         hubToken = CalmScoreHub.shared.addListener { [weak self] session, bundle, props in
             guard let self else { return }
             self.lastBiometrics = bundle
-            
+
+            print("=== HomeViewModel Hub Props ===")
+            print("Score: \(props.score)")
+            print("HRV: \(props.trend.hrvMs) ms (up: \(props.trend.hrvIsUp))")
+            print("HR: \(props.trend.hrBpm) bpm (down: \(props.trend.hrIsDown))")
+            print("Sleep: \(props.trend.sleepHours) hours (up: \(props.trend.sleepIsUp))")
+            print("Device Source: \(props.deviceSource.rawValue)")
+            print("Is Streaming: \(props.isStreaming)")
+            print("Last Update: \(props.lastUpdate)")
+            print("Battery Percent: \(String(describing: props.batteryPercent))")
+            print("=================================")
+
             // Start from incoming props
             var p = props
-            
+
             // Pill: show "Connect" instead of "Apple HK"
             if p.deviceSource == .appleHK {
                 p.deviceSource = .connect
                 p.isStreaming = false
             }
-            
+
             self.isCalm360Connected = (p.deviceSource == .calm360)
             if !self.isCalm360Connected { p.batteryPercent = nil }
-            
-//            // HR visibility: show if we’re streaming on a Polar device
+
+//            // HR visibility: show if we're streaming on a Polar device
 //            let shouldShowHR = p.isStreaming && (p.deviceSource == .h10 || p.deviceSource == .calm360)
 //            self.onHRVisibility?(shouldShowHR)
-//            
+//
 //            if shouldShowHR {
 //                let hrBpm = Int(round(p.trend.hrBpm))
 //                let ts = self.formatTimestamp(p.lastUpdate)
 //                self.onHRValue?("\(hrBpm) bpm", ts)
 //            }
-            
+
+
             // Override sleep trend so Home gauge matches unified SleepRepository
             self.overrideSleepTrend(baseProps: p)
         }
-        
+
         // Follow Polar battery/snapshots
         PolarManager.shared.onBatteryUpdate = { [weak self] deviceId, level, _ in
             guard let self else { return }
@@ -325,6 +337,12 @@ final class HomeViewModel: BaseViewModel {
             
             var p = p0
             
+            // Print sleep data being retrieved
+            print("=== HomeViewModel Sleep Data ===")
+            print("Current night sleep hours: \(String(describing: currentHours))")
+            print("Previous night sleep hours: \(String(describing: prevHours))")
+            print("================================")
+
             if let curH = currentHours {
                 var t = p.trend
                 t.sleepHours = curH
@@ -334,6 +352,18 @@ final class HomeViewModel: BaseViewModel {
                 p.trend = t
             }
             
+            // Print the data we're getting from Health app in the ViewModel
+            print("=== HomeViewModel Health Data ===")
+            print("Score: \(p.score)")
+            print("HRV: \(p.trend.hrvMs) ms (up: \(p.trend.hrvIsUp))")
+            print("HR: \(p.trend.hrBpm) bpm (down: \(p.trend.hrIsDown))")
+            print("Sleep: \(p.trend.sleepHours) hours (up: \(p.trend.sleepIsUp))")
+            print("Device Source: \(p.deviceSource.rawValue)")
+            print("Is Streaming: \(p.isStreaming)")
+            print("Last Update: \(p.lastUpdate)")
+            print("Battery Percent: \(String(describing: p.batteryPercent))")
+            print("=================================")
+
             self.currentProps = p
             DispatchQueue.main.async {
                 self.onPropsUpdate?(p)

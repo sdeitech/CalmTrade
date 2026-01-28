@@ -65,6 +65,10 @@ final class SleepInsightViewModel {
 
     // MARK: - Unified Fetch (Repository only)
     func loadData(start: Date, end: Date, isPaginating: Bool) {
+        print("=== SleepInsightViewModel loadData ===")
+        print("Requesting data from \(start) to \(end)")
+        print("======================================")
+
         guard !isLoadingData else { return }
         isLoadingData = true
         onIsLoading?(true)
@@ -91,6 +95,12 @@ final class SleepInsightViewModel {
         end: Date,
         isPaginating: Bool
     ) {
+        print("=== SleepInsightViewModel processUnifiedSegments ===")
+        print("Received \(segs.count) segments from repository")
+        for (i, seg) in segs.enumerated() {
+            print("  Segment \(i): \(seg.stage) from \(seg.start) to \(seg.end) (source: \(seg.source))")
+        }
+
         // Coalesce stage segments
         var merged = Self.coalesce(segments: segs.sorted { $0.start < $1.start }, joinThreshold: 60)
 
@@ -104,6 +114,9 @@ final class SleepInsightViewModel {
 
         // Compute total union-asleep seconds
         let total = Self.totalAsleepUnionSeconds(from: sleepSegments)
+
+        print("After coalescing: \(sleepSegments.count) segments, total: \(total) seconds (\(total/3600) hours)")
+        print("=================================================")
 
         let ui = SleepUIData(
             timeAsleepAttributedText: formatTimeAsleep(total),
