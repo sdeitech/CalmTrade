@@ -198,5 +198,7 @@ extension PolarManager {
     }
 
     func enableAutoReconnectOnLaunch() { attemptAutoReconnectIfNeeded() }
-    func resumeAutoReconnectOnForeground() { attemptAutoReconnectIfNeeded() }
+    func resumeAutoReconnectOnForeground() {
+        attemptAutoReconnectIfNeeded()
+    }
 }

@@ -158,6 +158,18 @@ class HomeViewController: BaseViewController, UICollectionViewDataSource, UIColl
             DispatchQueue.main.async {
                 guard let self = self, let hc = self.calmScoreTileController else { return }
 
+                // Print the data we're getting from Health app
+                print("=== HomeViewController Health Data ===")
+                print("Score: \(newProps.score)")
+                print("HRV: \(newProps.trend.hrvMs) ms (up: \(newProps.trend.hrvIsUp))")
+                print("HR: \(newProps.trend.hrBpm) bpm (down: \(newProps.trend.hrIsDown))")
+                print("Sleep: \(newProps.trend.sleepHours) hours (up: \(newProps.trend.sleepIsUp))")
+                print("Device Source: \(newProps.deviceSource.rawValue)")
+                print("Is Streaming: \(newProps.isStreaming)")
+                print("Last Update: \(newProps.lastUpdate)")
+                print("Battery Percent: \(String(describing: newProps.batteryPercent))")
+                print("=====================================")
+
                 let onConnectTap: () -> Void = { [weak self] in
                     guard let self = self else { return }
                     let vc = UIStoryboard(name: Constants.Storyboard.Devices, bundle: nil)
