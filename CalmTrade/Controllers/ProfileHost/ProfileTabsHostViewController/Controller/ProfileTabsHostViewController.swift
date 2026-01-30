@@ -194,7 +194,9 @@ final class ProfileTabsHostViewController: UIViewController {
                     )
                 }
             case .dataManagement:
-                break
+                let dataManageVC = UIStoryboard(name: Constants.Storyboard.Security, bundle: nil)
+                    .instantiateViewController(withIdentifier: "DataManagementViewController") as! DataManagementViewController
+                self.navigationController?.pushViewController(dataManageVC)
             }
         }
         return vc

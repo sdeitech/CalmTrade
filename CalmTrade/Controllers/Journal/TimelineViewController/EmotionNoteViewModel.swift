@@ -63,7 +63,7 @@ enum EmotionNoteService {
 
         let params: [String: Any] = [
             "content": content,
-            "noteType": "Emotion"
+            "noteType": typeString
         ]
 
         api.startService(

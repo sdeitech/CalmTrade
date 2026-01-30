@@ -142,10 +142,11 @@ extension TimelineViewController: UITableViewDataSource, UITableViewDelegate {
 
         let host = UIHostingController(rootView: sheet)
         host.modalPresentationStyle = .pageSheet
+        host.view.backgroundColor = .clear
 
         if let sheet = host.sheetPresentationController {
             sheet.detents = [.medium()]
-            sheet.prefersGrabberVisible = true
+            sheet.prefersGrabberVisible = false
         }
 
         present(host, animated: true)
