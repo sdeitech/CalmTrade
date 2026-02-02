@@ -22,7 +22,7 @@ final class DataManagementViewModel {
 
         api.startService(
             with: .DELETE,
-            path: "analytics/delete-all",
+            path: "userData/delete-data",
             parameters: nil,
             files: nil,
             modelType: EmptyResponse.self

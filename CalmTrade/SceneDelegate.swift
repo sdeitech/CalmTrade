@@ -46,7 +46,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         IQKeyboardManager.shared.isEnabled = true
 
         // Initialize StoreKit helper to prevent authentication errors
-        StoreKitHelper.shared.configureStoreKit()
+//        StoreKitHelper.shared.configureStoreKit()
 
         // Initialize Core Data without blocking UI (deferring heavy work until after UI is visible)
         DispatchQueue.main.async {
