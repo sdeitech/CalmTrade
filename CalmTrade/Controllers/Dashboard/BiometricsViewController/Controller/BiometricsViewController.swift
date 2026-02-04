@@ -162,18 +162,6 @@ final class BiometricsViewController: UIViewController {
 
         // SwiftUI gauge props
         viewModel.onPropsUpdate = { [weak self] props in
-            // Print the data we're getting from Health app
-            print("=== BiometricsViewController Health Data ===")
-            print("Score: \(props.score)")
-            print("HRV: \(props.trend.hrvMs) ms (up: \(props.trend.hrvIsUp))")
-            print("HR: \(props.trend.hrBpm) bpm (down: \(props.trend.hrIsDown))")
-            print("Sleep: \(props.trend.sleepHours) hours (up: \(props.trend.sleepIsUp))")
-            print("Device Source: \(props.deviceSource.rawValue)")
-            print("Is Streaming: \(props.isStreaming)")
-            print("Last Update: \(props.lastUpdate)")
-            print("Battery Percent: \(String(describing: props.batteryPercent))")
-            print("============================================")
-
             let onConnectTap: () -> Void = { [weak self] in
                 guard let self = self else { return }
                 let vc = UIStoryboard(name: Constants.Storyboard.Devices, bundle: nil)
@@ -244,12 +232,6 @@ final class BiometricsViewController: UIViewController {
         lblRestingHrLatest.text = data.restingHeartRateLatest
         lblRestingHrTimestamp.text = data.restingHeartRateTimestamp
 
-        // Debug print for sleep data
-        print("=== BiometricsViewController Sleep Labels Data ===")
-        print("Sleep Total: \(String(describing: data.sleepTotal))")
-        print("Sleep Date: \(String(describing: data.sleepDate))")
-        print("===============================================")
-
         lblSleepTotal.text = data.sleepTotal
         lblSleepDate.text = data.sleepDate
 
@@ -260,16 +242,6 @@ final class BiometricsViewController: UIViewController {
 
     // MARK: - Sleep Score rendering (single attributed label)
     private func renderSleepScore(_ tile: SleepScoreTile?) {
-        print("=== BiometricsViewController Sleep Score Tile Data ===")
-        if let tile = tile {
-            print("Sleep Score: \(tile.score)")
-            print("Sleep Score Date: \(tile.date)")
-            print("Sleep Score Source: \(tile.source.rawValue)")
-        } else {
-            print("Sleep Score: nil")
-        }
-        print("==================================================")
-
         guard let tile = tile else {
             sleepScoreLabel.attributedText = placeholderSleepScore()
             sleepScoreDateLabel.text = "No data"
@@ -375,6 +347,7 @@ final class BiometricsViewController: UIViewController {
             .instantiateViewController(withIdentifier: "SleepInsightViewController")
         self.navigationController?.pushViewController(vc, transitionType: .fade)
     }
+
 
     private enum Prefs {
         static let hideSleepInfo = "ct.prefs.hideSleepInfo"

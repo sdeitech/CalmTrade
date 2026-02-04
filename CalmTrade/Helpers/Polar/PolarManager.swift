@@ -284,16 +284,75 @@ extension PolarManager {
         onHeartRate?(Double(data.hr), ts)
         
         if !data.rrsMs.isEmpty {
+            debugPrint("=== POLAR RR INTERVALS RECEIVED ===")
+            debugPrint("RR intervals (ms): \(data.rrsMs.map { Int($0) })")
+            debugPrint("RR count: \(data.rrsMs.count)")
+            debugPrint("Timestamp: \(ts)")
+            debugPrint("==================================")
             onRRIntervals?(data.rrsMs.map { Int($0) }, ts)
         } else if !data.rrs.isEmpty {
             let rrMs = data.rrs.map { Int((Double($0) / 1024.0) * 1000.0) }
+            debugPrint("=== POLAR RR INTERVALS RECEIVED (converted) ===")
+            debugPrint("Original RR values: \(data.rrs)")
+            debugPrint("Converted RR intervals (ms): \(rrMs)")
+            debugPrint("RR count: \(rrMs.count)")
+            debugPrint("Timestamp: \(ts)")
+            debugPrint("=============================================")
             onRRIntervals?(rrMs, ts)
+        } else {
+            debugPrint("=== POLAR HR DATA ONLY ===")
+            debugPrint("Only heart rate received: \(data.hr) BPM")
+            debugPrint("No RR intervals available")
+            debugPrint("Timestamp: \(ts)")
+            debugPrint("========================")
         }
+    }
+
+    // MARK: - Test Functions
+    func testRRIntervalFlow() {
+        debugPrint("=== TESTING RR INTERVAL FLOW ===")
+        debugPrint("Simulating RR intervals: [1000, 980, 1020, 990, 1010, 970, 1030]")
+        debugPrint("These represent RR intervals in milliseconds")
+        debugPrint("Expected BPM conversions: [60, 61.2, 58.8, 60.6, 59.4, 61.9, 58.3]")
+        debugPrint("================================")
+
+        // Simulate receiving RR intervals from Polar device
+        let simulatedRRIntervals: [Int] = [1000, 980, 1020, 990, 1010, 970, 1030] // in milliseconds
+        let timestamp = Date()
+
+        debugPrint("Testing LiveDataRouter flow (HRV metrics)...")
+        // This should trigger the LiveDataRouter flow for HRV metrics
+        onRRIntervals?(simulatedRRIntervals, timestamp)
+
+        debugPrint("Testing RHR calculation flow...")
+        // Also test the RHR calculation directly
+        computeRestingHeartRate(from: simulatedRRIntervals, source: .polar360, deviceId: "TEST_DEVICE")
+
+        debugPrint("Test completed. Check for both HRV and RHR computation messages above.")
+        debugPrint("================================")
+    }
+
+    func testStaticRHRFlow() {
+        debugPrint("=== TESTING STATIC RHR CALCULATION ===")
+        debugPrint("Using static RR intervals representing a person at rest")
+        debugPrint("Typical resting RR intervals: [1100, 1080, 1120, 1090, 1110, 1070, 1130, 1085, 1115, 1095]")
+        debugPrint("These convert to BPM: [54.5, 55.6, 53.6, 55.0, 54.1, 55.9, 53.1, 55.3, 54.2, 54.8]")
+        debugPrint("Expected median RHR: ~54.5-55 BPM")
+        debugPrint("================================")
+
+        // Static data representing typical resting heart rate
+        let staticRRIntervals: [Int] = [1100, 1080, 1120, 1090, 1110, 1070, 1130, 1085, 1115, 1095]
+
+        debugPrint("Calculating RHR from static data...")
+        computeRestingHeartRate(from: staticRRIntervals, source: .polar360, deviceId: "STATIC_TEST")
+
+        debugPrint("Static RHR test completed.")
+        debugPrint("================================")
     }
 
     func bleSdkFeatureReady(_ identifier: String, feature: PolarBleSdkFeature) {
         guard identifier == connectedDevice?.id else { return }
-        
+
         switch feature {
         case .feature_polar_online_streaming:
             let now = Date()
@@ -359,4 +418,10 @@ extension PolarManager {
 
     /// Whether the connected device supports factory reset.
     func supportsFactoryReset(_ deviceId: String) -> Bool { supportsDeviceManagement(deviceId) }
+
+    // MARK: - Public Test Method
+    public func runRRIntervalTests() {
+        testRRIntervalFlow()
+        testStaticRHRFlow()
+    }
 }

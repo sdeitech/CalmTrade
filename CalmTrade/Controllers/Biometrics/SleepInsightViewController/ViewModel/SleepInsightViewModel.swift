@@ -65,9 +65,9 @@ final class SleepInsightViewModel {
 
     // MARK: - Unified Fetch (Repository only)
     func loadData(start: Date, end: Date, isPaginating: Bool) {
-        print("=== SleepInsightViewModel loadData ===")
-        print("Requesting data from \(start) to \(end)")
-        print("======================================")
+        debugPrint("=== SleepInsightViewModel loadData ===")
+        debugPrint("Requesting data from \(start) to \(end)")
+        debugPrint("======================================")
 
         guard !isLoadingData else { return }
         isLoadingData = true
@@ -95,10 +95,10 @@ final class SleepInsightViewModel {
         end: Date,
         isPaginating: Bool
     ) {
-        print("=== SleepInsightViewModel processUnifiedSegments ===")
-        print("Received \(segs.count) segments from repository")
+        debugPrint("=== SleepInsightViewModel processUnifiedSegments ===")
+        debugPrint("Received \(segs.count) segments from repository")
         for (i, seg) in segs.enumerated() {
-            print("  Segment \(i): \(seg.stage) from \(seg.start) to \(seg.end) (source: \(seg.source))")
+            debugPrint("  Segment \(i): \(seg.stage) from \(seg.start) to \(seg.end) (source: \(seg.source))")
         }
 
         // Coalesce stage segments
@@ -112,11 +112,22 @@ final class SleepInsightViewModel {
 
         sleepSegments.sort { $0.start < $1.start }
 
-        // Compute total union-asleep seconds
-        let total = Self.totalAsleepUnionSeconds(from: sleepSegments)
+        // Calculate raw sleep time from sleep start to end (to match Polar's calculation)
+        var total: TimeInterval = 0
+        if !sleepSegments.isEmpty {
+            let sleepStart = sleepSegments.min { $0.start < $1.start }?.start ?? Date()
+            let sleepEnd = sleepSegments.max { $0.end < $1.end }?.end ?? Date()
+            total = sleepEnd.timeIntervalSince(sleepStart)
 
-        print("After coalescing: \(sleepSegments.count) segments, total: \(total) seconds (\(total/3600) hours)")
-        print("=================================================")
+            debugPrint("Raw Polar calculation: Start=\(sleepStart), End=\(sleepEnd), Total=\(total) seconds (\(total/3600) hours)")
+        } else {
+            // Fallback to the original calculation if no segments found
+            total = Self.totalAsleepUnionSeconds(from: sleepSegments)
+            debugPrint("Using fallback calculation: \(total) seconds (\(total/3600) hours)")
+        }
+
+        debugPrint("After coalescing: \(sleepSegments.count) segments, total: \(total) seconds (\(total/3600) hours)")
+        debugPrint("=================================================")
 
         let ui = SleepUIData(
             timeAsleepAttributedText: formatTimeAsleep(total),
