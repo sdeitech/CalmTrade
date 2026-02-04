@@ -7,6 +7,7 @@
 //
 
 import UIKit
+import Foundation
 
 enum AlertType {
     case normal
@@ -23,19 +24,19 @@ class BaseViewModel: NSObject {
             self.updateLoadingStatus?()
         }
     }
-    
+
     var alertMessage: String? {
         didSet {
             self.showAlertClosure?(.success)
         }
     }
-    
+
     var errorMessage: String? {
         didSet {
             self.showAlertClosure?(.error)
         }
     }
-    
+
     var isSuccess:Bool? {
         didSet {
             if isSuccess ?? false {
@@ -43,18 +44,18 @@ class BaseViewModel: NSObject {
             }
         }
     }
-    
+
     var isFailed:Bool? {
         didSet {
             self.showAlertClosure?(.error)
         }
     }
-    
+
     var showAlertClosure: ((_ type: AlertType)->())?
     var updateLoadingStatus: (()->())?
     var reloadListViewClosure: (()->())?
     var redirectControllerClosure: (()->())?
-    
+
     func updateUserToken(_ token: String) {
         UserDefaults.standard.set(token, forKey: "accessToken")
         UserDefaults.standard.synchronize()

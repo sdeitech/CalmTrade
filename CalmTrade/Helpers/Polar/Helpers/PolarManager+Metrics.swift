@@ -16,12 +16,33 @@ extension PolarManager {
     // MARK: - Resting HR (RHR) computation
 
     func computeRestingHeartRate(from rrsMs: [Int], source: CTMetricSource, deviceId: String) {
-        guard !rrsMs.isEmpty else { return }
+        guard !rrsMs.isEmpty else {
+            debugPrint("=== POLAR RHR COMPUTATION DEBUG ===")
+            debugPrint("No RR intervals received, skipping RHR calculation")
+            debugPrint("===================================")
+            return
+        }
+
+        debugPrint("=== POLAR RHR COMPUTATION DEBUG ===")
+        debugPrint("Received \(rrsMs.count) RR intervals (in ms): \(rrsMs)")
+        debugPrint("RR intervals range: \(rrsMs.min() ?? 0) - \(rrsMs.max() ?? 0) ms")
 
         // Convert RR → instantaneous HR (bpm) → median
-        let bpmValues: [Double] = rrsMs.map { 60000.0 / Double($0) }
+        let bpmValues: [Double] = rrsMs.map {
+            let bpm = 60000.0 / Double($0)
+            debugPrint("RR interval \($0)ms → \(bpm) BPM")
+            return bpm
+        }
+
         let sorted = bpmValues.sorted()
         let median: Double = sorted[sorted.count / 2]
+        let average: Double = bpmValues.reduce(0, +) / Double(bpmValues.count)
+
+        debugPrint("BPM values: \(bpmValues)")
+        debugPrint("Sorted BPM values: \(sorted)")
+        debugPrint("Median RHR: \(median) BPM")
+        debugPrint("Average RHR: \(average) BPM")
+        debugPrint("===================================")
 
         NSLog("[PM][RHR] computed RHR median \(median) bpm from \(rrsMs.count) RR samples")
 
@@ -85,6 +106,21 @@ extension PolarManager {
         NSLog("[PM][Sleep] built episode start=\(start) end=\(end) totalSegments=\(segments.count)")
 
         CTMetricsRepository.shared.upsertSleepEpisode(episode)
+
+        // Store the Polar sleep score as a separate metric
+        if let sleepScore = sleep.userSleepRating?.rawValue {
+            _ = CTMetricsRepository.shared.upsert(
+                kind: .sleepScore,
+                value: Double(sleepScore),
+                unit: "",
+                source: .polar360,
+                date: end
+            )
+            debugPrint("=== POLAR SLEEP SCORE STORED ===")
+            debugPrint("Polar sleep score: \(sleepScore)")
+            debugPrint("Date: \(end)")
+            debugPrint("================================")
+        }
     }
 
 

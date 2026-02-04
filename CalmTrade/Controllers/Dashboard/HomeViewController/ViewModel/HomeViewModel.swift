@@ -85,17 +85,6 @@ final class HomeViewModel: BaseViewModel {
             guard let self else { return }
             self.lastBiometrics = bundle
 
-            print("=== HomeViewModel Hub Props ===")
-            print("Score: \(props.score)")
-            print("HRV: \(props.trend.hrvMs) ms (up: \(props.trend.hrvIsUp))")
-            print("HR: \(props.trend.hrBpm) bpm (down: \(props.trend.hrIsDown))")
-            print("Sleep: \(props.trend.sleepHours) hours (up: \(props.trend.sleepIsUp))")
-            print("Device Source: \(props.deviceSource.rawValue)")
-            print("Is Streaming: \(props.isStreaming)")
-            print("Last Update: \(props.lastUpdate)")
-            print("Battery Percent: \(String(describing: props.batteryPercent))")
-            print("=================================")
-
             // Start from incoming props
             var p = props
 
@@ -322,26 +311,55 @@ final class HomeViewModel: BaseViewModel {
     private func overrideSleepTrend(baseProps p0: CalmScoreTileProps) {
         workQ.async { [weak self] in
             guard let self else { return }
-            
+
             let now = Date()
-            
-            // Current night (latest) from unified repo
-            let currentNight = SleepRepository.shared.latestNight()
-            let currentHours = currentNight?.hours
-            
-            // Previous night using the same unified pipeline
+
+            // Current night (latest) from unified repo - calculate raw sleep time
+            var currentHours: Double?
+            if let currentNight = SleepRepository.shared.latestNight() {
+                // Calculate raw sleep time from sleep start to end (to match Polar's calculation)
+                if !currentNight.segments.isEmpty {
+                    let sleepStart = currentNight.segments.min { $0.start < $1.start }?.start ?? Date()
+                    let sleepEnd = currentNight.segments.max { $0.end < $1.end }?.end ?? Date()
+                    let totalSleepTime = sleepEnd.timeIntervalSince(sleepStart) / 3600.0 // Convert to hours
+                    currentHours = totalSleepTime
+                } else {
+                    // Fallback to the stored hours if no segments available
+                    currentHours = currentNight.hours
+                }
+            }
+
+            // Previous night using the same unified pipeline - calculate raw sleep time
             let prevAnchor = Calendar.current.date(byAdding: .day, value: -1, to: now)
                 ?? now.addingTimeInterval(-86400)
-            let prevNight = self.latestNightBefore(date: prevAnchor)
-            let prevHours = prevNight?.hours
-            
+            var prevHours: Double?
+            if let prevNight = self.latestNightBefore(date: prevAnchor) {
+                // Calculate raw sleep time from sleep start to end for previous night
+                let cal = Calendar.current
+                let today = cal.startOfDay(for: prevNight.date)
+                let tomorrow = cal.date(byAdding: .day, value: 1, to: today)!
+
+                // Get unified sleep segments from SleepRepository for previous night
+                let unifiedSegments = SleepRepository.shared.unifiedSegments(from: today, to: tomorrow)
+
+                if !unifiedSegments.isEmpty {
+                    let sleepStart = unifiedSegments.min { $0.start < $1.start }?.start ?? Date()
+                    let sleepEnd = unifiedSegments.max { $0.end < $1.end }?.end ?? Date()
+                    let totalSleepTime = sleepEnd.timeIntervalSince(sleepStart) / 3600.0 // Convert to hours
+                    prevHours = totalSleepTime
+                } else {
+                    // Fallback to the original hours if no segments found
+                    prevHours = prevNight.hours
+                }
+            }
+
             var p = p0
-            
+
             // Print sleep data being retrieved
-            print("=== HomeViewModel Sleep Data ===")
-            print("Current night sleep hours: \(String(describing: currentHours))")
-            print("Previous night sleep hours: \(String(describing: prevHours))")
-            print("================================")
+            debugPrint("=== HomeViewModel Sleep Data ===")
+            debugPrint("Current night sleep hours: \(String(describing: currentHours))")
+            debugPrint("Previous night sleep hours: \(String(describing: prevHours))")
+            debugPrint("================================")
 
             if let curH = currentHours {
                 var t = p.trend
@@ -351,18 +369,18 @@ final class HomeViewModel: BaseViewModel {
                 }
                 p.trend = t
             }
-            
+
             // Print the data we're getting from Health app in the ViewModel
-            print("=== HomeViewModel Health Data ===")
-            print("Score: \(p.score)")
-            print("HRV: \(p.trend.hrvMs) ms (up: \(p.trend.hrvIsUp))")
-            print("HR: \(p.trend.hrBpm) bpm (down: \(p.trend.hrIsDown))")
-            print("Sleep: \(p.trend.sleepHours) hours (up: \(p.trend.sleepIsUp))")
-            print("Device Source: \(p.deviceSource.rawValue)")
-            print("Is Streaming: \(p.isStreaming)")
-            print("Last Update: \(p.lastUpdate)")
-            print("Battery Percent: \(String(describing: p.batteryPercent))")
-            print("=================================")
+            debugPrint("=== HomeViewModel Health Data ===")
+            debugPrint("Score: \(p.score)")
+            debugPrint("HRV: \(p.trend.hrvMs) ms (up: \(p.trend.hrvIsUp))")
+            debugPrint("HR: \(p.trend.hrBpm) bpm (down: \(p.trend.hrIsDown))")
+            debugPrint("Sleep: \(p.trend.sleepHours) hours (up: \(p.trend.sleepIsUp))")
+            debugPrint("Device Source: \(p.deviceSource.rawValue)")
+            debugPrint("Is Streaming: \(p.isStreaming)")
+            debugPrint("Last Update: \(p.lastUpdate)")
+            debugPrint("Battery Percent: \(String(describing: p.batteryPercent))")
+            debugPrint("=================================")
 
             self.currentProps = p
             DispatchQueue.main.async {
@@ -385,23 +403,33 @@ final class HomeViewModel: BaseViewModel {
     }
     
     // MARK: - Unified sleep helper (same logic pattern as BiometricsViewModel)
-    
+
     /// Find the last full sleep night strictly before the given anchor.
     private func latestNightBefore(date: Date) -> (date: Date, hours: Double)? {
         // Look 48h back from anchor for any segments
         let start = date.addingTimeInterval(-48 * 3600)
         let segs = SleepRepository.shared.unifiedSegments(from: start, to: date)
         guard let last = segs.last else { return nil }
-        
+
         // Bucket to that night's "sleep day start"
         let bucket = SleepRepository.shared.sleepDayStart(for: last.start)
         let nextBucket = bucket.addingTimeInterval(24 * 3600)
-        
+
         let nightSegs = SleepRepository.shared.unifiedSegments(from: bucket, to: nextBucket)
-        let secs = nightSegs.reduce(0.0) {
-            $0 + max(0.0, $1.end.timeIntervalSince($1.start))
+
+        // Calculate raw sleep time from sleep start to end (to match Polar's calculation)
+        if !nightSegs.isEmpty {
+            let sleepStart = nightSegs.min { $0.start < $1.start }?.start ?? Date()
+            let sleepEnd = nightSegs.max { $0.end < $1.end }?.end ?? Date()
+            let totalSleepTime = sleepEnd.timeIntervalSince(sleepStart) / 3600.0 // Convert to hours
+            return (bucket, totalSleepTime)
+        } else {
+            // Fallback to the original calculation if no segments found
+            let secs = nightSegs.reduce(0.0) {
+                $0 + max(0.0, $1.end.timeIntervalSince($1.start))
+            }
+            return (bucket, secs / 3600.0)
         }
-        return (bucket, secs / 3600.0)
     }
     
     private func postSessionEmotion(
