@@ -8,6 +8,7 @@ target 'CalmTrade' do
   pod 'FirebaseFirestore', '~> 11.8.0'
   pod 'FirebaseAnalytics', '~> 11.8.0'
   pod 'FirebaseCrashlytics', '~> 11.8.0'
+  pod 'Firebase/Messaging'
 
   # DO NOT add GoogleUtilities manually – Firebase pulls what it needs
   # pod 'GoogleUtilities'  <-- remove this

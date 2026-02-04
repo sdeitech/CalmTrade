@@ -70,7 +70,6 @@ class HomeViewController: BaseViewController, UICollectionViewDataSource, UIColl
         setupViewModelBindings()
         setupCollectionViews()
 
-        viewModel.fetchEmotionTags()
         viewModel.determineButtonState()
 
         showCategory(.positive)
@@ -78,6 +77,7 @@ class HomeViewController: BaseViewController, UICollectionViewDataSource, UIColl
     
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
+        viewModel.fetchEmotionTags()
         enforceDailySessionSetupIfNeeded()
         refreshUserProfileIfNeeded()
     }
@@ -191,7 +191,7 @@ class HomeViewController: BaseViewController, UICollectionViewDataSource, UIColl
             activeCV.isHidden = false
             activeCV.layoutIfNeeded()
 
-            DispatchQueue.main.async {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
                 self.updateContainerHeight(for: self.selectedCategory)
             }
         }

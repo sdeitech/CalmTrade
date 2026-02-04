@@ -1420,6 +1420,9 @@ isabella.ainsley@yourdomain.com </string>
                                                                 <real key="value" value="10"/>
                                                             </userDefinedRuntimeAttribute>
                                                         </userDefinedRuntimeAttributes>
+                                                        <connections>
+                                                            <action selector="exportDataTapped:" destination="wxo-Hj-bhB" eventType="touchUpInside" id="XPk-Lv-ufh"/>
+                                                        </connections>
                                                     </button>
                                                 </subviews>
                                                 <color key="backgroundColor" red="0.10196078431372549" green="0.10196078431372549" blue="0.10196078431372549" alpha="1" colorSpace="calibratedRGB"/>

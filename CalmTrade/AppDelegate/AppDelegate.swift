@@ -13,9 +13,11 @@ import IQKeyboardManagerSwift
 import FBSDKCoreKit
 import BackgroundTasks
 import FirebaseCrashlytics
+import FirebaseMessaging
 
 @main
-class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterDelegate {
+class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterDelegate,
+                   MessagingDelegate {
     
     var window: UIWindow?
     
@@ -107,7 +109,11 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
         center.delegate = self    // REQUIRED
         center.requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
             print("Notification permission granted: \(granted)")
+            DispatchQueue.main.async {
+                UIApplication.shared.registerForRemoteNotifications()
+            }
         }
+        Messaging.messaging().delegate = self
 
         // Check if we're running on iOS 13+ and should defer UI setup to SceneDelegate
         if #available(iOS 13.0, *) {
@@ -367,6 +373,42 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
         withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
     ) {
         completionHandler([.banner, .sound])     // <-- CRITICAL
+    }
+    
+    //MARK: - Push Notifications
+    func application(
+        _ application: UIApplication,
+        didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data
+    ) {
+        Messaging.messaging().apnsToken = deviceToken
+    }
+
+    func application(
+        _ application: UIApplication,
+        didFailToRegisterForRemoteNotificationsWithError error: Error
+    ) {
+        print("❌ APNs registration failed:", error)
+    }
+
+    func messaging(
+        _ messaging: Messaging,
+        didReceiveRegistrationToken fcmToken: String?
+    ) {
+        guard let token = fcmToken else { return }
+
+        print("🔥 FCM TOKEN:", token)
+
+        // Persist locally
+        UserDefaults.standard.set(token, forKey: "fcmToken")
+    }
+
+    func clearFCMToken() {
+        Messaging.messaging().deleteToken { error in
+            if let error = error {
+                print("Failed to delete FCM token:", error)
+            }
+        }
+        UserDefaults.standard.removeObject(forKey: "fcmToken")
     }
 }
 

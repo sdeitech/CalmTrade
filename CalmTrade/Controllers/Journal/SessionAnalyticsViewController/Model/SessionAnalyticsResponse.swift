@@ -20,6 +20,8 @@ struct SessionAnalyticsData: Decodable {
     let winRate: WinRateBlock
     let drawdown: DrawdownBlock
     let calmScore: CalmScoreBlock
+    let noTrades: NoTradeBlock
+    let emotionCounter: EmotionBlock
 }
 
 struct PLBlock: Decodable {
@@ -56,5 +58,35 @@ struct DecimalValue: Decodable {
         let container = try decoder.singleValueContainer()
         let dict = try container.decode([String: String].self)
         value = Double(dict["$numberDecimal"] ?? "0") ?? 0
+    }
+}
+
+struct NoTradeBlock: Decodable {
+    let count: Int?
+    let label: String?
+}
+
+struct EmotionBlock: Decodable {
+    let primaryEmotion: String?
+    let primaryCategory: String?
+    let primaryCount: Int?
+    let totalTags: Int?
+    let breakdown: [breakdownBlock]
+    let negative : Int?
+    let neutral : Int?
+    let cognitive : Int?
+    let positive : Int?
+}
+
+struct breakdownBlock: Decodable {
+    let emotion: String
+    let count: Int
+    let colorCode: String
+    
+
+    enum CodingKeys: String, CodingKey {
+        case emotion
+        case count
+        case colorCode
     }
 }

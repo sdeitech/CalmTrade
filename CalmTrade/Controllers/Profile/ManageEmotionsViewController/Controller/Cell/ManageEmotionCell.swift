@@ -17,10 +17,7 @@ final class ManageEmotionCell: UITableViewCell {
 
     func configure(
         emotion: EmotionTagModel?,
-        color: UIColor,
-        onEdit: (() -> Void)?,
-        onDelete: (() -> Void)?,
-        onAdd: (() -> Void)?
+        color: UIColor
     ) {
 
         if let emotion {
@@ -30,13 +27,9 @@ final class ManageEmotionCell: UITableViewCell {
             lblEmotion.text = emotion.name
             viewEmotion.layer.borderColor = color.cgColor
 
-            btnEdit.addAction(UIAction { _ in onEdit?() }, for: .touchUpInside)
-            btnDelete.addAction(UIAction { _ in onDelete?() }, for: .touchUpInside)
-
         } else {
             viewEmotion.isHidden = true
             btnAdd.isHidden = false
-            btnAdd.addAction(UIAction { _ in onAdd?() }, for: .touchUpInside)
         }
     }
 }

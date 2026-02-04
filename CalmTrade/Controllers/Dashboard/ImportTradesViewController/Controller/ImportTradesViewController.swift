@@ -172,6 +172,10 @@ final class ImportTradesViewController: BaseViewController, UIDocumentPickerDele
             uploadButton.isHidden = false
         }
     }
+    
+    @IBAction func backButtonTapped(_ sender: UIButton) {
+        self.navigationController?.popViewController()
+    }
 
     // MARK: - Document Picker
     func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {

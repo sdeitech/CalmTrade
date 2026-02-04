@@ -6,13 +6,6 @@
 //
 
 
-//
-//  CalmScoreDiagnosticsView.swift
-//  CalmTrade
-//
-//  Created by Anas Parekh on 20/11/25.
-//
-
 import SwiftUI
 import Foundation
 

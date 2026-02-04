@@ -51,6 +51,11 @@ final class ManageEmotionsViewController: UIViewController {
         sheet.sheetPresentationController?.detents = [.medium()]
         present(sheet, animated: true)
     }
+    
+    // MARK: -- Actions
+    @IBAction func btnBackClk(_ sender: UIButton) {
+        self.navigationController?.popViewController()
+    }
 }
 
 extension ManageEmotionsViewController: UITableViewDataSource, UITableViewDelegate {
@@ -76,43 +81,24 @@ extension ManageEmotionsViewController: UITableViewDataSource, UITableViewDelega
         let category = viewModel.category(at: indexPath.section)
         let emotion = viewModel.tag(at: indexPath)
         let color = UIColor(hex: category.colorHex)
-
-        cell.configure(
-            emotion: emotion,
-            color: color,
-            onEdit: emotion == nil ? nil : {
-                self.presentEditor(
-                    title: category.name,
-                    colorHex: category.colorHex,
-                    initial: emotion?.name
-                ) {
-                    self.viewModel.updateTag(
-                        name: $0,
-                        section: indexPath.section,
-                        row: indexPath.row
-                    )
-                }
-            },
-            onDelete: emotion == nil ? nil : {
-                self.viewModel.deleteTag(
-                    section: indexPath.section,
-                    row: indexPath.row
-                )
-            },
-            onAdd: {
-                self.presentEditor(
-                    title: category.name,
-                    colorHex: category.colorHex,
-                    initial: nil
-                ) {
-                    self.viewModel.createTag(
-                        name: $0,
-                        section: indexPath.section
-                    )
-                }
-            }
-        )
-
+        
+        // Encode indexPath
+        cell.btnAdd.tag = indexPath.section
+        cell.btnAdd.accessibilityValue = "\(indexPath.row)"
+        
+        cell.btnEdit.tag = indexPath.section
+        cell.btnEdit.accessibilityValue = "\(indexPath.row)"
+        
+        cell.btnDelete.tag = indexPath.section
+        cell.btnDelete.accessibilityValue = "\(indexPath.row)"
+        
+        // Targets
+        cell.btnAdd.addTarget(self, action: #selector(addTapped(_:)), for: .touchUpInside)
+        cell.btnEdit.addTarget(self, action: #selector(editTapped(_:)), for: .touchUpInside)
+        cell.btnDelete.addTarget(self, action: #selector(deleteTapped(_:)), for: .touchUpInside)
+        
+        cell.configure(emotion: emotion, color: color)
+        
         return cell
     }
     
@@ -154,5 +140,57 @@ extension ManageEmotionsViewController: UITableViewDataSource, UITableViewDelega
 
     func tableView(_ tableView: UITableView, heightForHeaderInSection section: Int) -> CGFloat {
         return 60
+    }
+    
+    @objc private func addTapped(_ sender: UIButton) {
+        guard let indexPath = indexPath(from: sender) else { return }
+        let category = viewModel.category(at: indexPath.section)
+
+        presentEditor(
+            title: category.name,
+            colorHex: category.colorHex,
+            initial: nil
+        ) {
+            self.viewModel.createTag(
+                name: $0,
+                section: indexPath.section
+            )
+        }
+    }
+
+    @objc private func editTapped(_ sender: UIButton) {
+        guard let indexPath = indexPath(from: sender),
+              let emotion = viewModel.tag(at: indexPath)
+        else { return }
+
+        let category = viewModel.category(at: indexPath.section)
+
+        presentEditor(
+            title: category.name,
+            colorHex: category.colorHex,
+            initial: emotion.name
+        ) {
+            self.viewModel.updateTag(
+                name: $0,
+                section: indexPath.section,
+                row: indexPath.row
+            )
+        }
+    }
+
+    @objc private func deleteTapped(_ sender: UIButton) {
+        guard let indexPath = indexPath(from: sender),
+              let emotion = viewModel.tag(at: indexPath)
+        else { return }
+        viewModel.deleteTag(section: indexPath.section, row: indexPath.row)
+    }
+    
+    private func indexPath(from sender: UIButton) -> IndexPath? {
+        guard
+            let rowString = sender.accessibilityValue,
+            let row = Int(rowString)
+        else { return nil }
+
+        return IndexPath(row: row, section: sender.tag)
     }
 }

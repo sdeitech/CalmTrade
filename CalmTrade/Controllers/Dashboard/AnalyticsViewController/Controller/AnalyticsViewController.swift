@@ -51,5 +51,10 @@ final class AnalyticsViewController: UIViewController {
         let section = vm.sectionFor(index: sender.selectedSegmentIndex)
         vm.selectedSection = section
     }
+    
+    @IBAction func importButtonTapped(_ sender: UIButton) {
+        let importTradesVC = UIStoryboard(name: Constants.Storyboard.Dashboard, bundle: nil).instantiateViewController(withIdentifier: "ImportTradesViewController") as! ImportTradesViewController
+        self.navigationController?.pushViewController(importTradesVC)
+    }
 }
 
