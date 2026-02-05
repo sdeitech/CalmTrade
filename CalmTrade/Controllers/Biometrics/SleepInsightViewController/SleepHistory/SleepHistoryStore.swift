@@ -85,6 +85,9 @@ final class SleepHistoryStore {
 
             let totalAsleep = totalAsleepUnionSeconds(from: group)
 
+            // Calculate total including awake time (REM + Core + Deep + Awake)
+            let totalWithAwake = rem + core + deep + awake
+
             // unified segments have mixed sources (ct360/HK)
             // pick highest priority source for the night:
             // ct360 > HK
@@ -98,7 +101,7 @@ final class SleepHistoryStore {
                 SleepLogEntry(
                     sessionStart: first.start,
                     sessionEnd: last.end,
-                    totalSeconds: totalAsleep,
+                    totalSeconds: totalWithAwake,
                     remSeconds: rem,
                     coreSeconds: core,
                     deepSeconds: deep,

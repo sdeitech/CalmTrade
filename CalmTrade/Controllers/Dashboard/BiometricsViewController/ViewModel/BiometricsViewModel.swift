@@ -525,6 +525,24 @@ final class BiometricsViewModel: ObservableObject {
 
 
         // Steps (today + 7-day avg)
+        // Let's debug which source data we're getting
+        debugPrint("=== BiometricsViewModel Steps Debug ===")
+        let polarStepsToday = StepEngine.seriesPerMinute(from: cal.startOfDay(for: Date()), to: Date()).filter { point in
+            guard let sourceData = repo.latestValue(kind: .steps, source: .polar360) else { return false }
+            return abs(point.0.timeIntervalSince(sourceData.date)) < 3600 // Within 1 hour
+        }.reduce(0) { $0 + $1.1 }
+
+        let appleStepsToday = StepEngine.seriesPerMinute(from: cal.startOfDay(for: Date()), to: Date()).filter { point in
+            guard let sourceData = repo.latestValue(kind: .steps, source: .appleHealth) else { return false }
+            return abs(point.0.timeIntervalSince(sourceData.date)) < 3600 // Within 1 hour
+        }.reduce(0) { $0 + $1.1 }
+
+        debugPrint("Steps Today (Raw): \(stepsToday)")
+        debugPrint("Polar steps today (estimated): \(polarStepsToday)")
+        debugPrint("Apple Health steps today (estimated): \(appleStepsToday)")
+        debugPrint("Using source with higher priority (Polar360 > Apple Health)")
+        debugPrint("======================================")
+
         data.stepsToday = "\(Int(stepsToday))"
         data.stepsDate  = formatDate(now)
         var sum7 = 0.0

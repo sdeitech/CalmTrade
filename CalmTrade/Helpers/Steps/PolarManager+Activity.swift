@@ -53,33 +53,115 @@ extension PolarManager {
     {
         let cal = Calendar.current
         let start = cal.startOfDay(for: date)
-        let end   = cal.date(byAdding: .day, value: 1, to: start)!
+        let end   = cal.date(byAdding: .day, value: 1, to: start)!.addingTimeInterval(-1) // End of day (23:59:59)
 
-        guard api.isFeatureReady(deviceId, feature: .feature_polar_activity_data) else {
+        debugPrint("=== PolarManager+Activity ===")
+        debugPrint("Fetching Polar steps for date: \(date) (range: \(start) to \(end))")
+        debugPrint("=============================")
+
+        guard self.api.isFeatureReady(deviceId, feature: .feature_polar_activity_data) else {
             NSLog("[PM][ACT] feature not ready; skipping fetch")
             completion([]); return
         }
 
-        api.getActivitySampleData(identifier: deviceId, fromDate: start, toDate: end)
+        // Use the dedicated getSteps method like in the reference implementation
+        self.api.getSteps(identifier: deviceId, fromDate: start, toDate: end)
             .observe(on: MainScheduler.instance)
             .subscribe(onSuccess: { [weak self] days in
-                guard let self else { completion([]); return }
+                guard let self else {
+                    debugPrint("=== PolarManager+Activity ===")
+                    debugPrint("Self was nil in success callback")
+                    debugPrint("=============================")
+                    completion([]);
+                    return
+                }
+
+                debugPrint("=== PolarManager+Activity ===")
+                debugPrint("Successfully fetched \(days.count) days of Polar steps data")
+
                 var out: [(Date, Int)] = []
                 for dayObj in days {
-                    out.append(contentsOf: self._extractMinutePairs(from: dayObj, dayStart: start))
+                    let extracted = self._extractMinutePairs(from: dayObj, dayStart: start)
+                    debugPrint("Extracted \(extracted.count) step records from day object")
+                    out.append(contentsOf: extracted)
                 }
                 out.sort { $0.0 < $1.0 }
+
+                debugPrint("Total extracted steps records: \(out.count)")
+                for (ts, steps) in out.prefix(5) {
+                    debugPrint("  - \(ts) : \(steps) steps")
+                }
+                if out.count > 5 {
+                    debugPrint("  ... and \(out.count - 5) more records")
+                }
+                debugPrint("=============================")
+
                 completion(out)
             }, onFailure: { err in
-                NSLog("[PM][ACT] getActivitySampleData error: %@", err.localizedDescription)
-                completion([])
+                debugPrint("=== PolarManager+Activity ===")
+                debugPrint("Failed to fetch Polar steps via getSteps: \(err.localizedDescription)")
+                debugPrint("=============================")
+
+                // Fallback to the older method
+                debugPrint("Falling back to getActivitySampleData method...")
+
+                self.api.getActivitySampleData(identifier: deviceId, fromDate: start, toDate: end)
+                    .observe(on: MainScheduler.instance)
+                    .subscribe(onSuccess: { [weak self] days in
+                        guard let self else {
+                            debugPrint("=== PolarManager+Activity Fallback ===")
+                            debugPrint("Self was nil in fallback success callback")
+                            debugPrint("=============================")
+                            completion([]);
+                            return
+                        }
+
+                        debugPrint("=== PolarManager+Activity Fallback ===")
+                        debugPrint("Successfully fetched \(days.count) days of Polar activity data via fallback")
+
+                        var out: [(Date, Int)] = []
+                        for dayObj in days {
+                            let extracted = self._extractMinutePairs(from: dayObj, dayStart: start)
+                            debugPrint("Extracted \(extracted.count) step records from day object")
+                            out.append(contentsOf: extracted)
+                        }
+                        out.sort { $0.0 < $1.0 }
+
+                        debugPrint("Total extracted steps records from fallback: \(out.count)")
+
+                        completion(out)
+                    }, onFailure: { err in
+                        debugPrint("=== PolarManager+Activity Fallback ===")
+                        debugPrint("Also failed to fetch via getActivitySampleData: \(err.localizedDescription)")
+                        debugPrint("=============================")
+
+                        NSLog("[PM][ACT] fallback getActivitySampleData error: %@", err.localizedDescription)
+                        completion([])
+                    })
+                    .disposed(by: self.disposeBag)
             })
             .disposed(by: disposeBag)
     }
 
     /// Repo ingest (Polar 360 → .steps)
     func submitPolar360MinuteSteps(_ minutes: [(Date, Int)]) {
-        guard !minutes.isEmpty else { return }
+        guard !minutes.isEmpty else {
+            debugPrint("=== PolarManager+Activity ===")
+            debugPrint("No Polar steps data to submit")
+            debugPrint("=============================")
+            return
+        }
+
+        debugPrint("=== PolarManager+Activity ===")
+        debugPrint("Submitting \(minutes.count) Polar 360 step entries to repository")
+        for (ts, steps) in minutes.prefix(5) { // Print first 5 entries as sample
+            debugPrint("  - \(ts) : \(steps) steps")
+        }
+        if minutes.count > 5 {
+            debugPrint("  ... and \(minutes.count - 5) more entries")
+        }
+        debugPrint("=============================")
+
         let repo = CTMetricsRepository.shared
         for (ts, steps) in minutes {
             repo.upsert(kind: .steps, value: Double(steps), unit: "steps", source: .polar360, date: ts)

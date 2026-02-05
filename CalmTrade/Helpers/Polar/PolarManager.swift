@@ -251,7 +251,9 @@ extension PolarManager {
         
         NSLog("[PM] connected; waiting for DIS callbacks (firmware/software revision)")
         broadcastSnapshotIfCurrent()
-        
+
+        // Force immediate steps sync when connecting to Polar device
+        PolarDailySyncCoordinator.shared.fetchTodayAndYesterday(deviceId: dev.id)
         Polar360SleepIngestor.shared.syncLastNightsIfNeeded(deviceId: dev.id)
         PolarDailySyncCoordinator.shared.startWhileConnected(deviceId: dev.id)
     }
