@@ -40,6 +40,10 @@ final class DataManagementViewController: UIViewController {
     @IBAction func exportDataTapped(_ sender: UIButton) {
         viewModel.exportData()
     }
+    
+    @IBAction func btnBackTapped(_ sender: Any) {
+        navigationController?.popViewController()
+    }
 
     @IBAction func deleteAllDataTapped(_ sender: UIButton) {
         let vc = DeleteAllDataBottomSheetViewController()
@@ -52,7 +56,7 @@ final class DataManagementViewController: UIViewController {
 
     private func handleDeleteSuccess() {
         // Pop back (or reset app state)
-        navigationController?.popViewController(animated: true)
+        navigationController?.popViewController()
     }
     
     // MARK: - Helpers
@@ -61,7 +65,7 @@ final class DataManagementViewController: UIViewController {
                                       message: message,
                                       preferredStyle: .alert)
         alert.addAction(UIAlertAction(title: "OK", style: .default) { _ in
-            self.navigationController?.popViewController(animated: true)
+            self.navigationController?.popViewController()
         })
         present(alert, animated: true)
     }

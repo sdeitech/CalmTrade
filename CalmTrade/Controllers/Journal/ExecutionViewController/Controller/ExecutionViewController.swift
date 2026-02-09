@@ -25,11 +25,12 @@ final class ExecutionViewController: UIViewController {
     var selectedDate: String = "2026-01-05"
 
     // MARK: - Columns
-    private let columns = ["TIME", "SYMBOL", "SIDE", "SIZE", "P&L"]
+    private let columns = ["TIME", "SYMBOL", "PRICE", "SIDE", "SIZE", "P&L"]
 
     private let columnWidths: [CGFloat] = [
         80,   // TIME
 //        180,  // TIMESTAMP
+        90,
         100,  // SYMBOL
         80,   // SIDE
         80,   // SIZE
@@ -133,6 +134,8 @@ final class ExecutionViewController: UIViewController {
                 )
             )
         }
+        
+        let total = executions.compactMap(\.price).reduce(0, +)
 
         // TOTAL ROW
         grid.append(
@@ -141,14 +144,15 @@ final class ExecutionViewController: UIViewController {
                     "TOTAL",
 //                    "",
                     "\(executions.count) executions",
+                    "$ \(total)",
                     "",
                     "",
                     String(format: "$%.2f", totalPnL)
                 ],
                 colors: [
                     .yellow,
-//                    .white,
                     .yellow,
+                    .white,
                     .white,
                     .white,
                     totalPnL >= 0 ? .systemGreen : .systemRed

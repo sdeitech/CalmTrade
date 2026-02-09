@@ -163,6 +163,6 @@ final class HeartRateDetailViewController: BaseViewController {
     }
     
     @IBAction private func btnBackTapped(_ sender: Any) {
-        navigationController?.popViewController(animated: true)
+        navigationController?.popViewController()
     }
 }

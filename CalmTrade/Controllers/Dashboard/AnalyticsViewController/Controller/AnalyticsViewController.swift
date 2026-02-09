@@ -56,5 +56,19 @@ final class AnalyticsViewController: UIViewController {
         let importTradesVC = UIStoryboard(name: Constants.Storyboard.Dashboard, bundle: nil).instantiateViewController(withIdentifier: "ImportTradesViewController") as! ImportTradesViewController
         self.navigationController?.pushViewController(importTradesVC)
     }
+    
+    @IBAction func didTapFlowerIcon(_ sender: Any) {
+        let deviceManagerVC = UIStoryboard(name: Constants.Storyboard.Devices, bundle: nil).instantiateViewController(withIdentifier: "DeviceManagementViewController") as! DeviceManagementViewController
+        self.navigationController?.pushViewController(deviceManagerVC)
+    }
+    
+    @IBAction func didTapProfileIcon(_ sender: Any) {
+        self.navigationController?.pushViewController(UIStoryboard(name: Constants.Storyboard.ProfileHost, bundle: nil).instantiateViewController(withIdentifier: "ProfileTabsHostViewController") as! ProfileTabsHostViewController,transitionType: .fade)
+    }
+    
+    @IBAction func didTapCalendarIcon(_ sender: Any) {
+        let calendarVC = UIStoryboard(name: Constants.Storyboard.Home, bundle: nil).instantiateViewController(withIdentifier: "CalendarViewController") as! CalendarViewController
+        self.navigationController?.pushViewController(calendarVC)
+    }
 }
 

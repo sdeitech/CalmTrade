@@ -1404,6 +1404,9 @@ Pago_Pago</string>
                                         </constraints>
                                         <inset key="imageEdgeInsets" minX="0.0" minY="0.0" maxX="2.2250738585072014e-308" maxY="0.0"/>
                                         <state key="normal" image="back"/>
+                                        <connections>
+                                            <action selector="btnBackClk:" destination="PaK-Vp-v4x" eventType="touchUpInside" id="zSu-QP-UHq"/>
+                                        </connections>
                                     </button>
                                     <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Manage Subscriptons" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="1E8-gg-tfZ">
                                         <rect key="frame" x="78.666666666666686" y="4.3333333333333286" width="188" height="21.666666666666668"/>

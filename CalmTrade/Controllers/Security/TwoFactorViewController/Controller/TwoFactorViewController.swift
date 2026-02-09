@@ -67,6 +67,10 @@ final class TwoFactorViewController: UIViewController {
             presentOTPVerification(isDisabling: true)
         }
     }
+    
+    @IBAction func btnBackTapped(_ sender: Any) {
+        navigationController?.popViewController()
+    }
 
     // MARK: - Navigation
     private func presentOTPVerification(isDisabling: Bool) {

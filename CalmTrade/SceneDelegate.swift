@@ -59,6 +59,13 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         DispatchQueue.global(qos: .userInitiated).async {
             self.initializeBackgroundSystems(scene, session: session, connectionOptions: connectionOptions)
         }
+        
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleAuthExpired),
+            name: .authDidExpire,
+            object: nil
+        )
     }
     
     // MARK: - Deferred initialization
@@ -274,5 +281,9 @@ extension SceneDelegate: UNUserNotificationCenterDelegate {
         withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
     ) {
         completionHandler([.banner, .sound])     // <-- CRITICAL
+    }
+    
+    @objc private func handleAuthExpired(_ notification: Notification) {
+        SessionLogoutManager.shared.logout(reason: notification.object)
     }
 }

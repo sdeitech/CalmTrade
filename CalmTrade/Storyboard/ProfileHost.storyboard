@@ -62,7 +62,7 @@
                                         </constraints>
                                     </view>
                                     <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="profile" translatesAutoresizingMaskIntoConstraints="NO" id="dxC-vR-6aR">
-                                        <rect key="frame" x="155.66666666666666" y="138" width="82" height="82"/>
+                                        <rect key="frame" x="155.66666666666666" y="114" width="82" height="82"/>
                                         <constraints>
                                             <constraint firstAttribute="width" constant="82" id="QbU-yt-zZg"/>
                                             <constraint firstAttribute="height" constant="82" id="cEk-zD-Fe9"/>
@@ -74,19 +74,19 @@
                                         </userDefinedRuntimeAttributes>
                                     </imageView>
                                     <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Joseph Burns" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="8cg-eK-Dnf">
-                                        <rect key="frame" x="138.66666666666666" y="231" width="115.66666666666666" height="21.666666666666657"/>
+                                        <rect key="frame" x="138.66666666666666" y="207" width="115.66666666666666" height="21.666666666666657"/>
                                         <fontDescription key="fontDescription" name="HelveticaNeue-Medium" family="Helvetica Neue" pointSize="18"/>
                                         <color key="textColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                         <nil key="highlightedColor"/>
                                     </label>
                                     <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Joseph.Burns@example.com" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="WDw-dd-psr">
-                                        <rect key="frame" x="105.33333333333333" y="254.66666666666666" width="182.66666666666669" height="16.333333333333343"/>
+                                        <rect key="frame" x="105.33333333333333" y="230.66666666666666" width="182.66666666666669" height="16.333333333333343"/>
                                         <fontDescription key="fontDescription" name="HelveticaNeue" family="Helvetica Neue" pointSize="14"/>
                                         <color key="textColor" white="1" alpha="0.54000000000000004" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                         <nil key="highlightedColor"/>
                                     </label>
                                     <view clipsSubviews="YES" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="l4I-JG-YKW">
-                                        <rect key="frame" x="0.0" y="287" width="393" height="73"/>
+                                        <rect key="frame" x="0.0" y="263" width="393" height="73"/>
                                         <subviews>
                                             <stackView opaque="NO" contentMode="scaleToFill" distribution="equalSpacing" spacing="-43" translatesAutoresizingMaskIntoConstraints="NO" id="Abi-eP-Qhg">
                                                 <rect key="frame" x="22" y="15" width="349" height="58"/>
@@ -274,7 +274,7 @@
                                         </constraints>
                                     </view>
                                     <containerView opaque="NO" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="tcx-K7-yPS">
-                                        <rect key="frame" x="26" y="382" width="343" height="440"/>
+                                        <rect key="frame" x="26" y="358" width="343" height="464"/>
                                         <connections>
                                             <segue destination="sOk-gR-HKf" kind="embed" id="h6O-0A-Ns1"/>
                                         </connections>
@@ -293,7 +293,7 @@
                                     <constraint firstItem="l4I-JG-YKW" firstAttribute="leading" secondItem="ezb-PH-KD9" secondAttribute="leading" id="lZR-Zm-72x"/>
                                     <constraint firstItem="tcx-K7-yPS" firstAttribute="top" secondItem="l4I-JG-YKW" secondAttribute="bottom" constant="22" id="mP7-MS-tg2"/>
                                     <constraint firstItem="TiS-In-QY7" firstAttribute="leading" secondItem="ezb-PH-KD9" secondAttribute="leading" constant="24" id="oCZ-kJ-WUg"/>
-                                    <constraint firstItem="dxC-vR-6aR" firstAttribute="top" secondItem="TiS-In-QY7" secondAttribute="bottom" constant="48" id="p67-bl-WoE"/>
+                                    <constraint firstItem="dxC-vR-6aR" firstAttribute="top" secondItem="TiS-In-QY7" secondAttribute="bottom" constant="24" id="p67-bl-WoE"/>
                                     <constraint firstItem="WDw-dd-psr" firstAttribute="top" secondItem="8cg-eK-Dnf" secondAttribute="bottom" constant="2" id="qHV-VL-zMI"/>
                                     <constraint firstItem="hlX-f8-GFd" firstAttribute="top" secondItem="ezb-PH-KD9" secondAttribute="top" id="rNR-EI-0qf"/>
                                     <constraint firstAttribute="trailing" secondItem="hlX-f8-GFd" secondAttribute="trailing" id="rbP-h4-hSY"/>

@@ -41,6 +41,9 @@
                                         </constraints>
                                         <inset key="imageEdgeInsets" minX="0.0" minY="0.0" maxX="2.2250738585072014e-308" maxY="0.0"/>
                                         <state key="normal" image="back"/>
+                                        <connections>
+                                            <action selector="btnBackTapped:" destination="Y6W-OH-hqX" eventType="touchUpInside" id="IaB-hu-Yhc"/>
+                                        </connections>
                                     </button>
                                     <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Change Password" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="i2l-XT-H4D">
                                         <rect key="frame" x="94.333333333333329" y="4.3333333333333286" width="156.66666666666669" height="21.666666666666668"/>
@@ -446,6 +449,9 @@
                                         </constraints>
                                         <inset key="imageEdgeInsets" minX="0.0" minY="0.0" maxX="2.2250738585072014e-308" maxY="0.0"/>
                                         <state key="normal" image="back"/>
+                                        <connections>
+                                            <action selector="btnBackTapped:" destination="Zn5-pB-Xaj" eventType="touchUpInside" id="NGx-Nn-ALg"/>
+                                        </connections>
                                     </button>
                                     <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Two-Factor Authentication" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="MSk-hn-MqO">
                                         <rect key="frame" x="58.666666666666686" y="4.3333333333333286" width="228" height="21.666666666666668"/>
@@ -1365,6 +1371,9 @@ isabella.ainsley@yourdomain.com </string>
                                         </constraints>
                                         <inset key="imageEdgeInsets" minX="0.0" minY="0.0" maxX="2.2250738585072014e-308" maxY="0.0"/>
                                         <state key="normal" image="back"/>
+                                        <connections>
+                                            <action selector="btnBackTapped:" destination="wxo-Hj-bhB" eventType="touchUpInside" id="sQy-un-1Fe"/>
+                                        </connections>
                                     </button>
                                     <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Data Management" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="k4w-6y-FMm">
                                         <rect key="frame" x="93.666666666666686" y="4.3333333333333286" width="158" height="21.666666666666668"/>

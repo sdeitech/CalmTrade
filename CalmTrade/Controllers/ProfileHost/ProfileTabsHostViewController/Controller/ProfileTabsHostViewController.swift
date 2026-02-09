@@ -281,7 +281,7 @@ final class ProfileTabsHostViewController: UIViewController {
                         bundle: nil
                     ).instantiateViewController(withIdentifier: "LoginViewController") as! LoginViewController
 
-                    self?.navigationController?.setViewControllers([loginVC], animated: true)
+                    UIApplication.shared.setRootViewController(loginVC)
                 }
 
                 present(sheet, animated: true)

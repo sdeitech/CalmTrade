@@ -73,6 +73,10 @@ final class ConsecutiveViewController: UIViewController {
         let filter = mapFilter(sender.selectedSegmentIndex)
         viewModel.fetchConsecutive(filter: filter)
     }
+    
+    @IBAction func btnBackClk(_ sender: UIButton) {
+        self.navigationController?.popViewController()
+    }
 
     private func mapFilter(_ index: Int) -> String {
         switch index {

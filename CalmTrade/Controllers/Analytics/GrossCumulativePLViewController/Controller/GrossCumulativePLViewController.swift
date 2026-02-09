@@ -91,4 +91,8 @@ final class GrossCumulativePLViewController: UIViewController {
         let ranged = selected.lowercased()
         vm.fetchPL(range: ranged)
     }
+    
+    @IBAction func btnBackTapped(_ sender: Any) {
+        navigationController?.popViewController()
+    }
 }

@@ -102,6 +102,10 @@ final class ChangeEmailOTPViewController: BaseViewController {
     @IBAction func btnResendTapped(_ sender: UIButton) {
         viewModel.resendOTP()
     }
+    
+    @IBAction func btnBackTapped(_ sender: Any) {
+        navigationController?.popViewController()
+    }
 
     // MARK: - Helpers
 

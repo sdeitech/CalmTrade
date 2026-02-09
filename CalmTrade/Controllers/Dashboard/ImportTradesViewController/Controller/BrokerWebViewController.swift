@@ -57,7 +57,7 @@ final class BrokerWebViewController: UIViewController, WKNavigationDelegate {
             KRProgressHUD.dismiss()
 
             if ok {
-                self.navigationController?.popViewController(animated: true)
+                self.navigationController?.popViewController()
             } else {
                 print("❌ Callback or sync failed")
             }

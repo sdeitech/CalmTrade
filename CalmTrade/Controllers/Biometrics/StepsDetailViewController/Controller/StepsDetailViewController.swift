@@ -141,6 +141,6 @@ final class StepsDetailViewController: BaseViewController {
 
 
     @IBAction private func backTapped(_ sender: Any) {
-        navigationController?.popViewController(animated: true)
+        navigationController?.popViewController()
     }
 }

@@ -20,4 +20,5 @@ struct ExecutionItem: Decodable, Hashable {
     let side: String
     let size: Int?
     let pnl: Double?
+    let price: Double?
 }

@@ -116,4 +116,5 @@ final class SessionManager: ObservableObject {
 
 extension Notification.Name {
     static let userAccountDidChange = Notification.Name("UserAccountDidChange")
+    static let authDidExpire = Notification.Name("authDidExpire")
 }

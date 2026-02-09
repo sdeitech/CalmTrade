@@ -98,6 +98,10 @@ final class ChangeEmailViewController: BaseViewController {
     @IBAction func btnPasswordEyeTapped(_ sender: UIButton) {
         toggleEye(textField: txtPassword, button: sender)
     }
+    
+    @IBAction func btnBackTapped(_ sender: Any) {
+        navigationController?.popViewController()
+    }
 
     // MARK: - Helpers
 

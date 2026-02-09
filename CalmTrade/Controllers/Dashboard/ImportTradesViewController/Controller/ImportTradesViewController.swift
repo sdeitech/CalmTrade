@@ -56,7 +56,7 @@ final class ImportTradesViewController: BaseViewController, UIDocumentPickerDele
         }
 
         viewModel.onImportSuccess = { [weak self] in
-            self?.navigationController?.popViewController(animated: true)
+            self?.navigationController?.popViewController()
         }
 
         viewModel.onBrokerConnect = { [weak self] redirectURL in
