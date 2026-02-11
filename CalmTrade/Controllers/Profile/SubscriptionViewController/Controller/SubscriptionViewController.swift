@@ -231,6 +231,10 @@ final class SubscriptionViewController: UIViewController {
             self.navigationController?.pushViewController(vc, animated: true)
         }
     }
+    
+    @IBAction func btnBackClk(_ sender: Any) {
+        navigationController?.popViewController()
+    }
 }
 
 // MARK: - TABLES

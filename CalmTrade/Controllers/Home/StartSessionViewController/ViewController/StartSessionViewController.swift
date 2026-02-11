@@ -107,7 +107,7 @@ final class StartSessionViewController: UIViewController {
     }
 
     @IBAction func backTapped() {
-        navigationController?.popViewController(animated: true)
+        navigationController?.popViewController()
     }
 
     // MARK: - UI Helpers

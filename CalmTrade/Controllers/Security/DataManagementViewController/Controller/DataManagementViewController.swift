@@ -26,14 +26,23 @@ final class DataManagementViewController: UIViewController {
         viewModel.onLoading = { isLoading in
             isLoading ? KRProgressHUD.show() : KRProgressHUD.dismiss()
         }
-
-        viewModel.onSuccess = { [weak self] in
-            self?.handleDeleteSuccess()
+        
+        viewModel.onSuccess = { [weak self] message in
+            self?.showSuccessAndPop(message: message)
         }
 
         viewModel.onError = { [weak self] msg in
             self?.showAlert(message: msg)
         }
+    }
+    
+    // MARK: - Actions
+    @IBAction func exportDataTapped(_ sender: UIButton) {
+        viewModel.exportData()
+    }
+    
+    @IBAction func btnBackTapped(_ sender: Any) {
+        navigationController?.popViewController()
     }
 
     @IBAction func deleteAllDataTapped(_ sender: UIButton) {
@@ -47,6 +56,17 @@ final class DataManagementViewController: UIViewController {
 
     private func handleDeleteSuccess() {
         // Pop back (or reset app state)
-        navigationController?.popViewController(animated: true)
+        navigationController?.popViewController()
+    }
+    
+    // MARK: - Helpers
+    private func showSuccessAndPop(message: String) {
+        let alert = UIAlertController(title: "Success",
+                                      message: message,
+                                      preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "OK", style: .default) { _ in
+            self.navigationController?.popViewController()
+        })
+        present(alert, animated: true)
     }
 }

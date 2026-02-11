@@ -76,7 +76,7 @@ final class ChangePasswordViewController: BaseViewController {
             KRProgressHUD.dismiss()
 
             if success {
-                self.navigationController?.popViewController(animated: true)
+                self.navigationController?.popViewController()
             } else {
                 self.showAlert(message: message ?? "Failed to update password.")
             }
@@ -95,6 +95,10 @@ final class ChangePasswordViewController: BaseViewController {
 
     @IBAction func btnConfirmEyeTapped(_ sender: UIButton) {
         toggleEye(textField: txtConfirm, button: sender)
+    }
+    
+    @IBAction func btnBackTapped(_ sender: UIButton) {
+        navigationController?.popViewController()
     }
 
     private func toggleEye(textField: UITextField, button: UIButton) {

@@ -87,7 +87,7 @@ final class SetBalanceViewController: BaseViewController, UITextFieldDelegate {
     }
 
     @IBAction private func didTapBack(_ sender: UIButton) {
-        navigationController?.popViewController(animated: true)
+        navigationController?.popViewController()
     }
 
     @IBAction private func didTapInfo(_ sender: UIButton) { viewInfo.isHidden = false }

@@ -83,6 +83,6 @@ final class AccountDetailsViewController: UIViewController {
     
     // MARK: - Actions
     @IBAction func btnBackTapped(_ sender: Any) {
-        navigationController?.popViewController(animated: true)
+        navigationController?.popViewController()
     }
 }

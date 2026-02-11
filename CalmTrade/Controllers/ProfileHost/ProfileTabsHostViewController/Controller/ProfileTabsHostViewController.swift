@@ -6,6 +6,7 @@
 //
 
 import UIKit
+import KRProgressHUD
 
 final class ProfileTabsHostViewController: UIViewController {
 
@@ -39,6 +40,7 @@ final class ProfileTabsHostViewController: UIViewController {
 
     // MARK: - ViewModels
     private let tabsVM = TabsHostViewModel(initial: .profile)
+    private let deleteAccountViewModel = DeleteAccountViewModel()
 
     // MARK: - Lifecycle
     override func viewDidLoad() {
@@ -117,6 +119,38 @@ final class ProfileTabsHostViewController: UIViewController {
             self.currentIndex = newIndex
             UIImpactFeedbackGenerator(style: .light).impactOccurred()
         }
+        
+        deleteAccountViewModel.onLoading = { isLoading in
+            isLoading ? KRProgressHUD.show() : KRProgressHUD.dismiss()
+        }
+
+        deleteAccountViewModel.onSuccess = { [weak self] in
+            guard let self else { return }
+
+            // Clear everything
+            UserDefaults.standard.removePersistentDomain(
+                forName: Bundle.main.bundleIdentifier!
+            )
+            SocketClient.shared.disconnect()
+
+            let loginVC = UIStoryboard(
+                name: Constants.Storyboard.Main,
+                bundle: nil
+            ).instantiateViewController(withIdentifier: "LoginViewController") as! LoginViewController
+
+            self.navigationController?.setViewControllers([loginVC], animated: true)
+        }
+
+        deleteAccountViewModel.onError = { [weak self] msg in
+            let alert = UIAlertController(
+                title: "Error",
+                message: msg,
+                preferredStyle: .alert
+            )
+            alert.addAction(UIAlertAction(title: "OK", style: .default))
+            self?.present(alert, animated: true)
+        }
+
     }
 
     // MARK: - Page builders
@@ -213,13 +247,26 @@ final class ProfileTabsHostViewController: UIViewController {
             guard let self = self else { return }
             switch action {
             case .notification:
-                break
+                let notificationSettingVC = UIStoryboard(name: Constants.Storyboard.Setting, bundle: nil)
+                    .instantiateViewController(withIdentifier: "NotificationSettingsViewController") as! NotificationSettingsViewController
+                self.navigationController?.pushViewController(notificationSettingVC)
             case .connectWearable:
                 let twoFactorVC = UIStoryboard(name: Constants.Storyboard.Devices, bundle: nil)
                     .instantiateViewController(withIdentifier: "PolarConnectionViewController") as! PolarConnectionViewController
                 self.navigationController?.pushViewController(twoFactorVC)
             case .deleteAccount:
-                break
+                let sheet = DeleteAccountBottomSheetViewController()
+                sheet.modalPresentationStyle = .overFullScreen
+                sheet.modalTransitionStyle = .crossDissolve
+
+                sheet.onConfirm = { [weak self] in
+                    guard let self else { return }
+
+                    let userId = SessionManager.shared.current?.id
+                    self.deleteAccountViewModel.deleteAccount(userId: userId ?? "")
+                }
+
+                present(sheet, animated: true)
             case .logout:
                 let sheet = LogoutBottomSheetViewController()
                 sheet.modalPresentationStyle = .overFullScreen
@@ -234,7 +281,7 @@ final class ProfileTabsHostViewController: UIViewController {
                         bundle: nil
                     ).instantiateViewController(withIdentifier: "LoginViewController") as! LoginViewController
 
-                    self?.navigationController?.setViewControllers([loginVC], animated: true)
+                    UIApplication.shared.setRootViewController(loginVC)
                 }
 
                 present(sheet, animated: true)

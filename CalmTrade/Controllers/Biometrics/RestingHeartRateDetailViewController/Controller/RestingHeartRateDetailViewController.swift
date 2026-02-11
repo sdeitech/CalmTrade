@@ -114,7 +114,7 @@ final class RestingHeartRateDetailViewController: BaseViewController {
     }
 
     @IBAction private func btnBackTapped(_ sender: Any) {
-        navigationController?.popViewController(animated: true)
+        navigationController?.popViewController()
     }
 }
 

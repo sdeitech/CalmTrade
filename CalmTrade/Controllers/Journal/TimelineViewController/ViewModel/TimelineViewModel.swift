@@ -7,6 +7,7 @@
 
 import Foundation
 import UIKit
+import KRProgressHUD
 
 final class TimelineViewModel {
 
@@ -21,7 +22,7 @@ final class TimelineViewModel {
 
     func fetch() {
         let param = ["date": selectedDate]
-        
+        KRProgressHUD.show()
         api.startService(
             with: .GET,
             path: "session/timeline",
@@ -30,6 +31,7 @@ final class TimelineViewModel {
             modelType: TimelineResponse.self
         ) { [weak self] result in
             DispatchQueue.main.async {
+                KRProgressHUD.dismiss()
                 switch result {
                 case .Success(let response):
                     guard let data = response?.data else { return }

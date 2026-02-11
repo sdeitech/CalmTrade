@@ -290,6 +290,17 @@ public extension APIService {
 
         // Extract readable error message if possible
         if let json = try? JSONSerialization.jsonObject(with: data, options: []) as? [String: Any] {
+            if let authFailure = detectAuthFailure(status: status, json: json) {
+                DispatchQueue.main.async {
+                    NotificationCenter.default.post(
+                        name: .authDidExpire,
+                        object: authFailure
+                    )
+                }
+                completion(.Error("Session expired"))
+                return
+            }
+            
             let message = (json["message"] as? String)
                 ?? (json["error"] as? String)
                 ?? (json["detail"] as? String)
@@ -504,4 +515,35 @@ private extension APIService {
               !token.isEmpty else { return }
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
     }
+}
+
+enum AuthFailureReason {
+    case unauthorized
+    case forbidden
+    case sessionExpired
+    case userNotFound
+}
+
+private extension APIService {
+    private func detectAuthFailure(
+        status: Int,
+        json: [String: Any]?
+    ) -> AuthFailureReason? {
+
+        if status == 401 { return .unauthorized }
+        if status == 403 { return .forbidden }
+
+        let message = (json?["message"] as? String)?.lowercased() ?? ""
+
+        if message.contains("session") && message.contains("expired") {
+            return .sessionExpired
+        }
+
+        if message.contains("user") && message.contains("not found") {
+            return .userNotFound
+        }
+
+        return nil
+    }
+
 }

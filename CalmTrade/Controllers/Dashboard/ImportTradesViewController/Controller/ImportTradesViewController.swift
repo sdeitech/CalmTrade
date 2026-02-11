@@ -56,7 +56,7 @@ final class ImportTradesViewController: BaseViewController, UIDocumentPickerDele
         }
 
         viewModel.onImportSuccess = { [weak self] in
-            self?.navigationController?.popViewController(animated: true)
+            self?.navigationController?.popViewController()
         }
 
         viewModel.onBrokerConnect = { [weak self] redirectURL in
@@ -171,6 +171,10 @@ final class ImportTradesViewController: BaseViewController, UIDocumentPickerDele
             viewAccountName.isHidden = false
             uploadButton.isHidden = false
         }
+    }
+    
+    @IBAction func backButtonTapped(_ sender: UIButton) {
+        self.navigationController?.popViewController()
     }
 
     // MARK: - Document Picker

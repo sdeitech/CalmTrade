@@ -53,7 +53,7 @@ final class SubscriptionWebViewController: UIViewController, WKNavigationDelegat
 
         if let urlString = navigationAction.request.url?.absoluteString,
            urlString.contains(successURL) {
-            navigationController?.popViewController(animated: true)
+            navigationController?.popViewController()
             decisionHandler(.cancel)
             return
         }

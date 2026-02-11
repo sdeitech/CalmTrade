@@ -28,6 +28,17 @@ final class SessionAnalyticsViewController: UIViewController {
     @IBOutlet weak var calmScoreLabel: UILabel!
     @IBOutlet weak var calmStateLabel: UILabel!
     @IBOutlet weak var sleepLabel: UILabel!
+    
+    // No Trade
+    @IBOutlet weak var noTradeCntLabel: UILabel!
+    
+    // Emotion Counter
+    @IBOutlet weak var positiveCntLabel: UILabel!
+    @IBOutlet weak var negativeCntLabel: UILabel!
+    @IBOutlet weak var neutralCntLabel: UILabel!
+    @IBOutlet weak var cognitiveCntLabel: UILabel!
+    @IBOutlet weak var tagsLoggedLabel: UILabel!
+    @IBOutlet weak var mainEmotionLabel: UILabel!
 
     // MARK: - VM
     let viewModel = SessionAnalyticsViewModel()
@@ -38,6 +49,9 @@ final class SessionAnalyticsViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         bindViewModel()
+    }
+    
+    override func viewWillAppear(_ animated: Bool) {
         viewModel.fetch(date: selectedDate)
     }
 
@@ -89,5 +103,27 @@ final class SessionAnalyticsViewController: UIViewController {
         } else {
             sleepLabel.isHidden = true
         }
+        
+        // --- No Trade ---
+        noTradeCntLabel.text = "\(data.noTrades.count ?? 0)"
+        
+        // --- Emotion Counter ---
+        switch data.emotionCounter.primaryCategory {
+        case "positive": mainEmotionLabel.textColor = .init(hex: "245E2B")
+        case "negative": mainEmotionLabel.textColor = .init(hex: "B52D0B")
+        case "neutral": mainEmotionLabel.textColor  = .init("F4B04C")
+        case "cognitive": mainEmotionLabel.textColor  = .init("B3E3FC")
+        case .none:
+            mainEmotionLabel.textColor = .white
+        case .some(_):
+            mainEmotionLabel.textColor = .white
+        }
+        mainEmotionLabel.text = "\(data.emotionCounter.primaryEmotion ?? "—") \(data.emotionCounter.primaryCount ?? 0)"
+        tagsLoggedLabel.text = "\(data.emotionCounter.totalTags ?? 0) Tags Logged"
+        
+        positiveCntLabel.text = data.emotionCounter.positive?.description
+        negativeCntLabel.text = data.emotionCounter.negative?.description
+        neutralCntLabel.text = data.emotionCounter.neutral?.description
+        cognitiveCntLabel.text = data.emotionCounter.cognitive?.description
     }
 }

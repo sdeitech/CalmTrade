@@ -27,6 +27,8 @@ final class JournalTabsHostViewController: UIViewController {
     // MARK: - Combine
     private var cancellables: Set<AnyCancellable> = []
     
+    private var pendingDate: Date?
+    
     // MARK: - Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -108,10 +110,24 @@ final class JournalTabsHostViewController: UIViewController {
         vm.selectedSection = section
     }
     
+    @IBAction func didTapFlowerIcon(_ sender: Any) {
+        let deviceManagerVC = UIStoryboard(name: Constants.Storyboard.Devices, bundle: nil).instantiateViewController(withIdentifier: "DeviceManagementViewController") as! DeviceManagementViewController
+        self.navigationController?.pushViewController(deviceManagerVC)
+    }
+    
+    @IBAction func didTapProfileIcon(_ sender: Any) {
+        self.navigationController?.pushViewController(UIStoryboard(name: Constants.Storyboard.ProfileHost, bundle: nil).instantiateViewController(withIdentifier: "ProfileTabsHostViewController") as! ProfileTabsHostViewController,transitionType: .fade)
+    }
+    
+    @IBAction func didTapCalendarIcon(_ sender: Any) {
+        let calendarVC = UIStoryboard(name: Constants.Storyboard.Home, bundle: nil).instantiateViewController(withIdentifier: "CalendarViewController") as! CalendarViewController
+        self.navigationController?.pushViewController(calendarVC)
+    }
+    
     @IBAction func calendarTapped(_ sender: UIButton) {
 
         let pickerVC = UIViewController()
-        pickerVC.preferredContentSize = CGSize(width: 320, height: 250)
+        pickerVC.preferredContentSize = CGSize(width: 320, height: 320)
 
         let picker = UIDatePicker()
         picker.datePickerMode = .date
@@ -119,19 +135,37 @@ final class JournalTabsHostViewController: UIViewController {
         picker.locale = .current
         picker.date = vm.selectedDate
 
+        pendingDate = vm.selectedDate
+
         picker.addTarget(
             self,
             action: #selector(dateChanged(_:)),
             for: .valueChanged
         )
 
+        // Toolbar
+        let toolbar = UIToolbar()
+        toolbar.translatesAutoresizingMaskIntoConstraints = false
+
+        let flex = UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: nil, action: nil)
+        let done = UIBarButtonItem(title: "Done", style: .done, target: self, action: #selector(doneTapped))
+
+        toolbar.setItems([flex, done], animated: false)
+
+        pickerVC.view.addSubview(toolbar)
         pickerVC.view.addSubview(picker)
+
         picker.translatesAutoresizingMaskIntoConstraints = false
 
         NSLayoutConstraint.activate([
+            toolbar.topAnchor.constraint(equalTo: pickerVC.view.topAnchor),
+            toolbar.leadingAnchor.constraint(equalTo: pickerVC.view.leadingAnchor),
+            toolbar.trailingAnchor.constraint(equalTo: pickerVC.view.trailingAnchor),
+            toolbar.heightAnchor.constraint(equalToConstant: 50),
+
+            picker.topAnchor.constraint(equalTo: toolbar.bottomAnchor),
             picker.leadingAnchor.constraint(equalTo: pickerVC.view.leadingAnchor),
             picker.trailingAnchor.constraint(equalTo: pickerVC.view.trailingAnchor),
-            picker.topAnchor.constraint(equalTo: pickerVC.view.topAnchor),
             picker.bottomAnchor.constraint(equalTo: pickerVC.view.bottomAnchor)
         ])
 
@@ -147,8 +181,17 @@ final class JournalTabsHostViewController: UIViewController {
     }
     
     @objc private func dateChanged(_ sender: UIDatePicker) {
-        vm.update(date: sender.date)
-        updateAllPages(with: sender.date)
+        pendingDate = sender.date
+    }
+    
+    @objc private func doneTapped() {
+        guard let date = pendingDate else { return }
+
+        vm.selectedDate = date
+        vm.update(date: date)
+        updateAllPages(with: date)
+
+        dismiss(animated: true)
     }
 
 }

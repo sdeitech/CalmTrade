@@ -65,6 +65,7 @@ public struct Constants {
         static let Home = "Home"
         static let Security = "Security"
         static let Journal = "Journal"
+        static let Setting = "Setting"
     }
 }
 
