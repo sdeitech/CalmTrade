@@ -44,9 +44,15 @@ enum StepEngine {
             return cached
         }
 
+        debugPrint("=== StepEngine Debug ===")
+        debugPrint("Fetching steps data from \(start) to \(end)")
+
         // Pull per-source raw points (detached value structs)
         let polar = repo.series(kind: .steps, from: start, to: end, source: .polar360)
         let apple = repo.series(kind: .steps, from: start, to: end, source: .appleHealth)
+
+        debugPrint("Polar360 steps data count: \(polar.count)")
+        debugPrint("Apple Health steps data count: \(apple.count)")
 
         // Aggregate to minute buckets per source
         func aggregate(_ xs: [CTMetricsRepository.CTBiometricPoint]) -> [(Date, Int)] {
@@ -62,6 +68,9 @@ enum StepEngine {
 
         let aPolar = aggregate(polar)
         let aApple = aggregate(apple)
+
+        debugPrint("Aggregated Polar360 minutes: \(aPolar.count)")
+        debugPrint("Aggregated Apple Health minutes: \(aApple.count)")
 
         // Merge with priority (fold lower priority first, overwrite with higher)
         var merged: [Date: (CTMetricSource, Int)] = [:]
@@ -79,7 +88,17 @@ enum StepEngine {
         fold(aApple, src: .appleHealth)
         fold(aPolar, src: .polar360)
 
+        debugPrint("After merging with priority (Polar360 > Apple Health): \(merged.count) unique time slots")
+
+        // Count how many slots came from each source
+        let polarCount = merged.values.filter { $0.0 == .polar360 }.count
+        let appleCount = merged.values.filter { $0.0 == .appleHealth }.count
+        debugPrint("Final merged data - Polar360: \(polarCount) minutes, Apple Health: \(appleCount) minutes")
+
         let result = merged.keys.sorted().map { ($0, merged[$0]!.1) }
+
+        debugPrint("Final result: \(result.count) minute entries")
+        debugPrint("======================")
 
         // Store in cache
         cacheQueue.async(flags: .barrier) { cache[key] = result }

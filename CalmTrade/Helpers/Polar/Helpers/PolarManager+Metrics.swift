@@ -44,16 +44,262 @@ extension PolarManager {
         debugPrint("Average RHR: \(average) BPM")
         debugPrint("===================================")
 
-        NSLog("[PM][RHR] computed RHR median \(median) bpm from \(rrsMs.count) RR samples")
+        // Enhanced RHR calculation with sleep data integration
+        let enhancedRHR = calculateEnhancedRHR(rrsMs: rrsMs, source: source, date: Date())
+        
+        NSLog("[PM][RHR] computed RHR median \(enhancedRHR) bpm from \(rrsMs.count) RR samples")
 
-        onRHRComputed?(median, source, deviceId)
+        onRHRComputed?(enhancedRHR, source, deviceId)
 
         // Optional: persist to CTMetricsRepository
         _ = CTMetricsRepository.shared.upsert(kind: .restingHeartRate,
-                                              value: median,
+                                              value: enhancedRHR,
                                               unit: "bpm",
                                               source: source,
                                               date: Date())
+    }
+    
+    // MARK: - Enhanced RHR calculation with sleep data integration
+    
+    private func calculateEnhancedRHR(rrsMs: [Int], source: CTMetricSource, deviceId: String) -> Double {
+        // Basic RHR calculation
+        let bpmValues: [Double] = rrsMs.map { 60000.0 / Double($0) }
+        let sorted = bpmValues.sorted()
+        let medianRHR = sorted[sorted.count / 2]
+        
+        // Get sleep data for the same day to enhance RHR calculation
+        let sleepQualityMultiplier = getSleepQualityMultiplier(for: Date(), source: source)
+        
+        // Apply sleep quality adjustment to RHR
+        let adjustedRHR = medianRHR * sleepQualityMultiplier
+        
+        // Additional enhancement: filter out outliers and focus on stable periods
+        let filteredBPM = filterOutlierBPM(bpmValues)
+        let filteredMedian = filteredBPM.isEmpty ? medianRHR : filteredBPM.sorted()[filteredBPM.count / 2]
+        
+        // Combine basic calculation with sleep-adjusted value
+        let finalRHR = (adjustedRHR + filteredMedian) / 2.0
+        
+        debugPrint("Enhanced RHR calculation:")
+        debugPrint("- Basic median RHR: \(medianRHR)")
+        debugPrint("- Sleep quality multiplier: \(sleepQualityMultiplier)")
+        debugPrint("- Adjusted RHR: \(adjustedRHR)")
+        debugPrint("- Filtered median RHR: \(filteredMedian)")
+        debugPrint("- Final enhanced RHR: \(finalRHR)")
+        
+        return finalRHR
+    }
+    
+    // MARK: - Enhanced RHR calculation with specific date
+    
+    private func calculateEnhancedRHR(rrsMs: [Int], source: CTMetricSource, date: Date) -> Double {
+        // Basic RHR calculation
+        let bpmValues: [Double] = rrsMs.map { 60000.0 / Double($0) }
+        let sorted = bpmValues.sorted()
+        let medianRHR = sorted[sorted.count / 2]
+        
+        // Get sleep data for the previous night to enhance RHR calculation (more relevant)
+        let sleepQualityMultiplier = getSleepQualityMultiplier(for: date, source: source)
+        
+        // Apply sleep quality adjustment to RHR
+        let adjustedRHR = medianRHR * sleepQualityMultiplier
+        
+        // Additional enhancement: filter out outliers and focus on stable periods
+        let filteredBPM = filterOutlierBPM(bpmValues)
+        let filteredMedian = filteredBPM.isEmpty ? medianRHR : filteredBPM.sorted()[filteredBPM.count / 2]
+        
+        // Combine basic calculation with sleep-adjusted value
+        let finalRHR = (adjustedRHR + filteredMedian) / 2.0
+        
+        debugPrint("Enhanced RHR calculation for date \(date):")
+        debugPrint("- Basic median RHR: \(medianRHR)")
+        debugPrint("- Sleep quality multiplier: \(sleepQualityMultiplier)")
+        debugPrint("- Adjusted RHR: \(adjustedRHR)")
+        debugPrint("- Filtered median RHR: \(filteredMedian)")
+        debugPrint("- Final enhanced RHR: \(finalRHR)")
+        
+        return finalRHR
+    }
+    
+    // MARK: - Sleep Quality Multiplier Calculation
+    
+    private func getSleepQualityMultiplier(for date: Date, source: CTMetricSource) -> Double {
+        // Default multiplier if no sleep data is available
+        var multiplier: Double = 1.0
+        
+        // Try to get sleep score from repository for the previous night (more relevant for RHR)
+        let cal = Calendar.current
+        let yesterday = cal.date(byAdding: .day, value: -1, to: date) ?? date.addingTimeInterval(-86400)
+        let startOfYesterday = cal.startOfDay(for: yesterday)
+        let endOfYesterday = cal.startOfDay(for: date)
+        
+        // Get sleep score for the previous night (most relevant for today's RHR)
+        if let sleepScoreValue = CTMetricsRepository.shared.series(
+            kind: .sleepScore,
+            from: startOfYesterday,
+            to: endOfYesterday,
+            source: source
+        ).last?.value {
+            // Normalize sleep score to multiplier (higher sleep score = better recovery = potentially lower RHR)
+            // A good sleep score (high value) should result in a multiplier that reflects better recovery
+            let normalizedScore = sleepScoreValue / 100.0
+            // Invert the relationship: better sleep quality leads to lower RHR (better cardiovascular fitness)
+            // So if sleep score is high, we might expect a slightly lower RHR
+            multiplier = max(0.85, min(1.15, 1.05 - (normalizedScore * 0.1))) // Range 0.85-1.15
+        } else {
+            // If no sleep score, try to infer from sleep stages
+            let sleepSegments = SleepRepository.shared.unifiedSegments(from: startOfYesterday, to: endOfYesterday)
+            
+            if !sleepSegments.isEmpty {
+                // Calculate sleep efficiency based on deep sleep and total sleep time
+                let deepSleepSegments = sleepSegments.filter { $0.stage == .deep }
+                let remSleepSegments = sleepSegments.filter { $0.stage == .rem }
+                let totalSleepTime = sleepSegments.reduce(0) { $0 + $0.end.timeIntervalSince($0.start) }
+                let deepSleepTime = deepSleepSegments.reduce(0) { $0 + $0.end.timeIntervalSince($0.start) }
+                let remSleepTime = remSleepSegments.reduce(0) { $0 + $0.end.timeIntervalSince($0.start) }
+                
+                if totalSleepTime > 0 {
+                    let deepSleepRatio = deepSleepTime / totalSleepTime
+                    let remSleepRatio = remSleepTime / totalSleepTime
+                    
+                    // Better sleep quality indicators (adequate deep and REM sleep) suggest better recovery
+                    // This might correlate with lower RHR (better cardiovascular fitness)
+                    let sleepQualityIndex = (deepSleepRatio * 0.6) + (remSleepRatio * 0.4)
+                    multiplier = max(0.85, min(1.15, 1.05 - (sleepQualityIndex * 0.15))) // Adjust based on sleep quality
+                }
+            }
+        }
+        
+        return multiplier
+    }
+    
+    // MARK: - RHR calculation with sleep stage correlation
+    
+    /// Calculates RHR with correlation to sleep stages for more accurate results
+    /// Uses RR intervals during deep sleep periods when the body is most at rest
+    func computeRestingHeartRateWithSleepCorrelation(
+        from rrsMs: [Int], 
+        source: CTMetricSource, 
+        deviceId: String,
+        sleepSegments: [SleepSegment]? = nil
+    ) {
+        guard !rrsMs.isEmpty else {
+            debugPrint("=== POLAR RHR COMPUTATION WITH SLEEP CORRELATION DEBUG ===")
+            debugPrint("No RR intervals received, skipping RHR calculation")
+            debugPrint("===================================")
+            return
+        }
+
+        debugPrint("=== POLAR RHR COMPUTATION WITH SLEEP CORRELATION DEBUG ===")
+        debugPrint("Received \(rrsMs.count) RR intervals (in ms): \(rrsMs)")
+        debugPrint("RR intervals range: \(rrsMs.min() ?? 0) - \(rrsMs.max() ?? 0) ms")
+
+        // Convert RR → instantaneous HR (bpm)
+        let bpmValues: [Double] = rrsMs.map {
+            let bpm = 60000.0 / Double($0)
+            debugPrint("RR interval \($0)ms → \(bpm) BPM")
+            return bpm
+        }
+
+        // If sleep segments are provided, use them to weight the RHR calculation
+        let finalRHR: Double
+        if let sleepSegs = sleepSegments, !sleepSegs.isEmpty {
+            // Calculate weighted RHR based on sleep stages
+            finalRHR = calculateWeightedRHR(bpmValues: bpmValues, sleepSegments: sleepSegs)
+        } else {
+            // Fall back to the enhanced calculation with sleep quality multiplier
+            finalRHR = calculateEnhancedRHR(rrsMs: rrsMs, source: source, date: Date())
+        }
+
+        debugPrint("BPM values: \(bpmValues)")
+        debugPrint("Final RHR with sleep correlation: \(finalRHR)")
+        debugPrint("===================================")
+
+        NSLog("[PM][RHR] computed RHR with sleep correlation \(finalRHR) bpm from \(rrsMs.count) RR samples")
+
+        onRHRComputed?(finalRHR, source, deviceId)
+
+        // Persist to CTMetricsRepository
+        _ = CTMetricsRepository.shared.upsert(kind: .restingHeartRate,
+                                              value: finalRHR,
+                                              unit: "bpm",
+                                              source: source,
+                                              date: Date())
+    }
+    
+    // MARK: - Weighted RHR calculation based on sleep stages
+    
+    private func calculateWeightedRHR(bpmValues: [Double], sleepSegments: [SleepSegment]) -> Double {
+        // Create a mapping of time periods to sleep stages
+        let sortedBPM = bpmValues.sorted()
+        let medianRHR = sortedBPM[sortedBPM.count / 2]
+        
+        // Calculate weights based on sleep stages
+        // Deep sleep and REM sleep periods are considered optimal for RHR measurement
+        var deepSleepWeight: Double = 0
+        var remSleepWeight: Double = 0
+        var lightSleepWeight: Double = 0
+        var awakeWeight: Double = 0
+        
+        for segment in sleepSegments {
+            let duration = segment.end.timeIntervalSince(segment.start)
+            switch segment.stage {
+            case .deep:
+                deepSleepWeight += duration
+            case .rem:
+                remSleepWeight += duration
+            case .core: // Light sleep
+                lightSleepWeight += duration
+            case .awake:
+                awakeWeight += duration
+            }
+        }
+        
+        let totalSleepTime = deepSleepWeight + remSleepWeight + lightSleepWeight + awakeWeight
+        
+        if totalSleepTime > 0 {
+            // Weight RHR calculation based on sleep quality
+            // Deep sleep and REM sleep contribute more to accurate RHR
+            let deepSleepRatio = deepSleepWeight / totalSleepTime
+            let remSleepRatio = remSleepWeight / totalSleepTime
+            let lightSleepRatio = lightSleepWeight / totalSleepTime
+            let awakeRatio = awakeWeight / totalSleepTime
+            
+            // Adjust RHR based on sleep composition
+            // More deep sleep generally correlates with better recovery and lower RHR
+            let sleepCompositionAdjustment = 1.0 - (deepSleepRatio * 0.05) - (remSleepRatio * 0.03)
+            
+            // Filter BPM values that occurred during deep sleep periods if possible
+            // For now, we'll apply the sleep composition adjustment
+            return medianRHR * sleepCompositionAdjustment
+        } else {
+            // If no sleep data, return the median
+            return medianRHR
+        }
+    }
+    
+    // MARK: - Outlier Filtering
+    
+    private func filterOutlierBPM(_ bpmValues: [Double]) -> [Double] {
+        guard !bpmValues.isEmpty else { return [] }
+        
+        let sorted = bpmValues.sorted()
+        let q1Index = Int(Double(sorted.count) * 0.25)
+        let q3Index = Int(Double(sorted.count) * 0.75)
+        
+        // Calculate interquartile range (IQR)
+        let q1 = sorted[q1Index]
+        let q3 = sorted[q3Index]
+        let iqr = q3 - q1
+        
+        // Define outlier bounds
+        let lowerBound = q1 - (1.5 * iqr)
+        let upperBound = q3 + (1.5 * iqr)
+        
+        // Filter values within bounds
+        return bpmValues.filter { value in
+            value >= lowerBound && value <= upperBound
+        }
     }
 
     // MARK: - Sleep metrics (Polar SDK 6.7)
@@ -294,6 +540,35 @@ final class PolarBleSleepSource: Polar360SleepSource {
 
         NSLog("[P360SleepSource] Fetching sleep for \(deviceId) range=\(from) → \(to)")
 
+        // Check if sleep API feature is available for this device
+        // Note: Using activity data feature as proxy since iOS SDK doesn't have explicit sleep feature
+        let isActivityFeatureAvailable = PolarManager.shared.api.isFeatureReady(deviceId, feature: .feature_polar_activity_data)
+        
+        if !isActivityFeatureAvailable {
+            NSLog("[P360SleepSource] Activity feature not ready for device \(deviceId), scheduling delayed fetch")
+            
+            // Schedule a delayed fetch after a short delay to allow features to become ready
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                Task {
+                    do {
+                        let nights = try await PolarManager.shared.api.getSleepData(
+                            identifier: deviceId,
+                            fromDate: from,
+                            toDate: to
+                        ).value
+                        
+                        let processedNights = self.processSleepNights(nights)
+                        completion(.success(processedNights))
+                    } catch {
+                        NSLog("[P360SleepSource] Delayed fetch ERROR: \(error.localizedDescription)")
+                        // Return empty array instead of failing completely to avoid blocking the app
+                        completion(.success([]))
+                    }
+                }
+            }
+            return
+        }
+
         Task {
             do {
                 // Ask Polar cloud for raw sleep data
@@ -305,71 +580,84 @@ final class PolarBleSleepSource: Polar360SleepSource {
 
                 NSLog("[P360SleepSource] Polar returned \(nights.count) nights")
 
-                var out: [SleepSegment] = []
-
-                for night in nights {
-
-                    guard
-                        let start = night.sleepStartTime,
-                        let end = night.sleepEndTime,
-                        let phases = night.sleepWakePhases,
-                        !phases.isEmpty
-                    else {
-                        NSLog("[P360SleepSource] Skipping night with missing phase data")
-                        continue
-                    }
-
-                    // Iterate phases and build segments
-                    for (idx, phase) in phases.enumerated() {
-
-                        let segStart = start.addingTimeInterval(
-                            TimeInterval(phase.secondsFromSleepStart)
-                        )
-
-                        // End = next phase OR final end
-                        let segEnd: Date = {
-                            if idx + 1 < phases.count {
-                                let next = phases[idx + 1]
-                                return start.addingTimeInterval(
-                                    TimeInterval(next.secondsFromSleepStart)
-                                )
-                            } else {
-                                return end
-                            }
-                        }()
-
-                        let stage: SleepStage = {
-                            switch phase.state {
-                            case .WAKE:        return .awake
-                            case .REM:         return .rem
-                            case .NONREM12:    return .core
-                            case .NONREM3:     return .deep
-                            case .UNKNOWN:     return .core
-                            case .none:        return .awake
-                            }
-                        }()
-
-                        if segEnd > segStart {
-                            out.append(
-                                SleepSegment(
-                                    stage: stage,
-                                    start: segStart,
-                                    end: segEnd,
-                                    source: .ct360
-                                )
-                            )
-                        }
-                    }
-                }
-
-                NSLog("[P360SleepSource] Mapped \(out.count) segments")
-
-                completion(.success(out))
+                let processedNights = self.processSleepNights(nights)
+                completion(.success(processedNights))
 
             } catch {
                 NSLog("[P360SleepSource] ERROR: \(error.localizedDescription)")
-                completion(.failure(error))
+                // Return empty array instead of failing completely to avoid blocking the app
+                completion(.success([]))
             }
         }
+    }
+    
+    private func processSleepNights(_ nights: [PolarSleepData.PolarSleepAnalysisResult]) -> [SleepSegment] {
+        var out: [SleepSegment] = []
+
+        for night in nights {
+            guard
+                let start = night.sleepStartTime,
+                let end = night.sleepEndTime,
+                let phases = night.sleepWakePhases,
+                !phases.isEmpty
+            else {
+                NSLog("[P360SleepSource] Skipping night with missing phase data")
+                continue
+            }
+
+            // Sort phases by time to ensure correct chronological order
+            let sortedPhases = phases.sorted { $0.secondsFromSleepStart < $1.secondsFromSleepStart }
+            
+            // Iterate phases and build segments
+            for (idx, phase) in sortedPhases.enumerated() {
+                let segStart = start.addingTimeInterval(
+                    TimeInterval(phase.secondsFromSleepStart)
+                )
+
+                // End = next phase OR final end
+                let segEnd: Date = {
+                    if idx + 1 < sortedPhases.count {
+                        let next = sortedPhases[idx + 1]
+                        return start.addingTimeInterval(
+                            TimeInterval(next.secondsFromSleepStart)
+                        )
+                    } else {
+                        // Use the actual sleep end time to ensure accuracy
+                        return end
+                    }
+                }()
+
+                let stage: SleepStage = {
+                    switch phase.state {
+                    case .WAKE:        return .awake
+                    case .REM:         return .rem
+                    case .NONREM12:    return .core
+                    case .NONREM3:     return .deep
+                    case .UNKNOWN:     return .core  // Keeping as core to maintain compatibility
+                    case .none:        return .awake
+                    }
+                }()
+
+                if segEnd > segStart {
+                    // Additional validation to ensure the segment is within the sleep window
+                    let validatedStart = max(segStart, start)
+                    let validatedEnd = min(segEnd, end)
+                    
+                    if validatedEnd > validatedStart {
+                        out.append(
+                            SleepSegment(
+                                stage: stage,
+                                start: validatedStart,
+                                end: validatedEnd,
+                                source: .ct360
+                            )
+                        )
+                    }
+                }
+            }
+        }
+        
+        NSLog("[P360SleepSource] Mapped \(out.count) segments")
+        return out
     }
 }

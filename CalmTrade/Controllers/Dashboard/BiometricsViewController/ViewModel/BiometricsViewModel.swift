@@ -525,6 +525,24 @@ final class BiometricsViewModel: ObservableObject {
 
 
         // Steps (today + 7-day avg)
+        // Let's debug which source data we're getting
+        debugPrint("=== BiometricsViewModel Steps Debug ===")
+        let polarStepsToday = StepEngine.seriesPerMinute(from: cal.startOfDay(for: Date()), to: Date()).filter { point in
+            guard let sourceData = repo.latestValue(kind: .steps, source: .polar360) else { return false }
+            return abs(point.0.timeIntervalSince(sourceData.date)) < 3600 // Within 1 hour
+        }.reduce(0) { $0 + $1.1 }
+
+        let appleStepsToday = StepEngine.seriesPerMinute(from: cal.startOfDay(for: Date()), to: Date()).filter { point in
+            guard let sourceData = repo.latestValue(kind: .steps, source: .appleHealth) else { return false }
+            return abs(point.0.timeIntervalSince(sourceData.date)) < 3600 // Within 1 hour
+        }.reduce(0) { $0 + $1.1 }
+
+        debugPrint("Steps Today (Raw): \(stepsToday)")
+        debugPrint("Polar steps today (estimated): \(polarStepsToday)")
+        debugPrint("Apple Health steps today (estimated): \(appleStepsToday)")
+        debugPrint("Using source with higher priority (Polar360 > Apple Health)")
+        debugPrint("======================================")
+
         data.stepsToday = "\(Int(stepsToday))"
         data.stepsDate  = formatDate(now)
         var sum7 = 0.0
@@ -600,16 +618,23 @@ final class BiometricsViewModel: ObservableObject {
         NotificationCenter.default.addObserver(self, selector: #selector(_refreshSleepScore), name: .ctSleepUpdated, object: nil)
     }
 
-    // MARK: - Sleep Score logic (updated to include Polar sleep data)
+    // MARK: - Sleep Score logic (updated to prioritize Polar sleep score)
     @objc private func _refreshSleepScore() {
         // print("=== BiometricsViewModel _refreshSleepScore ===")
 
-        // Prefer explicit numeric Sleep Score if available
-        if let v = [repo.latestValue(kind: .sleepScore, source: .appleHealth),
-                    repo.latestValue(kind: .sleepScore, source: .polar360)]
-            .compactMap({ $0 }).max(by: { $0.date < $1.date }) {
-            debugPrint("Found explicit sleep score: \(v.value) from \(v.source.rawValue) at \(v.date)")
-            onSleepScoreDidUpdate?(SleepScoreTile(score: Int(v.value.rounded()), date: v.date, source: v.source))
+        // Prefer explicit numeric Sleep Score if available - prioritize Polar score over Apple Health
+        let sleepScores = [repo.latestValue(kind: .sleepScore, source: .polar360),
+                           repo.latestValue(kind: .sleepScore, source: .appleHealth)]
+            .compactMap({ $0 })
+        
+        // Prioritize Polar scores first, then Apple Health if no Polar data
+        if let latestPolarScore = sleepScores.filter({ $0.source == .polar360 }).max(by: { $0.date < $1.date }) {
+            debugPrint("Found Polar sleep score: \(latestPolarScore.value) from \(latestPolarScore.source.rawValue) at \(latestPolarScore.date)")
+            onSleepScoreDidUpdate?(SleepScoreTile(score: Int(latestPolarScore.value.rounded()), date: latestPolarScore.date, source: latestPolarScore.source))
+            return
+        } else if let latestAppleHealthScore = sleepScores.filter({ $0.source == .appleHealth }).max(by: { $0.date < $1.date }) {
+            debugPrint("Found Apple Health sleep score: \(latestAppleHealthScore.value) from \(latestAppleHealthScore.source.rawValue) at \(latestAppleHealthScore.date)")
+            onSleepScoreDidUpdate?(SleepScoreTile(score: Int(latestAppleHealthScore.value.rounded()), date: latestAppleHealthScore.date, source: latestAppleHealthScore.source))
             return
         } else {
             // print("No explicit sleep score found")
@@ -634,14 +659,15 @@ final class BiometricsViewModel: ObservableObject {
 
                 // Only proceed if we have a valid sleep time
                 if totalSleepTime > 0 {
-                    // print("Found sleep repository data: \(latestNight.hours) hours at \(latestNight.date)")
-                    // Calculate a simple sleep score based on hours slept using raw calculation
-                    let durationScore = min(50, Int((totalSleepTime / 8.0) * 50)) // Up to 50 points for duration
-                    let qualityScore = 25 // Base quality score
-                    let consistencyScore = 25 // Base consistency score
-                    let totalScore = min(100, durationScore + qualityScore + consistencyScore)
+                    // Calculate sleep score using Polar-style algorithm
+                    let totalScore = calculatePolarStyleSleepScore(
+                        sleepStart: sleepStart,
+                        sleepEnd: sleepEnd,
+                        unifiedSegments: unifiedSegments,
+                        sleepGoalMinutes: 420 // Default to 7 hours (420 minutes), could be configurable
+                    )
 
-                    debugPrint("Using raw Polar calculation for sleep score: \(totalSleepTime) hours from \(sleepStart) to \(sleepEnd)")
+                    debugPrint("Using Polar-style calculation for sleep score: \(totalScore) from \(sleepStart) to \(sleepEnd)")
 
                     // Determine the source based on available data
                     let source: CTMetricSource = {
@@ -674,14 +700,15 @@ final class BiometricsViewModel: ObservableObject {
 
                     // Only proceed if we have a valid sleep time
                     if totalSleepTime > 0 {
-                        // print("Found sleep repository data: \(latestNight.hours) hours at \(latestNight.date)")
-                        // Calculate a simple sleep score based on hours slept using raw calculation
-                        let durationScore = min(50, Int((totalSleepTime / 8.0) * 50)) // Up to 50 points for duration
-                        let qualityScore = 25 // Base quality score
-                        let consistencyScore = 25 // Base consistency score
-                        let totalScore = min(100, durationScore + qualityScore + consistencyScore)
+                        // Calculate sleep score using Polar-style algorithm
+                        let totalScore = calculatePolarStyleSleepScore(
+                            sleepStart: sleepStart,
+                            sleepEnd: sleepEnd,
+                            unifiedSegments: [], // No detailed segments available here
+                            sleepGoalMinutes: 420 // Default to 7 hours (420 minutes), could be configurable
+                        )
 
-                        debugPrint("Using raw Polar calculation for sleep score: \(totalSleepTime) hours from \(sleepStart) to \(sleepEnd)")
+                        debugPrint("Using Polar-style calculation for sleep score: \(totalScore) from \(sleepStart) to \(sleepEnd)")
 
                         // Determine the source based on available data
                         let source: CTMetricSource = {
@@ -706,10 +733,16 @@ final class BiometricsViewModel: ObservableObject {
                         totalSleepTime = latestNight.hours
                         // print("Found sleep repository data: \(latestNight.hours) hours at \(latestNight.date)")
                         // Calculate a simple sleep score based on hours slept
-                        let durationScore = min(50, Int((totalSleepTime / 8.0) * 50)) // Up to 50 points for duration
-                        let qualityScore = 25 // Base quality score
-                        let consistencyScore = 25 // Base consistency score
-                        let totalScore = min(100, durationScore + qualityScore + consistencyScore)
+                        // Calculate sleep score using Polar-style algorithm
+                        // We have the sleep hours from latestNight but need to estimate start/end times
+                        let estimatedSleepEnd = Date()
+                        let estimatedSleepStart = estimatedSleepEnd.addingTimeInterval(-(totalSleepTime * 3600)) // Convert hours to seconds
+                        let totalScore = calculatePolarStyleSleepScore(
+                            sleepStart: estimatedSleepStart,
+                            sleepEnd: estimatedSleepEnd,
+                            unifiedSegments: [], // No detailed segments available here
+                            sleepGoalMinutes: 420 // Default to 7 hours (420 minutes), could be configurable
+                        )
 
                         // Determine the source based on available data
                         let source: CTMetricSource = {
@@ -862,4 +895,153 @@ final class BiometricsViewModel: ObservableObject {
         }
     }
 
+    // MARK: - Polar-Style Sleep Score Calculation
+    private func calculatePolarStyleSleepScore(
+        sleepStart: Date,
+        sleepEnd: Date,
+        unifiedSegments: [SleepSegment],
+        sleepGoalMinutes: Int
+    ) -> Int {
+        // Calculate total time in bed
+        let timeInBed = sleepEnd.timeIntervalSince(sleepStart) / 3600.0 // in hours
+        
+        // If no detailed segments, use basic calculation
+        if unifiedSegments.isEmpty {
+            let actualSleepHours = timeInBed
+            let sleepGoalHours = Double(sleepGoalMinutes) / 60.0
+            
+            // Calculate sleep amount score based on ratio to goal
+            let sleepRatio = actualSleepHours / sleepGoalHours
+            let sleepAmountScore: Int
+            if sleepRatio >= 1.0 {
+                sleepAmountScore = 100
+            } else if sleepRatio >= 0.9 {
+                sleepAmountScore = 90
+            } else if sleepRatio >= 0.8 {
+                sleepAmountScore = 80
+            } else if sleepRatio >= 0.7 {
+                sleepAmountScore = 65
+            } else {
+                sleepAmountScore = 50
+            }
+            
+            // Apply hard caps based on actual sleep time
+            if actualSleepHours < 5.0 {
+                return min(sleepAmountScore, 60)
+            } else if actualSleepHours < 6.0 {
+                return min(sleepAmountScore, 70)
+            }
+            
+            return sleepAmountScore
+        }
+        
+        // Detailed calculation with sleep segments
+        var lightSleep: TimeInterval = 0
+        var deepSleep: TimeInterval = 0
+        var remSleep: TimeInterval = 0
+        var awakeTime: TimeInterval = 0
+        
+        // Calculate duration for each sleep stage
+        for segment in unifiedSegments {
+            let duration = segment.end.timeIntervalSince(segment.start)
+            switch segment.stage {
+            case .core:  // In the app's context, "core" represents light sleep
+                lightSleep += duration
+            case .deep:
+                deepSleep += duration
+            case .rem:
+                remSleep += duration
+            case .awake:
+                awakeTime += duration
+            }
+        }
+        
+        let actualSleep = lightSleep + deepSleep + remSleep
+        let actualSleepHours = actualSleep / 3600.0
+        let timeInBedHours = timeInBed
+        
+        // 4. Sleep Amount Score (0-100)
+        let sleepGoalSeconds = Double(sleepGoalMinutes) * 60.0
+        let sleepRatio = actualSleep / sleepGoalSeconds
+        
+        let sleepAmountScore: Int
+        if sleepRatio >= 1.0 {
+            sleepAmountScore = 100
+        } else if sleepRatio >= 0.9 {
+            sleepAmountScore = 90
+        } else if sleepRatio >= 0.8 {
+            sleepAmountScore = 80
+        } else if sleepRatio >= 0.7 {
+            sleepAmountScore = 65
+        } else {
+            sleepAmountScore = 50
+        }
+        
+        // 5. Interruptions & Solidity
+        let actualSleepPercent = (actualSleep / (timeInBed * 3600.0)) * 100.0
+        
+        // Count wake segments and long interruptions
+        let wakeSegments = unifiedSegments.filter { $0.stage == .awake }
+        let longInterruptions = wakeSegments.filter { ($0.end.timeIntervalSince($0.start) / 60.0) >= 1.0 } // 1+ minute interruptions
+        let longInterruptionTime = longInterruptions.reduce(0) { $0 + $1.end.timeIntervalSince($1.start) }
+        let longInterruptionPercent = (longInterruptionTime / (timeInBed * 3600.0)) * 100.0
+        
+        let solidityScore: Int
+        if longInterruptionPercent < 3.0 {
+            solidityScore = 90
+        } else if longInterruptionPercent < 6.0 {
+            solidityScore = 75
+        } else if longInterruptionPercent < 10.0 {
+            solidityScore = 60
+        } else {
+            solidityScore = 45
+        }
+        
+        // 6. Continuity Score (0-5)
+        let wakeCount = Double(wakeSegments.count)
+        let continuityScore = max(0.0, min(5.0, 5.0 - (wakeCount * 0.15) - (Double(longInterruptions.count) * 0.25)))
+        
+        // 7. Regeneration Score (0-100)
+        let deepRatio = deepSleep / actualSleep
+        let remRatio = remSleep / actualSleep
+        
+        let deepScore: Int
+        if deepRatio >= 0.20 && deepRatio <= 0.25 {
+            deepScore = 100
+        } else if (deepRatio >= 0.15 && deepRatio < 0.20) || (deepRatio > 0.25 && deepRatio < 0.30) {
+            deepScore = 85
+        } else {
+            deepScore = 65
+        }
+        
+        let remScore: Int
+        if remRatio >= 0.17 && remRatio <= 0.25 {
+            remScore = 100
+        } else if (remRatio >= 0.12 && remRatio < 0.17) || (remRatio > 0.25 && remRatio < 0.30) {
+            remScore = 80
+        } else {
+            remScore = 60
+        }
+        
+        let regenerationScore = Int(Double(deepScore) * 0.6 + Double(remScore) * 0.4)
+        
+        // 9. Final Sleep Score (0-100) - Weighted Sum
+        let weightedScore = Double(sleepAmountScore) * 0.35 +
+                           Double(solidityScore) * 0.20 +
+                           (continuityScore / 5.0) * 100.0 * 0.20 +
+                           Double(regenerationScore) * 0.20 +
+                           actualSleepPercent * 0.05
+        
+        var finalScore = Int(weightedScore)
+        
+        // 10. Hard Caps
+        if actualSleepHours < 5.0 {
+            finalScore = min(finalScore, 60)
+        } else if actualSleepHours < 6.0 {
+            finalScore = min(finalScore, 70)
+        }
+        
+        // Clamp final score between 0 and 100
+        return max(0, min(100, finalScore))
+    }
 }

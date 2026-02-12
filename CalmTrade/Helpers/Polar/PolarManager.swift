@@ -239,20 +239,26 @@ extension PolarManager {
         //        if lowered.contains("360"), isFirstTimeUse(for: dev) {
         //            DispatchQueue.main.async { [weak self] in self?.onFirstTimeUseNeeded?(dev) }
         //        }
-        
+
         defaults.set(dev.id,   forKey: lastDeviceIdKey)
         defaults.set(dev.name, forKey: lastDeviceNameKey)
-        
+
         // Kick readiness gate (will also trigger offline sync in waitForConnection)
         waitForConnection(deviceId: dev.id)
-        
+
         isHrReady = false
         hrStartRetry = 0
-        
+
         NSLog("[PM] connected; waiting for DIS callbacks (firmware/software revision)")
         broadcastSnapshotIfCurrent()
+
+        // Force immediate steps sync when connecting to Polar device
+        PolarDailySyncCoordinator.shared.fetchTodayAndYesterday(deviceId: dev.id)
         
-        Polar360SleepIngestor.shared.syncLastNightsIfNeeded(deviceId: dev.id)
+        // Sleep sync will be triggered when activity feature becomes ready
+        // This ensures that the device is fully ready before attempting to fetch sleep data
+        NSLog("[PM] Sleep sync scheduled for when activity feature is ready")
+        
         PolarDailySyncCoordinator.shared.startWhileConnected(deviceId: dev.id)
     }
 
@@ -386,6 +392,10 @@ extension PolarManager {
         case .feature_polar_activity_data:
                 NSLog("[PM][ACT] Activity feature ready — starting minute poller")
                 PolarDailySyncCoordinator.shared.startWhileConnected(deviceId: identifier)
+                
+                // Also trigger sleep data sync when activity feature is ready
+                NSLog("[PM][SLEEP] Activity feature ready — triggering sleep sync")
+                Polar360SleepIngestor.shared.syncLastNightsIfNeeded(deviceId: identifier)
             
         default:
             break
@@ -423,5 +433,22 @@ extension PolarManager {
     public func runRRIntervalTests() {
         testRRIntervalFlow()
         testStaticRHRFlow()
+    }
+    
+    // MARK: - Public Sleep Sync Method
+    public func syncSleepData(for deviceId: String, from: Date, to: Date) {
+        NSLog("[PM][SLEEP] Manual sleep sync triggered for device \(deviceId)")
+        Polar360SleepIngestor.shared.fetchSleepDataForDateRange(
+            deviceId: deviceId,
+            from: from,
+            to: to
+        ) { result in
+            switch result {
+            case .success(let message):
+                NSLog("[PM][SLEEP] Sleep sync successful: \(message)")
+            case .failure(let error):
+                NSLog("[PM][SLEEP] Sleep sync failed: \(error.localizedDescription)")
+            }
+        }
     }
 }

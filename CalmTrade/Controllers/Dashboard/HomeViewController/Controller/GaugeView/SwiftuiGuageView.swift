@@ -96,7 +96,7 @@ struct CalmScoreBarTile: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             Spacer()
-            
+
             // Top row: last update + device pill
             HStack(alignment: .center) {
                 Text(Self.format(date: props.lastUpdate))
@@ -111,14 +111,14 @@ struct CalmScoreBarTile: View {
                 )
             }
             .padding(.bottom, 56)
-            
+
             GaugeBar(score: props.score)
                 .frame(height: 36)
                 .padding(.top, 30)
-            
+
             TrendRow(trend: props.trend)
                 .padding(.top, 18)
-            
+
             HStack {
                 Spacer()
                 Text("CalmScore")
@@ -127,7 +127,7 @@ struct CalmScoreBarTile: View {
                     .padding(.top, 8)
                 Spacer()
             }
-            
+
             Spacer()
         }
         .padding(20)

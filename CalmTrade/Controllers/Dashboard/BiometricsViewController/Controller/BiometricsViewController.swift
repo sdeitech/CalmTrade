@@ -241,6 +241,13 @@ final class BiometricsViewController: UIViewController {
         lblStepsAverage.text = data.stepsWeeklyAverage
         lblStepsToday.text = data.stepsToday
         lblStepsDate.text = data.stepsDate
+
+        // Print steps data info
+        debugPrint("=== BiometricsViewController Steps Display ===")
+        debugPrint("Steps Today: \(data.stepsToday)")
+        debugPrint("Steps Weekly Average: \(data.stepsWeeklyAverage)")
+        debugPrint("Steps Date: \(data.stepsDate)")
+        debugPrint("============================================")
     }
 
     // MARK: - Sleep Score rendering (single attributed label)
