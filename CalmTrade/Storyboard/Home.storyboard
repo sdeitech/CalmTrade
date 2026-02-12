@@ -846,6 +846,7 @@ Total</string>
                     </view>
                     <connections>
                         <outlet property="backButton" destination="sr5-HE-ehW" id="Ai6-yW-yZ5"/>
+                        <outlet property="lblDate" destination="rzm-ps-2j3" id="DMG-dz-JIK"/>
                         <outlet property="lblSessionLoss" destination="4Ax-td-eXS" id="7HO-70-2Cy"/>
                         <outlet property="lblTradeLoss" destination="DN1-EW-KhE" id="slH-tT-lOF"/>
                         <outlet property="saveButton" destination="0FI-zM-y3G" id="Lbz-Dm-rd7"/>

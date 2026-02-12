@@ -9,7 +9,7 @@ import Foundation
 
 struct TimelineResponse: Decodable {
     let success: Bool
-    let data: TimelineData
+    let data: TimelineData?
 }
 
 struct TimelineData: Decodable {
@@ -29,8 +29,8 @@ struct SessionSummary: Decodable {
     let calmScore: Int?
     let sleep: Double?
 
-    let winningTrades: Int
-    let losingTrades: Int
+    let winningTrades: Int?
+    let losingTrades: Int?
 
     let riskLimits: RiskLimits?
 }

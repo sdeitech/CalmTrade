@@ -146,15 +146,19 @@ extension ManageEmotionsViewController: UITableViewDataSource, UITableViewDelega
         guard let indexPath = indexPath(from: sender) else { return }
         let category = viewModel.category(at: indexPath.section)
 
-        presentEditor(
-            title: category.name,
-            colorHex: category.colorHex,
-            initial: nil
-        ) {
-            self.viewModel.createTag(
-                name: $0,
-                section: indexPath.section
-            )
+        if checkAccess() {
+            presentEditor(
+                title: category.name,
+                colorHex: category.colorHex,
+                initial: nil
+            ) {
+                self.viewModel.createTag(
+                    name: $0,
+                    section: indexPath.section
+                )
+            }
+        } else {
+            FeatureGate.shared.presentUpgradeSheet(for: FeatureKey.customEmotions, from: self)
         }
     }
 
@@ -164,17 +168,21 @@ extension ManageEmotionsViewController: UITableViewDataSource, UITableViewDelega
         else { return }
 
         let category = viewModel.category(at: indexPath.section)
-
-        presentEditor(
-            title: category.name,
-            colorHex: category.colorHex,
-            initial: emotion.name
-        ) {
-            self.viewModel.updateTag(
-                name: $0,
-                section: indexPath.section,
-                row: indexPath.row
-            )
+        
+        if checkAccess() {
+            presentEditor(
+                title: category.name,
+                colorHex: category.colorHex,
+                initial: emotion.name
+            ) {
+                self.viewModel.updateTag(
+                    name: $0,
+                    section: indexPath.section,
+                    row: indexPath.row
+                )
+            }
+        } else {
+            FeatureGate.shared.presentUpgradeSheet(for: FeatureKey.customEmotions, from: self)
         }
     }
 
@@ -182,7 +190,11 @@ extension ManageEmotionsViewController: UITableViewDataSource, UITableViewDelega
         guard let indexPath = indexPath(from: sender),
               let emotion = viewModel.tag(at: indexPath)
         else { return }
-        viewModel.deleteTag(section: indexPath.section, row: indexPath.row)
+        if checkAccess() {
+            viewModel.deleteTag(section: indexPath.section, row: indexPath.row)
+        } else {
+            FeatureGate.shared.presentUpgradeSheet(for: FeatureKey.customEmotions, from: self)
+        }
     }
     
     private func indexPath(from sender: UIButton) -> IndexPath? {
@@ -192,5 +204,14 @@ extension ManageEmotionsViewController: UITableViewDataSource, UITableViewDelega
         else { return nil }
 
         return IndexPath(row: row, section: sender.tag)
+    }
+    
+    private func checkAccess() -> Bool {
+        switch FeatureGate.shared.access(for: FeatureKey.customEmotions) {
+        case .allowed:
+            return true
+        case .locked:
+            return false
+        }
     }
 }

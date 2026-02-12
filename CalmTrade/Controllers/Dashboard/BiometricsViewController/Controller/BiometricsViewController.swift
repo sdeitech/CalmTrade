@@ -43,6 +43,8 @@ final class BiometricsViewController: UIViewController {
     @IBOutlet weak var lblStepsAverage: UILabel!
     @IBOutlet weak var lblStepsToday: UILabel!
     @IBOutlet weak var lblStepsDate: UILabel!
+    
+    @IBOutlet weak var subscriptionBlurView: UIVisualEffectView!
 
     // MARK: - ViewModel
     private let viewModel = BiometricsViewModel()
@@ -86,6 +88,7 @@ final class BiometricsViewController: UIViewController {
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         viewModel.startLiveUpdates()
+        applyCalmScoreAccess()
     }
 
     override func viewWillDisappear(_ animated: Bool) {
@@ -373,6 +376,11 @@ final class BiometricsViewController: UIViewController {
         }
         presentSleepInfoSheet()
     }
+    
+    @IBAction func btnSubscribeTapped(_ sender: Any) {
+        let vc = UIStoryboard(name: Constants.Storyboard.Profile, bundle: nil).instantiateViewController(withIdentifier: "SubscriptionViewController") as! SubscriptionViewController
+        self.navigationController?.pushViewController(vc, animated: true)
+    }
 
     private func presentSleepInfoSheet() {
         let sheet = UIHostingController(
@@ -418,5 +426,16 @@ final class BiometricsViewController: UIViewController {
         let alert = UIAlertController(title: "How to add sleep", message: msg, preferredStyle: .alert)
         alert.addAction(UIAlertAction(title: "OK", style: .default))
         present(alert, animated: true)
+    }
+    
+    //MARK: - Subscription Logic
+    private func applyCalmScoreAccess() {
+        switch FeatureGate.shared.access(for: FeatureKey.calmScoreGauge) {
+        case .allowed:
+            subscriptionBlurView.isHidden = true
+
+        case .locked:
+            subscriptionBlurView.isHidden = false
+        }
     }
 }

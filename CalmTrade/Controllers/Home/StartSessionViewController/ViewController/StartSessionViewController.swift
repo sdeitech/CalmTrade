@@ -24,6 +24,8 @@ final class StartSessionViewController: UIViewController {
     @IBOutlet weak var useDefaultButton: UIButton!
     @IBOutlet weak var saveButton: UIButton!
     @IBOutlet weak var backButton: UIButton!
+    
+    @IBOutlet weak var lblDate: UILabel!
 
     // MARK: - Dependencies
 
@@ -39,6 +41,10 @@ final class StartSessionViewController: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        
+        let f = DateFormatter()
+        f.dateStyle = .medium
+        lblDate.text = f.string(from: Date())
 
         backButton.isHidden = !showsBackButton
 

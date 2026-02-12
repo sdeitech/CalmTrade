@@ -33,7 +33,18 @@ final class AnalyticsViewController: UIViewController {
 
     private func setupSegments() {
         AnalyticsSection.allCases.forEach { section in
-            segmentedControl.setTitle(section.title, forSegmentAt: section.rawValue)
+            let access = FeatureGate.shared.access(for: FeatureKey.tradeAnalyticsStats)
+            var title = section.title
+            if section.title != AnalyticsSection.topAnalytics.title {
+                switch access {
+                case .allowed:
+                    break
+                case .locked:
+                    title = title + "🔒"
+                }
+            }
+            
+            segmentedControl.setTitle(title, forSegmentAt: section.rawValue)
         }
         segmentedControl.selectedSegmentIndex = vm.selectedSection.rawValue
     }
@@ -48,8 +59,20 @@ final class AnalyticsViewController: UIViewController {
     }
 
     @IBAction func segmentedChanged(_ sender: UISegmentedControl) {
-        let section = vm.sectionFor(index: sender.selectedSegmentIndex)
-        vm.selectedSection = section
+        if sender.selectedSegmentIndex != 0 {
+            let access = FeatureGate.shared.access(for: FeatureKey.tradeAnalyticsStats)
+            switch access {
+            case .allowed:
+                let section = vm.sectionFor(index: sender.selectedSegmentIndex)
+                vm.selectedSection = section
+            case .locked:
+                FeatureGate.shared.presentUpgradeSheet(for: FeatureKey.tradeAnalyticsStats, from: self)
+                sender.selectedSegmentIndex = 0
+            }
+        } else {
+            let section = vm.sectionFor(index: sender.selectedSegmentIndex)
+            vm.selectedSection = section
+        }
     }
     
     @IBAction func importButtonTapped(_ sender: UIButton) {

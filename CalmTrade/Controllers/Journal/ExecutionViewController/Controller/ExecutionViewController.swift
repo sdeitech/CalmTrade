@@ -36,6 +36,15 @@ final class ExecutionViewController: UIViewController {
         80,   // SIZE
         120   // P&L
     ]
+    
+    private var hasExecutionAccess: Bool {
+        switch FeatureGate.shared.access(for: FeatureKey.journalUnlocked) {
+        case .allowed:
+            true
+        case .locked:
+            false
+        }
+    }
 
     // MARK: - Lifecycle
     override func viewDidLoad() {
@@ -92,6 +101,7 @@ final class ExecutionViewController: UIViewController {
 
     // MARK: - Grid Builder
     private func buildGrid(from executions: [ExecutionItem]) {
+
         grid.removeAll()
 
         // HEADER
@@ -104,18 +114,39 @@ final class ExecutionViewController: UIViewController {
         )
 
         var totalPnL: Double = 0
+        let totalPrice = executions.compactMap(\.price).reduce(0, +)
 
-        for e in executions {
+        // Always compute totals from ALL executions
+        executions.forEach { totalPnL += $0.pnl ?? 0 }
+
+        // Decide what to show
+        let visibleExecutions: [ExecutionItem]
+
+        if hasExecutionAccess {
+            visibleExecutions = executions
+        } else {
+            visibleExecutions = Array(executions.prefix(2))
+        }
+
+        // EXECUTION ROWS
+        for e in visibleExecutions {
+
             let pnl = e.pnl ?? 0
-            let pnlColor: UIColor = pnl > 0 ? .systemGreen : pnl < 0 ? .systemRed : .lightGray
-            totalPnL += pnl
+            let pnlColor: UIColor =
+                pnl > 0 ? .systemGreen :
+                pnl < 0 ? .systemRed :
+                .lightGray
+
+            let price = e.price ?? 0
 
             grid.append(
                 TradeGridRow(
                     values: [
-                        TimelineDateFormatter.time(from: e.timestamp)!,
-//                        e.timestamp,
+                        TimelineDateFormatter.time(from: e.timestamp) ?? "-",
                         e.symbol,
+                        e.price != nil
+                            ? String(format: "$%.2f", price)
+                            : "-",
                         e.side,
                         e.size.map { "\($0)" } ?? "-",
                         e.pnl != nil
@@ -124,7 +155,7 @@ final class ExecutionViewController: UIViewController {
                     ],
                     colors: [
                         .white,
-//                        .lightGray,
+                        .white,
                         .white,
                         e.side.lowercased() == "buy" ? .systemGreen : .systemRed,
                         .white,
@@ -134,17 +165,40 @@ final class ExecutionViewController: UIViewController {
                 )
             )
         }
-        
-        let total = executions.compactMap(\.price).reduce(0, +)
+
+        // VIEW ALL ROW (only if locked and more than 2)
+        if !hasExecutionAccess && executions.count > 2 {
+
+            grid.append(
+                TradeGridRow(
+                    values: [
+                        "",
+                        "View All 🔒",
+                        "",
+                        "",
+                        "",
+                        ""
+                    ],
+                    colors: [
+                        .clear,
+                        .systemYellow,
+                        .clear,
+                        .clear,
+                        .clear,
+                        .clear
+                    ],
+                    isSummary: true
+                )
+            )
+        }
 
         // TOTAL ROW
         grid.append(
             TradeGridRow(
                 values: [
                     "TOTAL",
-//                    "",
                     "\(executions.count) executions",
-                    "$ \(total)",
+                    "$ \(String(format: "%.2f", totalPrice))",
                     "",
                     "",
                     String(format: "$%.2f", totalPnL)
@@ -217,3 +271,20 @@ extension ExecutionViewController: UICollectionViewDelegateFlowLayout {
         CGSize(width: columnWidths[indexPath.item], height: 50)
     }
 }
+
+extension ExecutionViewController: UICollectionViewDelegate {
+
+    func collectionView(_ collectionView: UICollectionView,
+                        didSelectItemAt indexPath: IndexPath) {
+
+        let row = grid[indexPath.section]
+
+        if row.values.contains("View All 🔒") {
+            FeatureGate.shared.presentUpgradeSheet(
+                for: FeatureKey.journalUnlocked,
+                from: self
+            )
+        }
+    }
+}
+

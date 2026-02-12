@@ -24,6 +24,8 @@ final class HRVDetailViewController: BaseViewController {
     @IBOutlet private weak var chartContainerView: UIView!
     @IBOutlet private weak var lblHrvDetail: UILabel!
     @IBOutlet private weak var lblTitle: UILabel!
+    
+    @IBOutlet private weak var subscriptionBlurView: UIVisualEffectView!
 
     // MARK: - State
     private let viewModel = HRVDetailViewModel()
@@ -39,6 +41,10 @@ final class HRVDetailViewController: BaseViewController {
         viewModel.fetch(for: .hourly) // align with HR screens; pick your default
         lblTitle.text = (metric == .rmssd) ? "HRV • RMSSD" : "HRV • SDNN"
         lblHrvDetail.text = viewModel.hrvDetailText
+    }
+    
+    override func viewWillAppear(_ animated: Bool) {
+        subscriptionBlurView.isHidden = checkAccess()
     }
 
     private func setupSegmented() {
@@ -102,12 +108,23 @@ final class HRVDetailViewController: BaseViewController {
             }
             .store(in: &cancellables)
     }
+    
+    private func checkAccess() -> Bool {
+        switch FeatureGate.shared.access(for: FeatureKey.chartsForBiometric) {
+        case .allowed: return true
+        case .locked: return false
+        }
+    }
 
     // MARK: - Actions
 
     @IBAction private func segmentedControlChanged(_ sender: UISegmentedControl) {
         guard let r = HRVDetailViewModel.ChartTimeRange(rawValue: sender.selectedSegmentIndex) else { return }
         viewModel.fetch(for: r)
+    }
+    
+    @IBAction private func btnSubscribeTapped(_ sender: Any) {
+        FeatureGate.shared.presentUpgradeSheet(for: FeatureKey.chartsForBiometric, from: self)
     }
 
     @IBAction private func btnBackTapped(_ sender: Any) {

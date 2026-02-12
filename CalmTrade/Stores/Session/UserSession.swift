@@ -116,5 +116,29 @@ final class SessionManager: ObservableObject {
 
 extension Notification.Name {
     static let userAccountDidChange = Notification.Name("UserAccountDidChange")
-    static let authDidExpire = Notification.Name("authDidExpire")
+}
+
+enum FeatureKey {
+
+    // Core trading & analytics
+    static let calmScoreGauge = "Calmscore gauge"
+    static let tradeAnalyticsStats = "Trade Analytics + Stats"
+    static let tradesHistory = "Trades history"
+    static let manualTradeImport = "Manual trade import"
+    static let multipleAccountHandling = "multiple account handling for trade imports"
+
+    // Broker & sync
+    static let brokerSync = "Broker Sync"
+    static let realtime360Sync = "360 realtime sync"
+
+    // Biometrics & health
+    static let biometricDashboard = "Biometric dashboard"
+    static let chartsForBiometric = "Charts for biometric"
+    static let appleHealthKitSync = "Apple healthkit sync"
+
+    // Emotions & journaling
+    static let emotionTagging = "Emotion tagging"
+    static let customEmotions = "Custom Emotions"
+    static let journalUnlocked = "Journal (Unlocked)"
+
 }

@@ -50,17 +50,23 @@ final class SubscriptionViewController: UIViewController {
     // MARK: - Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
-
-        subscriptionScrollView.isHidden = true        // show MAIN screen by default
-        mainScrollView.isHidden = true             // hide until plans load
-        disableSubscribeButton()
-
         setupPlanSelectionTable()
 
         bindViewModel()
 
-        vm.fetchCurrentSubscription()   // load current plan
+        
         vm.fetchPlans()                 // load upgrade options
+    }
+    
+    override func viewDidAppear(_ animated: Bool) {
+        vm.selectedPlanId = nil
+        
+        subscriptionScrollView.isHidden = true        // show MAIN screen by default
+        mainScrollView.isHidden = true             // hide until plans load
+        
+        disableSubscribeButton()
+        
+        vm.fetchCurrentSubscription()   // load current plan
     }
 
     override func viewDidLayoutSubviews() {
@@ -134,7 +140,7 @@ final class SubscriptionViewController: UIViewController {
         updateCurrentPlanBackground(sub.planDetails?.name ?? "")
 
         // Disable upgrade if user is already Elite
-        let isElite = sub.planDetails?.name.lowercased() == "elite"
+        let isElite = sub.planDetails?.name?.lowercased() == "elite"
         btnUpgrade.isUserInteractionEnabled = !isElite
         btnUpgrade.alpha = isElite ? 0.4 : 1.0
     }

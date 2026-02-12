@@ -34,6 +34,9 @@ final class TimelineViewController: UIViewController {
     private func setupTable() {
         tableView.dataSource = self
         tableView.delegate = self
+        
+        tableView.register(ViewAllLockedCell.self,
+                           forCellReuseIdentifier: ViewAllLockedCell.identifier)
 
         // If using storyboard prototype cell → DO NOT register class
         // If using XIB → register nib instead
@@ -94,22 +97,35 @@ extension TimelineViewController: UITableViewDataSource, UITableViewDelegate {
         cellForRowAt indexPath: IndexPath
     ) -> UITableViewCell {
 
-        guard let cell = tableView.dequeueReusableCell(
-            withIdentifier: "TimelineCell",
-            for: indexPath
-        ) as? TimelineCell else {
-            return UITableViewCell()
+        let displayItem = viewModel.displayItem(at: indexPath.section)
+
+        switch displayItem {
+
+        case .entry(let item):
+
+            guard let cell = tableView.dequeueReusableCell(
+                withIdentifier: "TimelineCell",
+                for: indexPath
+            ) as? TimelineCell else {
+                return UITableViewCell()
+            }
+
+            cell.configure(with: item)
+
+            cell.onAddNoteTapped = { [weak self] in
+                guard let self, let emotionId = item._id else { return }
+                self.presentEmotionNoteSheet(emotionId: emotionId, type: item.type)
+            }
+
+            return cell
+
+        case .viewAllLocked:
+            let cell = tableView.dequeueReusableCell(
+                withIdentifier: ViewAllLockedCell.identifier,
+                for: indexPath
+            ) as! ViewAllLockedCell
+            return cell
         }
-
-        let item = viewModel.item(at: indexPath.section)
-        cell.configure(with: item)
-
-        cell.onAddNoteTapped = { [weak self] in
-            guard let self, let emotionId = item._id else { return }
-            self.presentEmotionNoteSheet(emotionId: emotionId, type: item.type)
-        }
-
-        return cell
     }
     
     func tableView(_ tableView: UITableView, viewForFooterInSection section: Int) -> UIView? {
@@ -151,4 +167,44 @@ extension TimelineViewController: UITableViewDataSource, UITableViewDelegate {
 
         present(host, animated: true)
     }
+    
+    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+
+        let item = viewModel.displayItem(at: indexPath.section)
+
+        if case .viewAllLocked = item {
+            FeatureGate.shared.presentUpgradeSheet(
+                for: FeatureKey.journalUnlocked,
+                from: self
+            )
+        }
+    }
+
+    func tableView(_ tableView: UITableView,
+                   contextMenuConfigurationForRowAt indexPath: IndexPath,
+                   point: CGPoint)
+    -> UIContextMenuConfiguration? {
+
+        let displayItem = viewModel.displayItem(at: indexPath.section)
+
+        guard case .entry(let item) = displayItem,
+              let id = item._id else {
+            return nil
+        }
+
+        return UIContextMenuConfiguration(identifier: nil, previewProvider: nil) { _ in
+
+            let delete = UIAction(
+                title: "Delete",
+                image: UIImage(systemName: "trash"),
+                attributes: .destructive
+            ) { [weak self] _ in
+                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                self?.viewModel.deleteItem(item: item) { _ in }
+            }
+
+            return UIMenu(title: "", children: [delete])
+        }
+    }
+
 }

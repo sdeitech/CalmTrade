@@ -14,8 +14,8 @@ struct SubscriptionDetailsResponse: Decodable {
 }
 
 struct SubscriptionRecord: Decodable {
-    let planId: String
-    let status: String
+    let status: String?
+    let isDefaultFreePlan: Bool?
     let startDate: String?
     let expiryDate: String?
     let trialEndDate: String?
@@ -24,15 +24,25 @@ struct SubscriptionRecord: Decodable {
 }
 
 struct SubscriptionPlanDetails: Decodable {
-    let planId: String
-    let name: String
-    let displayName: String
-    let price: Double
-    let billingCycle: String
-    let features: [SubscriptionFeature]
+    let planId: String?
+    let name: String?
+    let displayName: String?
+    let price: Double?
+    let billingCycle: String?
+    let features: [SubscriptionFeature]?
+    let description: String?
+    let isAddon: Bool?
+    let gradient: String?
+    let color: String?
+    let currency: String?
+    let isPopular: Bool?
+    let tagline: String?
+    let trialPeriodDays: Int?
 }
 
 struct SubscriptionFeature: Decodable {
-    let name: String
-    let included: Bool
+    let key: String?
+    let name: String?
+    let hasAccess: Bool?
 }
+

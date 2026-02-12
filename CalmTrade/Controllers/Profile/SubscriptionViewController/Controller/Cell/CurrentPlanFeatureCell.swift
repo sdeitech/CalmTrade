@@ -20,6 +20,6 @@ final class CurrentPlanFeatureCell: UITableViewCell {
 
     func configure(_ feature: SubscriptionFeature) {
         lblFeature.text = feature.name
-        imgIncluded.image = UIImage(named: feature.included ? "tick" : "cross")
+        imgIncluded.image = UIImage(named: feature.hasAccess ?? false ? "tick" : "cross")
     }
 }

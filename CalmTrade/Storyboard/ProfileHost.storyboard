@@ -314,6 +314,8 @@
                         </constraints>
                     </view>
                     <connections>
+                        <outlet property="lblEmail" destination="WDw-dd-psr" id="lfF-qu-qQX"/>
+                        <outlet property="lblName" destination="8cg-eK-Dnf" id="8gZ-1L-b9O"/>
                         <outlet property="lblPolarTitle" destination="jJj-Jf-tpr" id="IUa-xX-wX1"/>
                         <outlet property="lblProfileTitle" destination="Q93-GQ-F1X" id="ld5-fN-z1a"/>
                         <outlet property="lblSecurityTitle" destination="0qr-e7-aCE" id="Hn4-QO-Q5f"/>

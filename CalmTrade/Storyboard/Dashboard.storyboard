@@ -3,6 +3,7 @@
     <device id="retina6_1" orientation="portrait" appearance="light"/>
     <dependencies>
         <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="23721"/>
+        <capability name="Image references" minToolsVersion="12.0"/>
         <capability name="Named colors" minToolsVersion="9.0"/>
         <capability name="Safe area layout guides" minToolsVersion="9.0"/>
         <capability name="System colors in document resources" minToolsVersion="11.0"/>
@@ -1527,6 +1528,122 @@
                                                     </userDefinedRuntimeAttribute>
                                                 </userDefinedRuntimeAttributes>
                                             </view>
+                                            <visualEffectView opaque="NO" alpha="0.96999999999999997" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="Awu-ET-IdX">
+                                                <rect key="frame" x="0.0" y="116" width="414" height="280"/>
+                                                <view key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" insetsLayoutMarginsFromSafeArea="NO" id="yTH-2j-boM">
+                                                    <rect key="frame" x="0.0" y="0.0" width="414" height="280"/>
+                                                    <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                                                    <subviews>
+                                                        <visualEffectView opaque="NO" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="pYU-go-EY9">
+                                                            <rect key="frame" x="0.0" y="0.0" width="414" height="280"/>
+                                                            <view key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" insetsLayoutMarginsFromSafeArea="NO" id="0BN-qm-FRL">
+                                                                <rect key="frame" x="0.0" y="0.0" width="414" height="280"/>
+                                                                <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                                                            </view>
+                                                            <vibrancyEffect>
+                                                                <blurEffect style="regular"/>
+                                                            </vibrancyEffect>
+                                                        </visualEffectView>
+                                                        <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" distribution="equalSpacing" spacing="10" translatesAutoresizingMaskIntoConstraints="NO" id="j5z-2P-3q8">
+                                                            <rect key="frame" x="40" y="82" width="334" height="116"/>
+                                                            <subviews>
+                                                                <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Unlock CalmScore insights to trade with emotional clarity" textAlignment="center" lineBreakMode="tailTruncation" numberOfLines="0" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="MiW-L5-bhq">
+                                                                    <rect key="frame" x="0.0" y="0.0" width="334" height="48"/>
+                                                                    <fontDescription key="fontDescription" name="HelveticaNeue-Medium" family="Helvetica Neue" pointSize="20"/>
+                                                                    <color key="textColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                                                    <nil key="highlightedColor"/>
+                                                                </label>
+                                                                <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="0T3-W8-a9O" customClass="DesignableButton" customModule="CalmTrade" customModuleProvider="target">
+                                                                    <rect key="frame" x="0.0" y="58" width="334" height="58"/>
+                                                                    <constraints>
+                                                                        <constraint firstAttribute="height" constant="58" id="PU3-4g-JqL"/>
+                                                                    </constraints>
+                                                                    <color key="tintColor" red="0.95686274510000002" green="0.69019607839999997" blue="0.29803921570000003" alpha="1" colorSpace="custom" customColorSpace="displayP3"/>
+                                                                    <state key="normal" title="Button"/>
+                                                                    <buttonConfiguration key="configuration" style="plain" imagePlacement="trailing" title="Subscribe" imagePadding="10">
+                                                                        <imageReference key="image" image="crown.fill" catalog="system" symbolScale="large"/>
+                                                                        <fontDescription key="titleFontDescription" name="Outfit-SemiBold" family="Outfit" pointSize="20"/>
+                                                                        <attributedString key="attributedSubtitle">
+                                                                            <fragment content="Included in">
+                                                                                <attributes>
+                                                                                    <font key="NSFont" size="12" name="HelveticaNeue"/>
+                                                                                    <font key="NSOriginalFont" size="12" name="Helvetica"/>
+                                                                                </attributes>
+                                                                            </fragment>
+                                                                            <fragment content=" ">
+                                                                                <attributes>
+                                                                                    <font key="NSFont" size="12" name="Helvetica"/>
+                                                                                    <font key="NSOriginalFont" size="12" name="Helvetica"/>
+                                                                                </attributes>
+                                                                            </fragment>
+                                                                            <fragment content="Pro plan">
+                                                                                <attributes>
+                                                                                    <font key="NSFont" size="12" name="Helvetica-Bold"/>
+                                                                                    <font key="NSOriginalFont" size="12" name="Helvetica"/>
+                                                                                </attributes>
+                                                                            </fragment>
+                                                                        </attributedString>
+                                                                        <color key="baseForegroundColor" red="0.95686274510000002" green="0.69019607839999997" blue="0.29803921570000003" alpha="1" colorSpace="custom" customColorSpace="displayP3"/>
+                                                                    </buttonConfiguration>
+                                                                    <userDefinedRuntimeAttributes>
+                                                                        <userDefinedRuntimeAttribute type="color" keyPath="borderColor">
+                                                                            <color key="value" red="0.2274509804" green="0.64313725489999995" blue="1" alpha="1" colorSpace="custom" customColorSpace="displayP3"/>
+                                                                        </userDefinedRuntimeAttribute>
+                                                                        <userDefinedRuntimeAttribute type="number" keyPath="borderWidth">
+                                                                            <real key="value" value="1"/>
+                                                                        </userDefinedRuntimeAttribute>
+                                                                        <userDefinedRuntimeAttribute type="number" keyPath="cornerRadius">
+                                                                            <real key="value" value="10"/>
+                                                                        </userDefinedRuntimeAttribute>
+                                                                        <userDefinedRuntimeAttribute type="boolean" keyPath="hasInnerShadow" value="YES"/>
+                                                                        <userDefinedRuntimeAttribute type="boolean" keyPath="isHorizontalGradient" value="NO"/>
+                                                                        <userDefinedRuntimeAttribute type="color" keyPath="startColor">
+                                                                            <color key="value" name="commonButtonGradientStart"/>
+                                                                        </userDefinedRuntimeAttribute>
+                                                                        <userDefinedRuntimeAttribute type="color" keyPath="endColor">
+                                                                            <color key="value" name="commonButtonGradientEnd"/>
+                                                                        </userDefinedRuntimeAttribute>
+                                                                        <userDefinedRuntimeAttribute type="number" keyPath="innerShadowRadius">
+                                                                            <real key="value" value="1"/>
+                                                                        </userDefinedRuntimeAttribute>
+                                                                        <userDefinedRuntimeAttribute type="color" keyPath="innerShadowColor1">
+                                                                            <color key="value" white="1" alpha="0.25" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                                                        </userDefinedRuntimeAttribute>
+                                                                        <userDefinedRuntimeAttribute type="boolean" keyPath="hasInnerShadow1" value="YES"/>
+                                                                        <userDefinedRuntimeAttribute type="boolean" keyPath="hasInnerShadow2" value="YES"/>
+                                                                        <userDefinedRuntimeAttribute type="boolean" keyPath="hasShadow1" value="YES"/>
+                                                                        <userDefinedRuntimeAttribute type="color" keyPath="shadowColor1">
+                                                                            <color key="value" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                                                        </userDefinedRuntimeAttribute>
+                                                                        <userDefinedRuntimeAttribute type="color" keyPath="shadowColor2">
+                                                                            <color key="value" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                                                        </userDefinedRuntimeAttribute>
+                                                                        <userDefinedRuntimeAttribute type="boolean" keyPath="hasShadow2" value="YES"/>
+                                                                    </userDefinedRuntimeAttributes>
+                                                                    <connections>
+                                                                        <action selector="btnSubscribeTapped:" destination="bed-ks-3du" eventType="touchUpInside" id="3Gk-nG-bcO"/>
+                                                                    </connections>
+                                                                </button>
+                                                            </subviews>
+                                                        </stackView>
+                                                    </subviews>
+                                                    <constraints>
+                                                        <constraint firstItem="pYU-go-EY9" firstAttribute="top" secondItem="yTH-2j-boM" secondAttribute="top" id="4sA-jU-sPI"/>
+                                                        <constraint firstAttribute="trailing" secondItem="j5z-2P-3q8" secondAttribute="trailing" constant="40" id="CPS-8u-Rjp"/>
+                                                        <constraint firstAttribute="trailing" secondItem="pYU-go-EY9" secondAttribute="trailing" id="Cz1-Vh-Dpn"/>
+                                                        <constraint firstItem="j5z-2P-3q8" firstAttribute="centerY" secondItem="yTH-2j-boM" secondAttribute="centerY" id="E8v-xE-TUA"/>
+                                                        <constraint firstAttribute="bottom" secondItem="pYU-go-EY9" secondAttribute="bottom" id="RGr-CQ-GnT"/>
+                                                        <constraint firstItem="j5z-2P-3q8" firstAttribute="leading" secondItem="yTH-2j-boM" secondAttribute="leading" constant="40" id="d1I-7f-FDC"/>
+                                                        <constraint firstItem="pYU-go-EY9" firstAttribute="leading" secondItem="yTH-2j-boM" secondAttribute="leading" id="nEe-RZ-DzZ"/>
+                                                    </constraints>
+                                                </view>
+                                                <blurEffect style="systemUltraThinMaterialDark"/>
+                                                <userDefinedRuntimeAttributes>
+                                                    <userDefinedRuntimeAttribute type="number" keyPath="cornerRadius">
+                                                        <real key="value" value="20"/>
+                                                    </userDefinedRuntimeAttribute>
+                                                </userDefinedRuntimeAttributes>
+                                            </visualEffectView>
                                             <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" usesAttributedText="YES" lineBreakMode="tailTruncation" numberOfLines="0" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="AjN-Nj-trl">
                                                 <rect key="frame" x="24" y="421" width="93" height="21.5"/>
                                                 <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
@@ -2476,7 +2593,9 @@
                                         </subviews>
                                         <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                         <constraints>
+                                            <constraint firstItem="Awu-ET-IdX" firstAttribute="leading" secondItem="Zmi-e8-nNt" secondAttribute="leading" id="6Xj-KS-e4S"/>
                                             <constraint firstItem="fbP-zO-i09" firstAttribute="leading" secondItem="wHb-Hf-FDY" secondAttribute="leading" constant="3" id="BnD-WG-9lU"/>
+                                            <constraint firstItem="Awu-ET-IdX" firstAttribute="top" secondItem="Zmi-e8-nNt" secondAttribute="top" id="D37-eW-5CW"/>
                                             <constraint firstAttribute="bottom" secondItem="fbP-zO-i09" secondAttribute="bottom" constant="25" id="HoG-VV-tCC"/>
                                             <constraint firstItem="Zmi-e8-nNt" firstAttribute="top" secondItem="PJT-2D-8Ns" secondAttribute="bottom" constant="31" id="Jgs-eY-ZRl"/>
                                             <constraint firstItem="PJT-2D-8Ns" firstAttribute="leading" secondItem="wHb-Hf-FDY" secondAttribute="leading" constant="24" id="OXE-yV-ozo"/>
@@ -2484,8 +2603,10 @@
                                             <constraint firstItem="AjN-Nj-trl" firstAttribute="leading" secondItem="wHb-Hf-FDY" secondAttribute="leading" constant="24" id="aY7-pP-beh"/>
                                             <constraint firstItem="AjN-Nj-trl" firstAttribute="top" secondItem="Zmi-e8-nNt" secondAttribute="bottom" constant="25" id="btl-QQ-2VB"/>
                                             <constraint firstAttribute="trailing" secondItem="PJT-2D-8Ns" secondAttribute="trailing" constant="24" id="cJQ-5a-p12"/>
+                                            <constraint firstItem="Awu-ET-IdX" firstAttribute="trailing" secondItem="Zmi-e8-nNt" secondAttribute="trailing" id="dIX-oW-nkQ"/>
                                             <constraint firstItem="fbP-zO-i09" firstAttribute="top" secondItem="AjN-Nj-trl" secondAttribute="bottom" constant="25" id="goo-i4-fhR"/>
                                             <constraint firstAttribute="trailing" secondItem="Zmi-e8-nNt" secondAttribute="trailing" id="q8I-FY-POC"/>
+                                            <constraint firstItem="Awu-ET-IdX" firstAttribute="bottom" secondItem="Zmi-e8-nNt" secondAttribute="bottom" id="qeB-Mq-XRI"/>
                                             <constraint firstAttribute="trailing" secondItem="fbP-zO-i09" secondAttribute="trailing" constant="3" id="sbc-ko-Woa"/>
                                             <constraint firstItem="PJT-2D-8Ns" firstAttribute="top" secondItem="wHb-Hf-FDY" secondAttribute="top" constant="45" id="zKk-Gc-FmR"/>
                                         </constraints>
@@ -2534,6 +2655,7 @@
                         <outlet property="sleepScoreContainer" destination="avQ-Ef-lEL" id="poD-1O-DsY"/>
                         <outlet property="sleepScoreDateLabel" destination="V0A-76-DfJ" id="O6K-dX-5GX"/>
                         <outlet property="sleepScoreLabel" destination="jI4-gl-GHN" id="OJY-yr-jhJ"/>
+                        <outlet property="subscriptionBlurView" destination="Awu-ET-IdX" id="rdb-DD-VAU"/>
                     </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="xEL-p8-UIW" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
@@ -2790,6 +2912,122 @@
                                                     </userDefinedRuntimeAttribute>
                                                 </userDefinedRuntimeAttributes>
                                             </view>
+                                            <visualEffectView opaque="NO" alpha="0.97000002861022949" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="7Wf-bz-n6Y">
+                                                <rect key="frame" x="0.0" y="116" width="414" height="280"/>
+                                                <view key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" insetsLayoutMarginsFromSafeArea="NO" id="hER-dG-8Jk">
+                                                    <rect key="frame" x="0.0" y="0.0" width="414" height="280"/>
+                                                    <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                                                    <subviews>
+                                                        <visualEffectView opaque="NO" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="fuN-TK-UR4">
+                                                            <rect key="frame" x="0.0" y="0.0" width="414" height="280"/>
+                                                            <view key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" insetsLayoutMarginsFromSafeArea="NO" id="j4m-yX-IhM">
+                                                                <rect key="frame" x="0.0" y="0.0" width="414" height="280"/>
+                                                                <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                                                            </view>
+                                                            <vibrancyEffect>
+                                                                <blurEffect style="regular"/>
+                                                            </vibrancyEffect>
+                                                        </visualEffectView>
+                                                        <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" distribution="equalSpacing" spacing="10" translatesAutoresizingMaskIntoConstraints="NO" id="Oag-Zb-xcO">
+                                                            <rect key="frame" x="40" y="82" width="334" height="116"/>
+                                                            <subviews>
+                                                                <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Unlock CalmScore insights to trade with emotional clarity" textAlignment="center" lineBreakMode="tailTruncation" numberOfLines="0" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="Ag4-bU-SWq">
+                                                                    <rect key="frame" x="0.0" y="0.0" width="334" height="48"/>
+                                                                    <fontDescription key="fontDescription" name="HelveticaNeue-Medium" family="Helvetica Neue" pointSize="20"/>
+                                                                    <color key="textColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                                                    <nil key="highlightedColor"/>
+                                                                </label>
+                                                                <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="Y72-7d-gIO" customClass="DesignableButton" customModule="CalmTrade" customModuleProvider="target">
+                                                                    <rect key="frame" x="0.0" y="58" width="334" height="58"/>
+                                                                    <constraints>
+                                                                        <constraint firstAttribute="height" constant="58" id="TtV-tB-cVR"/>
+                                                                    </constraints>
+                                                                    <color key="tintColor" red="0.95686274510000002" green="0.69019607839999997" blue="0.29803921570000003" alpha="1" colorSpace="custom" customColorSpace="displayP3"/>
+                                                                    <state key="normal" title="Button"/>
+                                                                    <buttonConfiguration key="configuration" style="plain" imagePlacement="trailing" title="Subscribe" imagePadding="10">
+                                                                        <imageReference key="image" image="crown.fill" catalog="system" symbolScale="large"/>
+                                                                        <fontDescription key="titleFontDescription" name="Outfit-SemiBold" family="Outfit" pointSize="20"/>
+                                                                        <attributedString key="attributedSubtitle">
+                                                                            <fragment content="Included in">
+                                                                                <attributes>
+                                                                                    <font key="NSFont" size="12" name="HelveticaNeue"/>
+                                                                                    <font key="NSOriginalFont" size="12" name="Helvetica"/>
+                                                                                </attributes>
+                                                                            </fragment>
+                                                                            <fragment content=" ">
+                                                                                <attributes>
+                                                                                    <font key="NSFont" size="12" name="Helvetica"/>
+                                                                                    <font key="NSOriginalFont" size="12" name="Helvetica"/>
+                                                                                </attributes>
+                                                                            </fragment>
+                                                                            <fragment content="Pro plan">
+                                                                                <attributes>
+                                                                                    <font key="NSFont" size="12" name="Helvetica-Bold"/>
+                                                                                    <font key="NSOriginalFont" size="12" name="Helvetica"/>
+                                                                                </attributes>
+                                                                            </fragment>
+                                                                        </attributedString>
+                                                                        <color key="baseForegroundColor" red="0.95686274510000002" green="0.69019607839999997" blue="0.29803921570000003" alpha="1" colorSpace="custom" customColorSpace="displayP3"/>
+                                                                    </buttonConfiguration>
+                                                                    <userDefinedRuntimeAttributes>
+                                                                        <userDefinedRuntimeAttribute type="color" keyPath="borderColor">
+                                                                            <color key="value" red="0.2274509804" green="0.64313725489999995" blue="1" alpha="1" colorSpace="custom" customColorSpace="displayP3"/>
+                                                                        </userDefinedRuntimeAttribute>
+                                                                        <userDefinedRuntimeAttribute type="number" keyPath="borderWidth">
+                                                                            <real key="value" value="1"/>
+                                                                        </userDefinedRuntimeAttribute>
+                                                                        <userDefinedRuntimeAttribute type="number" keyPath="cornerRadius">
+                                                                            <real key="value" value="10"/>
+                                                                        </userDefinedRuntimeAttribute>
+                                                                        <userDefinedRuntimeAttribute type="boolean" keyPath="hasInnerShadow" value="YES"/>
+                                                                        <userDefinedRuntimeAttribute type="boolean" keyPath="isHorizontalGradient" value="NO"/>
+                                                                        <userDefinedRuntimeAttribute type="color" keyPath="startColor">
+                                                                            <color key="value" name="commonButtonGradientStart"/>
+                                                                        </userDefinedRuntimeAttribute>
+                                                                        <userDefinedRuntimeAttribute type="color" keyPath="endColor">
+                                                                            <color key="value" name="commonButtonGradientEnd"/>
+                                                                        </userDefinedRuntimeAttribute>
+                                                                        <userDefinedRuntimeAttribute type="number" keyPath="innerShadowRadius">
+                                                                            <real key="value" value="1"/>
+                                                                        </userDefinedRuntimeAttribute>
+                                                                        <userDefinedRuntimeAttribute type="color" keyPath="innerShadowColor1">
+                                                                            <color key="value" white="1" alpha="0.25" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                                                        </userDefinedRuntimeAttribute>
+                                                                        <userDefinedRuntimeAttribute type="boolean" keyPath="hasInnerShadow1" value="YES"/>
+                                                                        <userDefinedRuntimeAttribute type="boolean" keyPath="hasInnerShadow2" value="YES"/>
+                                                                        <userDefinedRuntimeAttribute type="boolean" keyPath="hasShadow1" value="YES"/>
+                                                                        <userDefinedRuntimeAttribute type="color" keyPath="shadowColor1">
+                                                                            <color key="value" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                                                        </userDefinedRuntimeAttribute>
+                                                                        <userDefinedRuntimeAttribute type="color" keyPath="shadowColor2">
+                                                                            <color key="value" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                                                        </userDefinedRuntimeAttribute>
+                                                                        <userDefinedRuntimeAttribute type="boolean" keyPath="hasShadow2" value="YES"/>
+                                                                    </userDefinedRuntimeAttributes>
+                                                                    <connections>
+                                                                        <action selector="btnSubscribeTapped:" destination="ekX-Ji-Ctg" eventType="touchUpInside" id="uC0-n2-Jm4"/>
+                                                                    </connections>
+                                                                </button>
+                                                            </subviews>
+                                                        </stackView>
+                                                    </subviews>
+                                                    <constraints>
+                                                        <constraint firstItem="Oag-Zb-xcO" firstAttribute="leading" secondItem="hER-dG-8Jk" secondAttribute="leading" constant="40" id="5z4-4s-vmS"/>
+                                                        <constraint firstAttribute="trailing" secondItem="fuN-TK-UR4" secondAttribute="trailing" id="CSh-wa-BSr"/>
+                                                        <constraint firstAttribute="bottom" secondItem="fuN-TK-UR4" secondAttribute="bottom" id="aGo-rd-jWq"/>
+                                                        <constraint firstItem="fuN-TK-UR4" firstAttribute="leading" secondItem="hER-dG-8Jk" secondAttribute="leading" id="dEJ-xW-bVm"/>
+                                                        <constraint firstItem="fuN-TK-UR4" firstAttribute="top" secondItem="hER-dG-8Jk" secondAttribute="top" id="dx9-ae-wQP"/>
+                                                        <constraint firstItem="Oag-Zb-xcO" firstAttribute="centerY" secondItem="hER-dG-8Jk" secondAttribute="centerY" id="oN1-jg-Mfw"/>
+                                                        <constraint firstAttribute="trailing" secondItem="Oag-Zb-xcO" secondAttribute="trailing" constant="40" id="s4w-zq-zMb"/>
+                                                    </constraints>
+                                                </view>
+                                                <blurEffect style="systemUltraThinMaterialDark"/>
+                                                <userDefinedRuntimeAttributes>
+                                                    <userDefinedRuntimeAttribute type="number" keyPath="cornerRadius">
+                                                        <real key="value" value="20"/>
+                                                    </userDefinedRuntimeAttribute>
+                                                </userDefinedRuntimeAttributes>
+                                            </visualEffectView>
                                             <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" distribution="fillEqually" spacing="10" translatesAutoresizingMaskIntoConstraints="NO" id="6nf-4F-4IE">
                                                 <rect key="frame" x="5" y="427" width="404" height="58"/>
                                                 <subviews>
@@ -3401,12 +3639,16 @@
                                             <constraint firstAttribute="bottom" secondItem="wtd-Vh-Jn0" secondAttribute="bottom" constant="20" id="bBN-vU-jV0"/>
                                             <constraint firstItem="wtd-Vh-Jn0" firstAttribute="top" secondItem="1kS-oE-Zo9" secondAttribute="bottom" constant="20" id="cg4-CU-iV4"/>
                                             <constraint firstItem="qZZ-Zc-oaz" firstAttribute="leading" secondItem="DSL-EC-pmt" secondAttribute="leading" id="eU7-dn-RyB"/>
+                                            <constraint firstItem="7Wf-bz-n6Y" firstAttribute="bottom" secondItem="DSL-EC-pmt" secondAttribute="bottom" id="eto-UU-XcU"/>
                                             <constraint firstItem="1kS-oE-Zo9" firstAttribute="top" secondItem="YZs-Gb-EIY" secondAttribute="bottom" constant="20" id="g6O-Qq-u7m"/>
                                             <constraint firstItem="A4F-W5-Jjn" firstAttribute="leading" secondItem="2BF-uf-yh0" secondAttribute="leading" constant="24" id="gCH-p6-77y"/>
                                             <constraint firstItem="qZZ-Zc-oaz" firstAttribute="trailing" secondItem="DSL-EC-pmt" secondAttribute="trailing" id="iOO-rv-Wc4"/>
+                                            <constraint firstItem="7Wf-bz-n6Y" firstAttribute="trailing" secondItem="DSL-EC-pmt" secondAttribute="trailing" id="kCL-Yu-RvM"/>
                                             <constraint firstItem="qZZ-Zc-oaz" firstAttribute="top" secondItem="DSL-EC-pmt" secondAttribute="top" id="q2K-fc-oTl"/>
                                             <constraint firstItem="hap-5F-aoy" firstAttribute="leading" secondItem="2BF-uf-yh0" secondAttribute="leading" constant="24" id="qF7-sd-9Jr"/>
                                             <constraint firstItem="wtd-Vh-Jn0" firstAttribute="leading" secondItem="2BF-uf-yh0" secondAttribute="leading" constant="5" id="s8U-wL-oBv"/>
+                                            <constraint firstItem="7Wf-bz-n6Y" firstAttribute="top" secondItem="DSL-EC-pmt" secondAttribute="top" id="uW7-0J-B28"/>
+                                            <constraint firstItem="7Wf-bz-n6Y" firstAttribute="leading" secondItem="DSL-EC-pmt" secondAttribute="leading" id="uq4-Ii-HAt"/>
                                             <constraint firstItem="DSL-EC-pmt" firstAttribute="leading" secondItem="2BF-uf-yh0" secondAttribute="leading" id="vKa-tV-fvg"/>
                                             <constraint firstItem="1kS-oE-Zo9" firstAttribute="leading" secondItem="2BF-uf-yh0" secondAttribute="leading" id="vry-Le-SAk"/>
                                             <constraint firstItem="YZs-Gb-EIY" firstAttribute="top" secondItem="A4F-W5-Jjn" secondAttribute="bottom" id="x7b-YM-fDf"/>
@@ -3455,6 +3697,7 @@
                         <outlet property="negativeCollectionView" destination="srm-W8-uUq" id="wCA-vQ-OVJ"/>
                         <outlet property="neutralCollectionView" destination="sGy-0f-K25" id="BHt-oU-sDy"/>
                         <outlet property="positiveCollectionView" destination="DLz-yk-kpl" id="caF-nM-Rax"/>
+                        <outlet property="subscriptionBlurView" destination="7Wf-bz-n6Y" id="tBs-3N-qKV"/>
                         <outlet property="viewCognitive" destination="CKu-Ll-Gp2" id="x6O-Rh-bcL"/>
                         <outlet property="viewNegative" destination="Bcu-wQ-eig" id="KA4-0w-PHa"/>
                         <outlet property="viewNeutral" destination="avP-nk-Xm8" id="L4g-vr-tpI"/>
@@ -3753,6 +3996,7 @@
         <image name="biometrics-selected" width="20.5" height="20"/>
         <image name="calender" width="161" height="160"/>
         <image name="checkbox" width="80" height="80"/>
+        <image name="crown.fill" catalog="system" width="128" height="92"/>
         <image name="file upload" width="1332" height="484"/>
         <image name="heart" width="160" height="160"/>
         <image name="heart_home" width="96" height="96"/>

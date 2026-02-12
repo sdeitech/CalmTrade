@@ -32,6 +32,9 @@ final class ProfileTabsHostViewController: UIViewController {
     @IBOutlet weak var securityContent: UIView!
     @IBOutlet weak var polarContent: UIView!
     @IBOutlet weak var settingsContent: UIView!
+    
+    @IBOutlet weak var lblName: UILabel!
+    @IBOutlet weak var lblEmail: UILabel!
 
     // MARK: - PageVC (embedded via Container View → Embed segue)
     private weak var pageVC: UIPageViewController?
@@ -59,6 +62,11 @@ final class ProfileTabsHostViewController: UIViewController {
         // Build pages after pageVC is ready (see prepare(for segue:))
         // But still push initial icons/state right away:
         tabsVM.bootstrap()
+    }
+    
+    override func viewWillAppear(_ animated: Bool) {
+        lblName.text = SessionManager.shared.current?.displayName
+        lblEmail.text = SessionManager.shared.current?.email
     }
 
     // The Container View’s embed segue will hit here, giving us the UIPageViewController.
@@ -251,9 +259,15 @@ final class ProfileTabsHostViewController: UIViewController {
                     .instantiateViewController(withIdentifier: "NotificationSettingsViewController") as! NotificationSettingsViewController
                 self.navigationController?.pushViewController(notificationSettingVC)
             case .connectWearable:
-                let twoFactorVC = UIStoryboard(name: Constants.Storyboard.Devices, bundle: nil)
-                    .instantiateViewController(withIdentifier: "PolarConnectionViewController") as! PolarConnectionViewController
-                self.navigationController?.pushViewController(twoFactorVC)
+                let access = FeatureGate.shared.access(for: FeatureKey.realtime360Sync)
+                switch access {
+                case .allowed:
+                    let twoFactorVC = UIStoryboard(name: Constants.Storyboard.Devices, bundle: nil)
+                        .instantiateViewController(withIdentifier: "PolarConnectionViewController") as! PolarConnectionViewController
+                    self.navigationController?.pushViewController(twoFactorVC)
+                case .locked:
+                    FeatureGate.shared.presentUpgradeSheet(for: FeatureKey.realtime360Sync, from: self)
+                }
             case .deleteAccount:
                 let sheet = DeleteAccountBottomSheetViewController()
                 sheet.modalPresentationStyle = .overFullScreen
@@ -280,8 +294,8 @@ final class ProfileTabsHostViewController: UIViewController {
                         name: Constants.Storyboard.Main,
                         bundle: nil
                     ).instantiateViewController(withIdentifier: "LoginViewController") as! LoginViewController
-
-                    UIApplication.shared.setRootViewController(loginVC)
+                    let nav = UINavigationController(rootViewController: loginVC)
+                    UIApplication.shared.setRootViewController(nav)           
                 }
 
                 present(sheet, animated: true)

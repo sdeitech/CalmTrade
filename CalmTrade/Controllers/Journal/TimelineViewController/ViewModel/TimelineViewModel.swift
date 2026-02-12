@@ -19,6 +19,13 @@ final class TimelineViewModel {
 
     private(set) var items: [TimelineItem] = []
     private let api: ApiServiceProtocol = APIService()
+    
+    private var hasJournalAccess: Bool {
+        switch FeatureGate.shared.access(for: FeatureKey.journalUnlocked) {
+        case .allowed: true
+        case .locked: false
+        }
+    }
 
     func fetch() {
         let param = ["date": selectedDate]
@@ -46,11 +53,79 @@ final class TimelineViewModel {
     }
 
 
-    func item(at index: Int) -> TimelineItem {
-        items[index]
+    func displayItem(at index: Int) -> TimelineDisplayItem {
+        displayItems[index]
+    }
+    
+    var displayItems: [TimelineDisplayItem] {
+        guard !hasJournalAccess else {
+            return items.map { .entry($0) }
+        }
+
+        // Locked logic
+        var result: [TimelineDisplayItem] = []
+
+        let grouped = Dictionary(grouping: items) { $0.type }
+
+        for type in [TimelineItemType.Trades,
+                     TimelineItemType.Emotion,
+                     TimelineItemType.NoTrade] {
+
+            if let latest = grouped[type]?.sorted(by: {
+                ($0.timestamp ?? "") > ($1.timestamp ?? "")
+            }).first {
+                result.append(.entry(latest))
+            }
+        }
+
+        if !result.isEmpty {
+            result.append(.viewAllLocked)
+        }
+
+        return result
     }
 
-    var count: Int { items.count }
+    var count: Int { displayItems.count }
+    
+    func deleteItem(item: TimelineItem, completion: @escaping (Bool) -> Void) {
+
+        guard let id = item._id else {
+            completion(false)
+            return
+        }
+
+        let typePath: String
+
+        switch item.type {
+        case .Trades:
+            typePath = "trade"
+        case .Emotion:
+            typePath = "emotion"
+        case .NoTrade:
+            typePath = "notrade"
+        }
+
+        let path = "session/timeline/\(typePath)/\(id)"
+
+        api.startService(
+            with: .DELETE,
+            path: path,
+            parameters: nil,
+            files: nil,
+            modelType: EmptyResponse.self
+        ) { [weak self] result in
+            DispatchQueue.main.async {
+                switch result {
+                case .Success:
+                    self?.fetch()
+                    completion(true)
+                case .Error:
+                    completion(false)
+                }
+            }
+        }
+    }
+
 }
 
 extension TimelineViewModel {
@@ -189,3 +264,8 @@ extension TimelineViewModel {
     }
 }
 
+
+enum TimelineDisplayItem {
+    case entry(TimelineItem)
+    case viewAllLocked
+}

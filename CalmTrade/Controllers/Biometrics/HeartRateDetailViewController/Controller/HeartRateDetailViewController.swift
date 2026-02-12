@@ -21,6 +21,8 @@ final class HeartRateDetailViewController: BaseViewController {
     @IBOutlet private weak var lblLatestValue: UILabel!
 //    @IBOutlet private weak var activityIndicator: UIActivityIndicatorView!
     
+    @IBOutlet private weak var subscriptionBlurView: UIVisualEffectView!
+    
     // MARK: - Properties
     private let viewModel = HeartRateDetailViewModel()
     private var cancellables = Set<AnyCancellable>()
@@ -41,6 +43,7 @@ final class HeartRateDetailViewController: BaseViewController {
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         viewModel.startLiveHR()
+        subscriptionBlurView.isHidden = checkAccess()
     }
 
     override func viewWillDisappear(_ animated: Bool) {
@@ -146,6 +149,13 @@ final class HeartRateDetailViewController: BaseViewController {
 //        }
     }
     
+    private func checkAccess() -> Bool {
+        switch FeatureGate.shared.access(for: FeatureKey.chartsForBiometric) {
+        case .allowed: return true
+        case .locked: return false
+        }
+    }
+    
     @objc private func didSwipeLeft() { // older period
         viewModel.loadPreviousPeriod()
     }
@@ -164,5 +174,9 @@ final class HeartRateDetailViewController: BaseViewController {
     
     @IBAction private func btnBackTapped(_ sender: Any) {
         navigationController?.popViewController()
+    }
+    
+    @IBAction private func btnSubscribeTapped(_ sender: Any) {
+        FeatureGate.shared.presentUpgradeSheet(for: FeatureKey.chartsForBiometric, from: self)
     }
 }

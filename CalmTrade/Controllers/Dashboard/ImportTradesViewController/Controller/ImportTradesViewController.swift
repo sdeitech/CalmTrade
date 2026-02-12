@@ -82,24 +82,32 @@ final class ImportTradesViewController: BaseViewController, UIDocumentPickerDele
             }
         }
     }
+    
+    private func checkAccessToBrokerSync() -> Bool {
+        switch FeatureGate.shared.access(for: FeatureKey.brokerSync) {
+        case .allowed:
+            return true
+        case .locked:
+            return false
+        }
+    }
 
     // MARK: - Actions
     @IBAction func brokerButtonTapped(_ sender: UIButton) {
-
         if viewModel.connectedAccounts.isEmpty {
-            showAlert(message: "No broker accounts connected yet.")
+            showBrokerList()
             return
         }
-
+        
         let alert = UIAlertController(title: "Select Account", message: nil, preferredStyle: .actionSheet)
-
+        
         for acc in viewModel.connectedAccounts {
             alert.addAction(UIAlertAction(title: acc.accountName, style: .default) { _ in
                 self.brokerField.text = acc.accountName
                 self.viewModel.selectedBroker = acc.accountName
             })
         }
-
+        
         alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
         present(alert, animated: true)
     }
@@ -154,14 +162,19 @@ final class ImportTradesViewController: BaseViewController, UIDocumentPickerDele
 
     @IBAction func segmentChanged(_ sender: UISegmentedControl) {
         if sender.selectedSegmentIndex == 0 {
-            // Broker Sync Mode
-            importButton.setTitle("Connect Broker", for: .normal)
-            viewTimezone.isHidden = true
-            viewAccountName.isHidden = true
-            uploadButton.isHidden = true
-
-            // Fetch broker accounts immediately
-            viewModel.fetchConnectedAccounts()
+            if checkAccessToBrokerSync() {
+                // Broker Sync Mode
+                importButton.setTitle("Connect Broker", for: .normal)
+                viewTimezone.isHidden = true
+                viewAccountName.isHidden = true
+                uploadButton.isHidden = true
+                
+                // Fetch broker accounts immediately
+                viewModel.fetchConnectedAccounts()
+            } else {
+                sender.selectedSegmentIndex = 1
+                FeatureGate.shared.presentUpgradeSheet(for: FeatureKey.brokerSync, from: self)
+            }
 
         } else {
             // File Import Mode

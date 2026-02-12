@@ -103,14 +103,14 @@ final class LatestBiometricsCache {
             // Fallback to the repository's sleepHours metric if no sleep night available
             sleepDurationInHours = repo.latestValue(kind: .sleepHours)?.value
         }
-
-        debugPrint("=== LatestBiometricsCache Snapshot ===")
-        debugPrint("Heart Rate: \(String(describing: heartRate))")
-        debugPrint("RMSSD: \(String(describing: hrvInRmssd))")
-        debugPrint("SDNN: \(String(describing: hrvInSdnn))")
-        debugPrint("Resting Heart Rate: \(String(describing: restingHeartRate))")
-        debugPrint("Sleep Duration (Hours): \(String(describing: sleepDurationInHours))")
-        debugPrint("=====================================")
+//
+//        debugPrint("=== LatestBiometricsCache Snapshot ===")
+//        debugPrint("Heart Rate: \(String(describing: heartRate))")
+//        debugPrint("RMSSD: \(String(describing: hrvInRmssd))")
+//        debugPrint("SDNN: \(String(describing: hrvInSdnn))")
+//        debugPrint("Resting Heart Rate: \(String(describing: restingHeartRate))")
+//        debugPrint("Sleep Duration (Hours): \(String(describing: sleepDurationInHours))")
+//        debugPrint("=====================================")
 
         return CalmScoreBiometricInputs(
             heartRate:            heartRate,

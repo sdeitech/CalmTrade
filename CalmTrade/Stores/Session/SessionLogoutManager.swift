@@ -52,7 +52,8 @@ final class SessionLogoutManager {
             bundle: nil
         ).instantiateViewController(withIdentifier: "LoginViewController")
 
-        UIApplication.shared.setRootViewController(loginVC)
+        let nav = UINavigationController(rootViewController: loginVC)
+        UIApplication.shared.setRootViewController(nav)
 
         isLoggingOut = false
     }
@@ -82,29 +83,27 @@ extension UIApplication {
     }
     
     func setRootViewController(
-            _ viewController: UIViewController,
-            animated: Bool = true
-        ) {
-            guard
-                let windowScene = connectedScenes
-                    .first(where: { $0.activationState == .foregroundActive }) as? UIWindowScene,
-                let window = windowScene.windows.first
-            else { return }
-
-            if animated {
-                UIView.transition(
-                    with: window,
-                    duration: 0.3,
-                    options: .transitionCrossDissolve,
-                    animations: {
-                        window.rootViewController = viewController
-                    },
-                    completion: nil
-                )
-            } else {
-                window.rootViewController = viewController
-            }
-
-            window.makeKeyAndVisible()
+        _ viewController: UIViewController,
+        animated: Bool = true
+    ) {
+        guard let window = (UIApplication.shared.delegate as? AppDelegate)?.window else {
+            return
         }
+        
+        if animated {
+            UIView.transition(
+                with: window,
+                duration: 0.3,
+                options: .transitionCrossDissolve,
+                animations: {
+                    window.rootViewController = viewController
+                },
+                completion: nil
+            )
+        } else {
+            window.rootViewController = viewController
+        }
+        
+        window.makeKeyAndVisible()
+    }
 }

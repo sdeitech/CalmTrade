@@ -287,3 +287,7 @@ extension SceneDelegate: UNUserNotificationCenterDelegate {
         SessionLogoutManager.shared.logout(reason: notification.object)
     }
 }
+
+extension Notification.Name {
+    static let authDidExpire = Notification.Name("authDidExpire")
+}

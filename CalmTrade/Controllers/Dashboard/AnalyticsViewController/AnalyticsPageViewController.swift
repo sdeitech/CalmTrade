@@ -41,18 +41,53 @@ extension AnalyticsPageViewController: UIPageViewControllerDataSource {
 
     func pageViewController(_ pageViewController: UIPageViewController,
                             viewControllerBefore viewController: UIViewController) -> UIViewController? {
+
         guard let index = orderedVCs.firstIndex(of: viewController),
               index > 0 else { return nil }
+
+        let targetSection = vm.sectionFor(index: index - 1)
+
+        // Gate access here
+        if targetSection != .topAnalytics {
+            let access = FeatureGate.shared.access(for: FeatureKey.tradeAnalyticsStats)
+            switch access {
+            case .allowed:
+                return orderedVCs[index + 1]
+            case .locked(let plan):
+                FeatureGate.shared.presentUpgradeSheet(for: FeatureKey.tradeAnalyticsStats,
+                                                       from: self)
+                return nil
+            }
+        }
+
         return orderedVCs[index - 1]
     }
 
     func pageViewController(_ pageViewController: UIPageViewController,
                             viewControllerAfter viewController: UIViewController) -> UIViewController? {
+
         guard let index = orderedVCs.firstIndex(of: viewController),
               index < orderedVCs.count - 1 else { return nil }
+
+        let targetSection = vm.sectionFor(index: index + 1)
+
+        // Gate access here
+        if targetSection != .topAnalytics {
+            let access = FeatureGate.shared.access(for: FeatureKey.tradeAnalyticsStats)
+            switch access {
+            case .allowed:
+                return orderedVCs[index + 1]
+            case .locked:
+                FeatureGate.shared.presentUpgradeSheet(for: FeatureKey.tradeAnalyticsStats,
+                                                       from: self)
+                return nil
+            }
+        }
+
         return orderedVCs[index + 1]
     }
 }
+
 
 extension AnalyticsPageViewController: UIPageViewControllerDelegate {
     func pageViewController(_ pageViewController: UIPageViewController,

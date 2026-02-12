@@ -32,6 +32,8 @@ class HomeViewController: BaseViewController, UICollectionViewDataSource, UIColl
     @IBOutlet weak var collectionViewContainerHeight: NSLayoutConstraint!
     
     @IBOutlet weak var btnSetSession: UIButton!
+    
+    @IBOutlet weak var subscriptionBlurView: UIVisualEffectView!
 
     //MARK: - Properties
 
@@ -78,7 +80,6 @@ class HomeViewController: BaseViewController, UICollectionViewDataSource, UIColl
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         viewModel.fetchEmotionTags()
-        enforceDailySessionSetupIfNeeded()
         refreshUserProfileIfNeeded()
     }
      
@@ -212,12 +213,13 @@ class HomeViewController: BaseViewController, UICollectionViewDataSource, UIColl
     }
     
     private func refreshUserProfileIfNeeded() {
-        guard let token = SessionManager.shared.accessToken else { return }
+        guard let token = UserDefaults.standard.string(forKey: "accessToken") else { return }
 
         profileService.refreshProfile(accessToken: token) { _, error in
             if let error {
                 print("⚠️ Profile refresh failed:", error)
             }
+            self.applyCalmScoreAccess()
         }
     }
 
@@ -305,6 +307,19 @@ class HomeViewController: BaseViewController, UICollectionViewDataSource, UIColl
         vc.showsBackButton = showsBackButton
         navigationController?.pushViewController(vc)
     }
+    
+    //MARK: - Subscription Logic
+    private func applyCalmScoreAccess() {
+        switch FeatureGate.shared.access(for: FeatureKey.calmScoreGauge) {
+        case .allowed:
+            subscriptionBlurView.isHidden = true
+
+        case .locked:
+            subscriptionBlurView.isHidden = false
+        }
+    }
+
+    
 
 
     // MARK: - Actions
@@ -375,6 +390,11 @@ class HomeViewController: BaseViewController, UICollectionViewDataSource, UIColl
         }
 
         present(vc, animated: true)
+    }
+    
+    @IBAction func btnSubscribeTapped(_ sender: Any) {
+        let vc = UIStoryboard(name: Constants.Storyboard.Profile, bundle: nil).instantiateViewController(withIdentifier: "SubscriptionViewController") as! SubscriptionViewController
+        self.navigationController?.pushViewController(vc, animated: true)
     }
 
 

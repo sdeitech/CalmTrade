@@ -17,6 +17,8 @@ public struct ApiEnvelope<T: Decodable>: Decodable {
 
 // MARK: - Server DTO (matches your Get Profile JSON)
 public struct UserProfileDTO: Decodable {
+
+    // MARK: - Core identity
     public let id: String
     public let displayName: String?
     public let email: String?
@@ -24,11 +26,15 @@ public struct UserProfileDTO: Decodable {
     public let accountId: String?
     public let twoFactorEnabled: Bool?
 
-    // Dates come as ISO8601 strings from server; parse in VM
+    // MARK: - Dates (ISO8601 strings)
     public let createdAt: String?
     public let lastLoginAt: String?
 
-    // Not provided by API (kept for future compatibility; VM prefers Polar 360)
+    // MARK: - Subscription / Features (NEW)
+    public let subscription: SubscriptionDTO?
+    public let features: [String: FeatureDTO]?
+
+    // MARK: - Future compatibility (not from API)
     public let birthday: Date? = nil
     public let heightCm: Double? = nil
     public let weightKg: Double? = nil
@@ -42,6 +48,8 @@ public struct UserProfileDTO: Decodable {
         case lastLoginAt
         case accountId
         case twoFactorEnabled
+        case subscription
+        case features
     }
 }
 
