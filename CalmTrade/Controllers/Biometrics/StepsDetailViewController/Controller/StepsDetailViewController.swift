@@ -25,6 +25,7 @@ final class StepsDetailViewController: BaseViewController {
     // SwiftUI host
     private var host: UIHostingController<StepsSwiftChartView>?
     private var currentBars: [StepBar] = []
+    private let calendar = Calendar.current
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -106,6 +107,7 @@ final class StepsDetailViewController: BaseViewController {
                 let seg = self.segmentedControl.selectedSegmentIndex
                 let range: StepsChartRange = (seg == 0) ? .daily : (seg == 1 ? .weekly : .monthly)
                 self.updateChart(bars: bars, xDomain: domain, yMax: yMax, range: range)
+                self.logStepsDetail(range: range, bars: bars, domain: domain)
             }
             .store(in: &cancellables)
 
@@ -142,5 +144,53 @@ final class StepsDetailViewController: BaseViewController {
 
     @IBAction private func backTapped(_ sender: Any) {
         navigationController?.popViewController()
+    }
+
+    private func logStepsDetail(range: StepsChartRange, bars: [StepBar], domain: ClosedRange<Date>) {
+        let (start, end) = window(for: range)
+        let repo = CTMetricsRepository.shared
+
+        let periodMerged = Int(StepEngine.stepsTotal(from: start, to: end).rounded())
+        let periodPolar = repo.series(kind: .steps, from: start, to: end, source: .polar360)
+            .reduce(0) { $0 + Int($1.value.rounded()) }
+        let periodApple = repo.series(kind: .steps, from: start, to: end, source: .appleHealth)
+            .reduce(0) { $0 + Int($1.value.rounded()) }
+        let barsTotal = Int(bars.reduce(0.0) { $0 + $1.value }.rounded())
+
+        print("=== StepsDetail \(rangeLabel(range)) ===")
+        print("Window: \(start) -> \(end)")
+        print("Chart Domain: \(domain.lowerBound) -> \(domain.upperBound)")
+        print("Bars Count: \(bars.count)")
+        print("Bars Total: \(barsTotal)")
+        print("Merged Total (StepEngine): \(periodMerged)")
+        print("Polar Raw Total: \(periodPolar)")
+        print("Apple Raw Total: \(periodApple)")
+        print("==============================")
+    }
+
+    private func rangeLabel(_ range: StepsChartRange) -> String {
+        switch range {
+        case .daily: return "Daily"
+        case .weekly: return "Weekly"
+        case .monthly: return "Monthly"
+        }
+    }
+
+    private func window(for range: StepsChartRange) -> (Date, Date) {
+        let now = Date()
+        switch range {
+        case .daily:
+            let start = calendar.startOfDay(for: now)
+            let end = calendar.date(byAdding: .day, value: 1, to: start) ?? now
+            return (start, end)
+        case .weekly:
+            let start = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: now)) ?? now
+            let end = calendar.date(byAdding: .day, value: 7, to: start) ?? now
+            return (start, end)
+        case .monthly:
+            let start = calendar.date(from: calendar.dateComponents([.year, .month], from: now)) ?? now
+            let end = calendar.date(byAdding: .month, value: 1, to: start) ?? now
+            return (start, end)
+        }
     }
 }

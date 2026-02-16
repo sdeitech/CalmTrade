@@ -12,6 +12,15 @@ import os.log
 // MARK: - Metrics (RHR / Sleep / Daily Activity)
 
 extension PolarManager {
+    fileprivate func normalizePolarSleepScore(rawScore: Int) -> Int {
+        // Polar payloads can carry 1...5 ratings instead of 0...100 sleep score.
+        // Convert rating scale to app score scale so 4 maps close to Polar's ~79.
+        if (1...5).contains(rawScore) {
+            let scaled = (rawScore * 20) - 1
+            return max(0, min(100, scaled))
+        }
+        return max(0, min(100, rawScore))
+    }
 
     // MARK: - Resting HR (RHR) computation
 
@@ -44,8 +53,12 @@ extension PolarManager {
         debugPrint("Average RHR: \(average) BPM")
         debugPrint("===================================")
 
-        // Enhanced RHR calculation with sleep data integration
-        let enhancedRHR = calculateEnhancedRHR(rrsMs: rrsMs, source: source, date: Date())
+        // Polar fallback estimate from RR-only stream.
+        // Primary nightly RHR should come from Polar sleep packet processing.
+        guard let enhancedRHR = computePolarRHRFromRRIntervals(rrsMs) else {
+            debugPrint("No valid RR-derived RHR candidate after filtering")
+            return
+        }
         
         NSLog("[PM][RHR] computed RHR median \(enhancedRHR) bpm from \(rrsMs.count) RR samples")
 
@@ -123,55 +136,105 @@ extension PolarManager {
     
     // MARK: - Sleep Quality Multiplier Calculation
     
+//    private func getSleepQualityMultiplier(for date: Date, source: CTMetricSource) -> Double {
+//        // Default multiplier if no sleep data is available
+//        var multiplier: Double = 1.0
+//        
+//        // Try to get sleep score from repository for the previous night (more relevant for RHR)
+//        let cal = Calendar.current
+//        let yesterday = cal.date(byAdding: .day, value: -1, to: date) ?? date.addingTimeInterval(-86400)
+//        let startOfYesterday = cal.startOfDay(for: yesterday)
+//        let endOfYesterday = cal.startOfDay(for: date)
+//        
+//        // Get sleep score for the previous night (most relevant for today's RHR)
+//        if let sleepScoreValue = CTMetricsRepository.shared.series(
+//            kind: .sleepScore,
+//            from: startOfYesterday,
+//            to: endOfYesterday,
+//            source: source
+//        ).last?.value {
+//            // Normalize sleep score to multiplier (higher sleep score = better recovery = potentially lower RHR)
+//            // A good sleep score (high value) should result in a multiplier that reflects better recovery
+//            let normalizedScore = sleepScoreValue / 100.0
+//            // Invert the relationship: better sleep quality leads to lower RHR (better cardiovascular fitness)
+//            // So if sleep score is high, we might expect a slightly lower RHR
+//            multiplier = max(0.85, min(1.15, 1.05 - (normalizedScore * 0.1))) // Range 0.85-1.15
+//        } else {
+//            // If no sleep score, try to infer from sleep stages
+//            let sleepSegments = SleepRepository.shared.unifiedSegments(from: startOfYesterday, to: endOfYesterday)
+//            
+//            if !sleepSegments.isEmpty {
+//                // Calculate sleep efficiency based on deep sleep and total sleep time
+//                let deepSleepSegments = sleepSegments.filter { $0.stage == .deep }
+//                let remSleepSegments = sleepSegments.filter { $0.stage == .rem }
+//                let totalSleepTime = sleepSegments.reduce(0) { $0 + $0.end.timeIntervalSince($0.start) }
+//                let deepSleepTime = deepSleepSegments.reduce(0) { $0 + $0.end.timeIntervalSince($0.start) }
+//                let remSleepTime = remSleepSegments.reduce(0) { $0 + $0.end.timeIntervalSince($0.start) }
+//                
+//                if totalSleepTime > 0 {
+//                    let deepSleepRatio = deepSleepTime / totalSleepTime
+//                    let remSleepRatio = remSleepTime / totalSleepTime
+//                    
+//                    // Better sleep quality indicators (adequate deep and REM sleep) suggest better recovery
+//                    // This might correlate with lower RHR (better cardiovascular fitness)
+//                    let sleepQualityIndex = (deepSleepRatio * 0.6) + (remSleepRatio * 0.4)
+//                    multiplier = max(0.85, min(1.15, 1.05 - (sleepQualityIndex * 0.15))) // Adjust based on sleep quality
+//                }
+//            }
+//        }
+//        
+//        return multiplier
+//    }
+    
     private func getSleepQualityMultiplier(for date: Date, source: CTMetricSource) -> Double {
-        // Default multiplier if no sleep data is available
-        var multiplier: Double = 1.0
-        
-        // Try to get sleep score from repository for the previous night (more relevant for RHR)
-        let cal = Calendar.current
-        let yesterday = cal.date(byAdding: .day, value: -1, to: date) ?? date.addingTimeInterval(-86400)
-        let startOfYesterday = cal.startOfDay(for: yesterday)
-        let endOfYesterday = cal.startOfDay(for: date)
-        
-        // Get sleep score for the previous night (most relevant for today's RHR)
-        if let sleepScoreValue = CTMetricsRepository.shared.series(
-            kind: .sleepScore,
-            from: startOfYesterday,
-            to: endOfYesterday,
-            source: source
-        ).last?.value {
-            // Normalize sleep score to multiplier (higher sleep score = better recovery = potentially lower RHR)
-            // A good sleep score (high value) should result in a multiplier that reflects better recovery
-            let normalizedScore = sleepScoreValue / 100.0
-            // Invert the relationship: better sleep quality leads to lower RHR (better cardiovascular fitness)
-            // So if sleep score is high, we might expect a slightly lower RHR
-            multiplier = max(0.85, min(1.15, 1.05 - (normalizedScore * 0.1))) // Range 0.85-1.15
-        } else {
-            // If no sleep score, try to infer from sleep stages
-            let sleepSegments = SleepRepository.shared.unifiedSegments(from: startOfYesterday, to: endOfYesterday)
+            // Default multiplier if no sleep data is available
+            var multiplier: Double = 1.0
             
-            if !sleepSegments.isEmpty {
-                // Calculate sleep efficiency based on deep sleep and total sleep time
-                let deepSleepSegments = sleepSegments.filter { $0.stage == .deep }
-                let remSleepSegments = sleepSegments.filter { $0.stage == .rem }
-                let totalSleepTime = sleepSegments.reduce(0) { $0 + $0.end.timeIntervalSince($0.start) }
-                let deepSleepTime = deepSleepSegments.reduce(0) { $0 + $0.end.timeIntervalSince($0.start) }
-                let remSleepTime = remSleepSegments.reduce(0) { $0 + $0.end.timeIntervalSince($0.start) }
+            // Try to get sleep score from repository for the previous night (more relevant for RHR)
+            let cal = Calendar.current
+            let yesterday = cal.date(byAdding: .day, value: -1, to: date) ?? date.addingTimeInterval(-86400)
+            let startOfYesterday = cal.startOfDay(for: yesterday)
+            let endOfYesterday = cal.startOfDay(for: date)
+            
+            // Get sleep score for the previous night (most relevant for today's RHR)
+            if let sleepScoreValue = CTMetricsRepository.shared.series(
+                kind: .sleepScore,
+                from: startOfYesterday,
+                to: endOfYesterday,
+                source: source
+            ).last?.value {
+                // Normalize sleep score to multiplier (higher sleep score = better recovery = potentially lower RHR)
+                // A good sleep score (high value) should result in a multiplier that reflects better recovery
+                let normalizedScore = sleepScoreValue / 100.0
+                // Invert the relationship: better sleep quality leads to lower RHR (better cardiovascular fitness)
+                // So if sleep score is high, we might expect a slightly lower RHR
+                multiplier = max(0.85, min(1.15, 1.05 - (normalizedScore * 0.1))) // Range 0.85-1.15
+            } else {
+                // If no sleep score, try to infer from sleep stages
+                let sleepSegments = SleepRepository.shared.unifiedSegments(from: startOfYesterday, to: endOfYesterday)
                 
-                if totalSleepTime > 0 {
-                    let deepSleepRatio = deepSleepTime / totalSleepTime
-                    let remSleepRatio = remSleepTime / totalSleepTime
+                if !sleepSegments.isEmpty {
+                    // Calculate sleep efficiency based on deep sleep and total sleep time
+                    let deepSleepSegments = sleepSegments.filter { $0.stage == .deep }
+                    let remSleepSegments = sleepSegments.filter { $0.stage == .rem }
+                    let totalSleepTime = sleepSegments.reduce(0) { $0 + $1.end.timeIntervalSince($1.start) }
+                    let deepSleepTime = deepSleepSegments.reduce(0) { $0 + $1.end.timeIntervalSince($1.start) }
+                    let remSleepTime = remSleepSegments.reduce(0) { $0 + $1.end.timeIntervalSince($1.start) }
                     
-                    // Better sleep quality indicators (adequate deep and REM sleep) suggest better recovery
-                    // This might correlate with lower RHR (better cardiovascular fitness)
-                    let sleepQualityIndex = (deepSleepRatio * 0.6) + (remSleepRatio * 0.4)
-                    multiplier = max(0.85, min(1.15, 1.05 - (sleepQualityIndex * 0.15))) // Adjust based on sleep quality
+                    if totalSleepTime > 0 {
+                        let deepSleepRatio = deepSleepTime / totalSleepTime
+                        let remSleepRatio = remSleepTime / totalSleepTime
+                        
+                        // Better sleep quality indicators (adequate deep and REM sleep) suggest better recovery
+                        // This might correlate with lower RHR (better cardiovascular fitness)
+                        let sleepQualityIndex = (deepSleepRatio * 0.6) + (remSleepRatio * 0.4)
+                        multiplier = max(0.85, min(1.15, 1.05 - (sleepQualityIndex * 0.15))) // Adjust based on sleep quality
+                    }
                 }
             }
+            
+            return multiplier
         }
-        
-        return multiplier
-    }
     
     // MARK: - RHR calculation with sleep stage correlation
     
@@ -207,8 +270,9 @@ extension PolarManager {
             // Calculate weighted RHR based on sleep stages
             finalRHR = calculateWeightedRHR(bpmValues: bpmValues, sleepSegments: sleepSegs)
         } else {
-            // Fall back to the enhanced calculation with sleep quality multiplier
-            finalRHR = calculateEnhancedRHR(rrsMs: rrsMs, source: source, date: Date())
+            // Fall back to RR-only Polar estimate.
+            finalRHR = computePolarRHRFromRRIntervals(rrsMs)
+                ?? bpmValues.sorted()[bpmValues.count / 2]
         }
 
         debugPrint("BPM values: \(bpmValues)")
@@ -302,7 +366,135 @@ extension PolarManager {
         }
     }
 
+    // MARK: - Polar-native RHR estimators
+
+    private func computePolarRHRFromRRIntervals(_ rrsMs: [Int]) -> Double? {
+        let bpmValues = rrsMs
+            .map { 60000.0 / Double($0) }
+            .filter { $0.isFinite && $0 >= 30.0 && $0 <= 220.0 }
+
+        guard !bpmValues.isEmpty else { return nil }
+        return computePolarRHRFromBPMSeries(bpmValues)
+    }
+
+    private func computePolarRHRFromBPMSeries(_ bpmValues: [Double]) -> Double? {
+        let filtered = filterOutlierBPM(bpmValues)
+        let base = filtered.isEmpty ? bpmValues : filtered
+        guard !base.isEmpty else { return nil }
+
+        // Resting estimate should favor the lower stable band, not full-night average.
+        let sorted = base.sorted()
+        let lowerBandCount = max(1, Int(Double(sorted.count) * 0.20))
+        let lowerBand = Array(sorted.prefix(lowerBandCount))
+        let candidate = median(lowerBand)
+        return max(30.0, min(120.0, candidate))
+    }
+
+    private func computePolarRHRFromSleepPacket(_ packet: P360SleepPacket) -> Double? {
+        let previousRhr = CTMetricsRepository.shared
+            .latestValue(kind: .restingHeartRate, source: .polar360)?
+            .value
+
+        let result = RHRAvgComputer.compute(
+            hkRhr: nil,
+            hkAgeHours: nil,
+            packet: packet,
+            previousRhr: previousRhr
+        )
+
+        guard let value = result.valueBpm, value.isFinite else { return nil }
+        return max(30.0, min(120.0, value))
+    }
+
+    private func median(_ values: [Double]) -> Double {
+        let sorted = values.sorted()
+        guard !sorted.isEmpty else { return .nan }
+        let mid = sorted.count / 2
+        if sorted.count % 2 == 0 {
+            return (sorted[mid - 1] + sorted[mid]) / 2.0
+        }
+        return sorted[mid]
+    }
+
     // MARK: - Sleep metrics (Polar SDK 6.7)
+
+    private func extractBestPolarSleepScore(from sleep: PolarSleepData.PolarSleepAnalysisResult) -> Int? {
+        // Prefer explicit score fields over qualitative/user rating fields.
+        let preferredKeys = [
+            "sleepScore",
+            "sleep_score",
+            "nightlySleepScore",
+            "sleepScoreValue",
+            "totalSleepScore",
+            "score"
+        ]
+
+        var candidates: [(key: String, value: Int)] = []
+
+        func appendCandidate(label: String, anyValue: Any) {
+            let key = label.lowercased()
+            if let v = anyValue as? Int, (0...100).contains(v) {
+                candidates.append((key, normalizePolarSleepScore(rawScore: v)))
+                return
+            }
+            if let v = anyValue as? Double {
+                let intV = Int(v.rounded())
+                if (0...100).contains(intV) {
+                    candidates.append((key, normalizePolarSleepScore(rawScore: intV)))
+                }
+                return
+            }
+            if let v = anyValue as? Float {
+                let intV = Int(v.rounded())
+                if (0...100).contains(intV) {
+                    candidates.append((key, normalizePolarSleepScore(rawScore: intV)))
+                }
+                return
+            }
+        }
+
+        func walk(_ value: Any, depth: Int) {
+            guard depth <= 3 else { return }
+
+            let mirror = Mirror(reflecting: value)
+            if mirror.displayStyle == .optional {
+                if let child = mirror.children.first {
+                    walk(child.value, depth: depth + 1)
+                }
+                return
+            }
+
+            for child in mirror.children {
+                guard let label = child.label else { continue }
+                appendCandidate(label: label, anyValue: child.value)
+                walk(child.value, depth: depth + 1)
+            }
+        }
+
+        walk(sleep, depth: 0)
+
+        // 1) Explicit preferred key match.
+        for wanted in preferredKeys {
+            if let match = candidates.first(where: { $0.key == wanted.lowercased() }) {
+                return match.value
+            }
+        }
+
+        // 2) Any key that looks like "*sleep*score*".
+        if let fuzzy = candidates.first(where: { $0.key.contains("sleep") && $0.key.contains("score") }) {
+            return fuzzy.value
+        }
+
+        // 3) Last resort: user rating raw value.
+        if let rating = sleep.userSleepRating?.rawValue {
+            // Polar rating is often 1...5, not a final 0...100 sleep score.
+            if (0...100).contains(rating) {
+                return normalizePolarSleepScore(rawScore: rating)
+            }
+        }
+
+        return nil
+    }
 
     func processPolarSleep(_ sleep: PolarSleepData.PolarSleepAnalysisResult, for deviceId: String) {
         NSLog("[PM][Sleep] received PolarSleepData for \(deviceId)")
@@ -353,8 +545,9 @@ extension PolarManager {
 
         CTMetricsRepository.shared.upsertSleepEpisode(episode)
 
-        // Store the Polar sleep score as a separate metric
-        if let sleepScore = sleep.userSleepRating?.rawValue {
+        // Store Polar sleep score as a separate metric.
+        // Prefer true score-like payload fields; fallback to userSleepRating.
+        if let sleepScore = extractBestPolarSleepScore(from: sleep) {
             _ = CTMetricsRepository.shared.upsert(
                 kind: .sleepScore,
                 value: Double(sleepScore),
@@ -362,10 +555,6 @@ extension PolarManager {
                 source: .polar360,
                 date: end
             )
-            debugPrint("=== POLAR SLEEP SCORE STORED ===")
-            debugPrint("Polar sleep score: \(sleepScore)")
-            debugPrint("Date: \(end)")
-            debugPrint("================================")
         }
     }
 
@@ -451,16 +640,17 @@ extension PolarManager {
     func submitPolar360SleepPacket(_ packet: P360SleepPacket) {
         NSLog("[PM][Cloud] ingesting Polar360 sleep packet ending \(packet.sleepEnd)")
 
-        // Persist average last-night RHR
-        if let avg = packet.hrSeries.map(\.bpm).average() {
+        // Persist Polar-native nightly RHR (restful-window based), not simple HR average.
+        if let rhr = computePolarRHRFromSleepPacket(packet) {
             _ = CTMetricsRepository.shared.upsert(
                 kind: .restingHeartRate,
-                value: avg,
+                value: rhr,
                 unit: "bpm",
                 source: .polar360,
                 date: packet.sleepEnd
             )
-            NSLog("[PM][Cloud] stored RHR \(avg) bpm at \(packet.sleepEnd)")
+            onRHRComputed?(rhr, .polar360, connectedDevice?.id ?? "Polar360")
+            NSLog("[PM][Cloud] stored nightly Polar RHR \(rhr) bpm at \(packet.sleepEnd)")
         }
 
         // Store HR samples
@@ -605,6 +795,18 @@ final class PolarBleSleepSource: Polar360SleepSource {
                 continue
             }
 
+            // Persist sleep score (if present in Polar payload) so UI can use Polar's native value.
+            if let score = extractBestPolarSleepScore(from: night), (0...100).contains(score) {
+                _ = CTMetricsRepository.shared.upsert(
+                    kind: .sleepScore,
+                    value: Double(score),
+                    unit: "",
+                    source: .polar360,
+                    date: end
+                )
+                NSLog("[P360SleepSource] Stored Polar sleep score=%d at %@", score, end as NSDate)
+            }
+
             // Sort phases by time to ensure correct chronological order
             let sortedPhases = phases.sorted { $0.secondsFromSleepStart < $1.secondsFromSleepStart }
             
@@ -659,5 +861,76 @@ final class PolarBleSleepSource: Polar360SleepSource {
         
         NSLog("[P360SleepSource] Mapped \(out.count) segments")
         return out
+    }
+
+    private func extractBestPolarSleepScore(from sleep: PolarSleepData.PolarSleepAnalysisResult) -> Int? {
+        let preferredKeys = [
+            "sleepScore",
+            "sleep_score",
+            "nightlySleepScore",
+            "sleepScoreValue",
+            "totalSleepScore",
+            "score"
+        ]
+
+        var candidates: [(key: String, value: Int)] = []
+
+        func appendCandidate(label: String, anyValue: Any) {
+            let key = label.lowercased()
+            if let v = anyValue as? Int, (0...100).contains(v) {
+                candidates.append((key, PolarManager.shared.normalizePolarSleepScore(rawScore: v)))
+                return
+            }
+            if let v = anyValue as? Double {
+                let intV = Int(v.rounded())
+                if (0...100).contains(intV) {
+                    candidates.append((key, PolarManager.shared.normalizePolarSleepScore(rawScore: intV)))
+                }
+                return
+            }
+            if let v = anyValue as? Float {
+                let intV = Int(v.rounded())
+                if (0...100).contains(intV) {
+                    candidates.append((key, PolarManager.shared.normalizePolarSleepScore(rawScore: intV)))
+                }
+                return
+            }
+        }
+
+        func walk(_ value: Any, depth: Int) {
+            guard depth <= 3 else { return }
+
+            let mirror = Mirror(reflecting: value)
+            if mirror.displayStyle == .optional {
+                if let child = mirror.children.first {
+                    walk(child.value, depth: depth + 1)
+                }
+                return
+            }
+
+            for child in mirror.children {
+                guard let label = child.label else { continue }
+                appendCandidate(label: label, anyValue: child.value)
+                walk(child.value, depth: depth + 1)
+            }
+        }
+
+        walk(sleep, depth: 0)
+
+        for wanted in preferredKeys {
+            if let match = candidates.first(where: { $0.key == wanted.lowercased() }) {
+                return match.value
+            }
+        }
+        if let fuzzy = candidates.first(where: { $0.key.contains("sleep") && $0.key.contains("score") }) {
+            return fuzzy.value
+        }
+        if let rating = sleep.userSleepRating?.rawValue {
+            // Polar rating is often 1...5, not a final 0...100 sleep score.
+            if (0...100).contains(rating) {
+                return PolarManager.shared.normalizePolarSleepScore(rawScore: rating)
+            }
+        }
+        return nil
     }
 }

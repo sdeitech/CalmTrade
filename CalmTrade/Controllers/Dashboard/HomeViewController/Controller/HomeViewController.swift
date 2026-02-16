@@ -214,11 +214,7 @@ class HomeViewController: BaseViewController, UICollectionViewDataSource, UIColl
     private func refreshUserProfileIfNeeded() {
         guard let token = SessionManager.shared.accessToken else { return }
 
-        profileService.refreshProfile(accessToken: token) { _, error in
-            if let error {
-                print("⚠️ Profile refresh failed:", error)
-            }
-        }
+        profileService.refreshProfile(accessToken: token) { _, _ in }
     }
 
     private func setupCollectionViews() {

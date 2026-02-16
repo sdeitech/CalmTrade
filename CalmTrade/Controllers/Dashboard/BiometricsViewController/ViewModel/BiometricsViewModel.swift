@@ -79,34 +79,57 @@ final class BiometricsViewModel: ObservableObject {
     private let workQ = DispatchQueue(label: "ct.biometrics.vm", qos: .userInitiated)
     private var pendingWork: DispatchWorkItem?
 
+    // MARK: - Source policy
+    private var isPolarConnected: Bool {
+        switch DeviceManager.shared.currentSource {
+        case .polar360, .polarH10: return true
+        case .appleHealthKit: return false
+        }
+    }
+
+    private var activeSleepSource: SleepDataSource {
+        isPolarConnected ? .ct360 : .appleHealth
+    }
+
+    private func preferredSources(for kind: CTMetricKind) -> [CTMetricSource] {
+        if isPolarConnected {
+            switch kind {
+            case .heartRate, .rmssd, .sdnn, .restingHeartRate:
+                return [.polar360, .polarH10]
+            case .sleepScore, .sleepCore, .sleepDeep, .sleepREM, .sleepAwake, .sleepHours, .steps:
+                return [.polar360]
+            }
+        }
+        return [.appleHealth]
+    }
+
+    private func latestMetricScoped(kind: CTMetricKind, from start: Date, to end: Date) -> (value: Double, date: Date, source: CTMetricSource)? {
+        func isValid(_ value: Double) -> Bool {
+            switch kind {
+            case .heartRate, .rmssd, .sdnn, .restingHeartRate:
+                return value > 0
+            default:
+                return true
+            }
+        }
+
+        for src in preferredSources(for: kind) {
+            let points = repo.series(kind: kind, from: start, to: end, source: src).filter { isValid($0.value) }
+            if let latest = points.max(by: { $0.date < $1.date }) {
+                return (latest.value, latest.date, src)
+            }
+        }
+        // Safety fallback so UI doesn't go blank while preferred source is catching up.
+        let any = repo.series(kind: kind, from: start, to: end, source: nil).filter { isValid($0.value) }
+        if let latest = any.max(by: { $0.date < $1.date }) {
+            return (latest.value, latest.date, latest.source)
+        }
+        return nil
+    }
+
     // MARK: - Lifecycle
     func start() {
         _installObserversIfNeeded()
-        // print("=== BiometricsViewModel Full HealthKit Data ===")
-        // print("Latest HR: \(String(describing: repo.latestValue(kind: .heartRate)?.value))")
-        // print("Latest RMSSD: \(String(describing: repo.latestValue(kind: .rmssd)?.value))")
-        // print("Latest SDNN: \(String(describing: repo.latestValue(kind: .sdnn)?.value))")
-        // print("Latest Resting HR: \(String(describing: repo.latestValue(kind: .restingHeartRate)?.value))")
-
-        // Print sleep data from different sources
-        let cal = Calendar.current
-        let today = cal.startOfDay(for: Date())
-        let tomorrow = cal.date(byAdding: .day, value: 1, to: today)!
-
-        let sleepCoreData = repo.series(kind: .sleepCore, from: today, to: tomorrow, source: .polar360)
-        let sleepDeepData = repo.series(kind: .sleepDeep, from: today, to: tomorrow, source: .polar360)
-        let sleepREMData = repo.series(kind: .sleepREM, from: today, to: tomorrow, source: .polar360)
-        let sleepAwakeData = repo.series(kind: .sleepAwake, from: today, to: tomorrow, source: .polar360)
-        let sleepScoreData = repo.series(kind: .sleepScore, from: today, to: tomorrow, source: .polar360)
-
-        debugPrint("Polar360 SleepCore data: \(sleepCoreData.map { "\($0.value)s at \($0.date)" })")
-        debugPrint("Polar360 SleepDeep data: \(sleepDeepData.map { "\($0.value)s at \($0.date)" })")
-        debugPrint("Polar360 SleepREM data: \(sleepREMData.map { "\($0.value)s at \($0.date)" })")
-        debugPrint("Polar360 SleepAwake data: \(sleepAwakeData.map { "\($0.value)s at \($0.date)" })")
-        debugPrint("Polar360 SleepScore data: \(sleepScoreData.map { "\($0.value) at \($0.date)" })")
-
-        debugPrint("SleepRepository latest night: \(String(describing: SleepRepository.shared.latestNight()))")
-        // print("===============================================")
 
         scheduleFullRefresh()
         // Add a small delay to ensure sleep data is loaded after other data
@@ -156,108 +179,23 @@ final class BiometricsViewModel: ObservableObject {
                 self.validateDataFreshness()
             }
 
-            // Read everything cheap/synchronous first (off-main)
-            let hr   = self.repo.latestValue(kind: .heartRate)?.value
-            let rm   = self.repo.latestValue(kind: .rmssd)?.value
-            let sd   = self.repo.latestValue(kind: .sdnn)?.value
-            let rhr  = self.repo.latestValue(kind: .restingHeartRate)?.value
+            // Read metrics according to active source policy.
+            let metricsStart = Calendar.current.date(byAdding: .day, value: -7, to: Date()) ?? Date().addingTimeInterval(-7 * 86400)
+            let hr   = self.latestMetricScoped(kind: .heartRate, from: metricsStart, to: Date())?.value
+            let rm   = self.latestMetricScoped(kind: .rmssd, from: metricsStart, to: Date())?.value
+            let sd   = self.latestMetricScoped(kind: .sdnn, from: metricsStart, to: Date())?.value
+            let rhr  = self.latestMetricScoped(kind: .restingHeartRate, from: metricsStart, to: Date())?.value
 
-            // Unified sleep hours from repository (Polar360 > HealthKit)
+            // Unified sleep hours from repository (single source of truth).
             let now = Date()
             let stepsToday = self.stepsSource.stepsToday()
-
-            // Try to get sleep data from SleepRepository first
-            var todaySleep = SleepRepository.shared.latestNight()?.hours
-
-            // print("=== BiometricsViewModel HealthKit Access ===")
-            // print("SleepRepository latest night: \(String(describing: SleepRepository.shared.latestNight()))")
-
-            // If no sleep data from repository, try to get from HealthKit directly
-            if todaySleep == nil {
-                let cal = Calendar.current
-                let today = cal.startOfDay(for: Date())
-                let tomorrow = cal.date(byAdding: .day, value: 1, to: today)!
-
-                // Check for sleep data in HealthKit
-                let sleepCoreData = self.repo.series(kind: .sleepCore, from: today, to: tomorrow, source: .polar360)
-                let sleepDeepData = self.repo.series(kind: .sleepDeep, from: today, to: tomorrow, source: .polar360)
-                let sleepREMData = self.repo.series(kind: .sleepREM, from: today, to: tomorrow, source: .polar360)
-
-                debugPrint("Polar360 SleepCore data count: \(sleepCoreData.count)")
-                debugPrint("Polar360 SleepDeep data count: \(sleepDeepData.count)")
-                debugPrint("Polar360 SleepREM data count: \(sleepREMData.count)")
-
-                let sleepData = sleepCoreData + sleepDeepData + sleepREMData
-
-                debugPrint("Total Polar360 sleep data count: \(sleepData.count)")
-
-                if !sleepData.isEmpty {
-                    todaySleep = sleepData.reduce(0.0) { $0 + $1.value } / 3600.0
-                    debugPrint("Calculated todaySleep from Polar360: \(todaySleep!) hours")
-                } else {
-                    debugPrint("No sleep data found in Polar360 for today")
-                }
-            } else {
-                // print("Using sleep data from SleepRepository: \(todaySleep!) hours")
-            }
-
-            // Calculate sleep time based on raw Polar data (from sleep start to end)
-            var todaySleepRaw: Double? = nil
-
-            // Try to get raw sleep time from SleepRepository (from sleep start to end)
-            if let latestNight = SleepRepository.shared.latestNight() {
-                // Calculate total time from sleep start to end (including awake periods)
-                // Try to get the unified sleep segments from the repository
-                let cal = Calendar.current
-                let today = cal.startOfDay(for: latestNight.date)
-                let tomorrow = cal.date(byAdding: .day, value: 1, to: today)!
-
-                // Get unified sleep segments from SleepRepository
-                let unifiedSegments = SleepRepository.shared.unifiedSegments(from: today, to: tomorrow)
-
-                if !unifiedSegments.isEmpty {
-                    let sleepStart = unifiedSegments.min { $0.start < $1.start }?.start ?? Date()
-                    let sleepEnd = unifiedSegments.max { $0.end < $1.end }?.end ?? Date()
-
-                    let totalSleepTime = sleepEnd.timeIntervalSince(sleepStart) / 3600.0 // Convert to hours
-                    todaySleepRaw = totalSleepTime
-
-                    debugPrint("Raw Polar sleep calculation: Start=\(sleepStart), End=\(sleepEnd), Total=\(totalSleepTime) hours")
-                } else {
-                    // Alternative: Get all sleep segments for this night to calculate raw time from the metrics repo
-                    let allSegments = repo.series(kind: .sleepCore, from: today, to: tomorrow, source: .polar360)
-                                  + repo.series(kind: .sleepDeep, from: today, to: tomorrow, source: .polar360)
-                                  + repo.series(kind: .sleepREM, from: today, to: tomorrow, source: .polar360)
-                                  + repo.series(kind: .sleepAwake, from: today, to: tomorrow, source: .polar360)
-
-                    if !allSegments.isEmpty {
-                        let sleepStart = allSegments.min { $0.date < $1.date }?.date ?? Date()
-                        let sleepEnd = allSegments.max { $0.date < $1.date }?.date ?? Date()
-
-                        let totalSleepTime = sleepEnd.timeIntervalSince(sleepStart) / 3600.0 // Convert to hours
-                        todaySleepRaw = totalSleepTime
-
-                        debugPrint("Raw Polar sleep calculation: Start=\(sleepStart), End=\(sleepEnd), Total=\(totalSleepTime) hours")
-                    } else {
-                        // Fallback to the original hours if no segments found
-                        todaySleepRaw = latestNight.hours
-                        debugPrint("Using fallback calculation: \(latestNight.hours) hours")
-                    }
-                }
-            }
-
-            // Use raw calculation instead of sum of sleep segments
-            todaySleep = todaySleepRaw
+            let todaySleep = SleepRepository.shared.latestNight(preferredSource: self.activeSleepSource)?.hours
+                ?? SleepRepository.shared.latestNight()?.hours
 
             // Previous-night unified sleep
             let prevAnchor = Calendar.current.date(byAdding: .day, value: -1, to: now) ?? now.addingTimeInterval(-86400)
-            var prevNightRaw: Double? = nil
-
-            if let prevNightObj = self.latestNightBefore(date: prevAnchor) {
-                // For the previous night, we'll use the hours value since it's already calculated
-                // The latestNightBefore function returns (date: Date, hours: Double) tuple
-                prevNightRaw = prevNightObj.hours
-            }
+            let prevNightRaw = SleepRepository.shared.latestNightBefore(date: prevAnchor, preferredSource: self.activeSleepSource)?.hours
+                ?? SleepRepository.shared.latestNightBefore(date: prevAnchor)?.hours
 
             // print("Previous night sleep: \(String(describing: prevNight))")
             // print("===========================================")
@@ -341,24 +279,26 @@ final class BiometricsViewModel: ObservableObject {
         let cal = Calendar.current
         let start = cal.date(byAdding: .day, value: -2, to: now) ?? now.addingTimeInterval(-172800)
 
-        func latestFromSeries(kind: CTMetricKind, source: CTMetricSource? = nil) -> (value: Double, date: Date)? {
-            let samples = repo.series(kind: kind, from: start, to: now, source: source)
-            guard let s = samples.max(by: { $0.date < $1.date }) else { return nil }
-            return (s.value, s.date)
-        }
-
         // Heart Rate
-        if let latest = repo.latestValue(kind: .heartRate) {
+        if let latest = latestMetricScoped(kind: .heartRate, from: start, to: now) {
             let v = latest.value
             data.heartRateLatest  = "\(Int(v))"
             data.heartRateAverage = "\(Int(v))"
         } else { data.heartRateLatest = "--"; data.heartRateAverage = "--" }
 
+        // When Polar is connected, mirror live HR from CalmScore hub trend so tile updates in real time.
+        if isPolarConnected,
+           let liveHr = lastCalmProps?.trend.hrBpm,
+           liveHr > 0 {
+            let live = "\(Int(liveHr.rounded()))"
+            data.heartRateLatest = live
+            data.heartRateAverage = live
+        }
+
         // RMSSD
-        if let (v, d) =
-            latestFromSeries(kind: .rmssd, source: .polar360) ??
-            latestFromSeries(kind: .rmssd, source: .polarH10) ??
-            latestFromSeries(kind: .rmssd, source: nil) {
+        if let latest = latestMetricScoped(kind: .rmssd, from: start, to: now) {
+            let v = latest.value
+            let d = latest.date
             data.rmssdLatest = "\(Int(v))"; data.rmssdAverage = "\(Int(v))"; data.rmssdTimestamp = formatTimeStamp(d)
             data.lastRmssdUpdate = d // Track last RMSSD update time in BiometricData
             lastRmssdUpdate = d // Also track in ViewModel
@@ -372,11 +312,9 @@ final class BiometricsViewModel: ObservableObject {
         }
 
         // SDNN
-        if let (v, d) =
-            latestFromSeries(kind: .sdnn, source: .polar360) ??
-            latestFromSeries(kind: .sdnn, source: .polarH10) ??
-            latestFromSeries(kind: .sdnn, source: .appleHealth) ??
-            latestFromSeries(kind: .sdnn, source: nil) {
+        if let latest = latestMetricScoped(kind: .sdnn, from: start, to: now) {
+            let v = latest.value
+            let d = latest.date
             data.sdnnLatest = "\(Int(v))"; data.sdnnAverage = "\(Int(v))"; data.sdnnTimestamp = formatTimeStamp(d)
             data.lastSdnnUpdate = d // Track last SDNN update time in BiometricData
             lastSdnnUpdate = d // Also track in ViewModel
@@ -389,7 +327,9 @@ final class BiometricsViewModel: ObservableObject {
         }
 
         // Resting HR
-        if let (v, d) = latestFromSeries(kind: .restingHeartRate, source: nil) {
+        if let latest = latestMetricScoped(kind: .restingHeartRate, from: start, to: now) {
+            let v = latest.value
+            let d = latest.date
             data.restingHeartRateLatest = "\(Int(v))"
             data.restingHeartRateAverage = "\(Int(v))"
             data.restingHeartRateTimestamp = formatTimeStamp(d)
@@ -411,7 +351,7 @@ final class BiometricsViewModel: ObservableObject {
             data.sleepTotal = formatHours(h)
             // print("Using chosenSleepHours: \(h)")
 
-            if let night = SleepRepository.shared.latestNight() {
+            if let night = SleepRepository.shared.latestNight(preferredSource: activeSleepSource) ?? SleepRepository.shared.latestNight() {
                 data.sleepDate = formatDate(night.date)
                 // print("Using SleepRepository night date: \(night.date)")
             } else {
@@ -421,7 +361,7 @@ final class BiometricsViewModel: ObservableObject {
         } else {
             // print("No chosenSleepHours, trying repository...")
             // If no chosen sleep hours, try to get from repository
-            if let latestNight = SleepRepository.shared.latestNight() {
+            if let latestNight = SleepRepository.shared.latestNight(preferredSource: activeSleepSource) ?? SleepRepository.shared.latestNight() {
                 // Calculate raw sleep time from sleep start to end (to match Polar's calculation)
                 // Try to get the unified sleep segments from the repository first
                 let cal = Calendar.current
@@ -438,13 +378,13 @@ final class BiometricsViewModel: ObservableObject {
                     totalSleepTime = sleepEnd.timeIntervalSince(sleepStart) / 3600.0 // Convert to hours
 
                     data.sleepTotal = formatHours(totalSleepTime)  // Use raw calculation
-                    debugPrint("Using raw Polar calculation: \(totalSleepTime) hours from \(sleepStart) to \(sleepEnd)")
                 } else {
                     // Alternative: Get all sleep segments for this night to calculate raw time from the metrics repo
-                    let allSegments = repo.series(kind: .sleepCore, from: today, to: tomorrow, source: .polar360)
-                                  + repo.series(kind: .sleepDeep, from: today, to: tomorrow, source: .polar360)
-                                  + repo.series(kind: .sleepREM, from: today, to: tomorrow, source: .polar360)
-                                  + repo.series(kind: .sleepAwake, from: today, to: tomorrow, source: .polar360)
+                    let sourceMetric: CTMetricSource = isPolarConnected ? .polar360 : .appleHealth
+                    let allSegments = repo.series(kind: .sleepCore, from: today, to: tomorrow, source: sourceMetric)
+                                  + repo.series(kind: .sleepDeep, from: today, to: tomorrow, source: sourceMetric)
+                                  + repo.series(kind: .sleepREM, from: today, to: tomorrow, source: sourceMetric)
+                                  + repo.series(kind: .sleepAwake, from: today, to: tomorrow, source: sourceMetric)
 
                     if !allSegments.isEmpty {
                         let sleepStart = allSegments.min { $0.date < $1.date }?.date ?? Date()
@@ -452,12 +392,10 @@ final class BiometricsViewModel: ObservableObject {
                         totalSleepTime = sleepEnd.timeIntervalSince(sleepStart) / 3600.0 // Convert to hours
 
                         data.sleepTotal = formatHours(totalSleepTime)  // Use raw calculation
-                        debugPrint("Using raw Polar calculation: \(totalSleepTime) hours from \(sleepStart) to \(sleepEnd)")
                     } else {
                         // Fallback to the original hours if no segments found
                         totalSleepTime = latestNight.hours
                         data.sleepTotal = formatHours(latestNight.hours)  // Use original calculation
-                        debugPrint("Using fallback calculation: \(latestNight.hours) hours")
                     }
                 }
 
@@ -470,22 +408,26 @@ final class BiometricsViewModel: ObservableObject {
                 let today = cal.startOfDay(for: Date())
                 let tomorrow = cal.date(byAdding: .day, value: 1, to: today)!
 
-                // Check for Polar sleep data specifically
-                let polarSleepData = repo.series(kind: .sleepCore, from: today, to: tomorrow, source: .polar360)
-                              + repo.series(kind: .sleepDeep, from: today, to: tomorrow, source: .polar360)
-                              + repo.series(kind: .sleepREM, from: today, to: tomorrow, source: .polar360)
+                // Check for active-source sleep data specifically
+                let sourceMetric: CTMetricSource = isPolarConnected ? .polar360 : .appleHealth
+                let sourceSleepData = repo.series(kind: .sleepCore, from: today, to: tomorrow, source: sourceMetric)
+                              + repo.series(kind: .sleepDeep, from: today, to: tomorrow, source: sourceMetric)
+                              + repo.series(kind: .sleepREM, from: today, to: tomorrow, source: sourceMetric)
 
-                if !polarSleepData.isEmpty {
+                if !sourceSleepData.isEmpty {
                     // Calculate raw sleep time from sleep start to end (to match Polar's calculation)
-                    let sleepStart = polarSleepData.min { $0.date < $1.date }?.date ?? Date()
-                    let sleepEnd = polarSleepData.max { $0.date < $1.date }?.date ?? Date()
+                    let sleepStart = sourceSleepData.min { $0.date < $1.date }?.date ?? Date()
+                    let sleepEnd = sourceSleepData.max { $0.date < $1.date }?.date ?? Date()
                     let totalSleepTime = sleepEnd.timeIntervalSince(sleepStart) / 3600.0 // Convert to hours
 
                     data.sleepTotal = formatHours(totalSleepTime)  // Use raw calculation
                     data.sleepDate = formatDate(today)
-                    debugPrint("Using raw Polar calculation: \(totalSleepTime) hours from \(sleepStart) to \(sleepEnd)")
                 } else {
-                    // print("No Polar360 sleep data, checking Apple Health...")
+                    if isPolarConnected {
+                        data.sleepTotal = "--"
+                        data.sleepDate = ""
+                        return data
+                    }
 
                     // Check Apple Health sleep data
                     let asleep = repo.series(kind: .sleepCore, from: today, to: tomorrow, source: .appleHealth)
@@ -500,7 +442,6 @@ final class BiometricsViewModel: ObservableObject {
 
                         data.sleepTotal = formatHours(totalSleepTime)  // Use raw calculation
                         data.sleepDate = formatDate(today)
-                        debugPrint("Using raw Apple Health calculation: \(totalSleepTime) hours from \(sleepStart) to \(sleepEnd)")
                     } else {
                         // print("No sleep data found in repositories, falling back to hub data...")
 
@@ -525,33 +466,19 @@ final class BiometricsViewModel: ObservableObject {
 
 
         // Steps (today + 7-day avg)
-        // Let's debug which source data we're getting
-        debugPrint("=== BiometricsViewModel Steps Debug ===")
-        let polarStepsToday = StepEngine.seriesPerMinute(from: cal.startOfDay(for: Date()), to: Date()).filter { point in
-            guard let sourceData = repo.latestValue(kind: .steps, source: .polar360) else { return false }
-            return abs(point.0.timeIntervalSince(sourceData.date)) < 3600 // Within 1 hour
-        }.reduce(0) { $0 + $1.1 }
-
-        let appleStepsToday = StepEngine.seriesPerMinute(from: cal.startOfDay(for: Date()), to: Date()).filter { point in
-            guard let sourceData = repo.latestValue(kind: .steps, source: .appleHealth) else { return false }
-            return abs(point.0.timeIntervalSince(sourceData.date)) < 3600 // Within 1 hour
-        }.reduce(0) { $0 + $1.1 }
-
-        debugPrint("Steps Today (Raw): \(stepsToday)")
-        debugPrint("Polar steps today (estimated): \(polarStepsToday)")
-        debugPrint("Apple Health steps today (estimated): \(appleStepsToday)")
-        debugPrint("Using source with higher priority (Polar360 > Apple Health)")
-        debugPrint("======================================")
-
         data.stepsToday = "\(Int(stepsToday))"
         data.stepsDate  = formatDate(now)
         var sum7 = 0.0
+        var daysWithData = 0
         for i in 0..<7 {
             let d0 = cal.date(byAdding: .day, value: -i, to: cal.startOfDay(for: now))!
             let d1 = cal.date(byAdding: .day, value: 1, to: d0)!
-            sum7 += StepEngine.stepsTotal(from: d0, to: d1)
+            let daily = StepEngine.stepsTotal(from: d0, to: d1)
+            sum7 += daily
+            if daily > 0 { daysWithData += 1 }
         }
-        data.stepsWeeklyAverage = "\(Int(round(sum7 / 7.0)))"
+        let divisor: Double = daysWithData > 0 ? Double(daysWithData) : 7.0
+        data.stepsWeeklyAverage = "\(Int(round(sum7 / divisor)))"
 
         return data
     }
@@ -622,34 +549,28 @@ final class BiometricsViewModel: ObservableObject {
     @objc private func _refreshSleepScore() {
         // print("=== BiometricsViewModel _refreshSleepScore ===")
 
-        // Prefer explicit numeric Sleep Score if available - prioritize Polar score over Apple Health
-        let sleepScores = [repo.latestValue(kind: .sleepScore, source: .polar360),
-                           repo.latestValue(kind: .sleepScore, source: .appleHealth)]
-            .compactMap({ $0 })
-        
-        // Prioritize Polar scores first, then Apple Health if no Polar data
-        if let latestPolarScore = sleepScores.filter({ $0.source == .polar360 }).max(by: { $0.date < $1.date }) {
-            debugPrint("Found Polar sleep score: \(latestPolarScore.value) from \(latestPolarScore.source.rawValue) at \(latestPolarScore.date)")
-            onSleepScoreDidUpdate?(SleepScoreTile(score: Int(latestPolarScore.value.rounded()), date: latestPolarScore.date, source: latestPolarScore.source))
+        let sleepMetricSource: CTMetricSource = isPolarConnected ? .polar360 : .appleHealth
+
+        // Prefer explicit numeric sleep score from the active source only.
+        if let latestScore = repo.latestValue(kind: .sleepScore, source: sleepMetricSource) {
+            let normalized = normalizeSleepScoreValue(latestScore.value)
+            onSleepScoreDidUpdate?(SleepScoreTile(score: normalized, date: latestScore.date, source: latestScore.source))
             return
-        } else if let latestAppleHealthScore = sleepScores.filter({ $0.source == .appleHealth }).max(by: { $0.date < $1.date }) {
-            debugPrint("Found Apple Health sleep score: \(latestAppleHealthScore.value) from \(latestAppleHealthScore.source.rawValue) at \(latestAppleHealthScore.date)")
-            onSleepScoreDidUpdate?(SleepScoreTile(score: Int(latestAppleHealthScore.value.rounded()), date: latestAppleHealthScore.date, source: latestAppleHealthScore.source))
+        }
+        if let latestAny = repo.latestValue(kind: .sleepScore, source: nil) {
+            let normalized = normalizeSleepScoreValue(latestAny.value)
+            onSleepScoreDidUpdate?(SleepScoreTile(score: normalized, date: latestAny.date, source: latestAny.source))
             return
-        } else {
-            // print("No explicit sleep score found")
         }
 
-        // First, try to get sleep hours from SleepRepository (which should include Polar data)
-        if let latestNight = SleepRepository.shared.latestNight() {
+        // First, try to get sleep hours from source-scoped SleepRepository.
+        if let latestNight = SleepRepository.shared.latestNight(preferredSource: activeSleepSource) ?? SleepRepository.shared.latestNight() {
             // Calculate raw sleep time from sleep start to end (to match Polar's calculation)
-            // Try to get the unified sleep segments from the repository first
+            // Use source-scoped segments from latestNight.
             let cal = Calendar.current
             let today = cal.startOfDay(for: latestNight.date)
             let tomorrow = cal.date(byAdding: .day, value: 1, to: today)!
-
-            // Get unified sleep segments from SleepRepository
-            let unifiedSegments = SleepRepository.shared.unifiedSegments(from: today, to: tomorrow)
+            let unifiedSegments = latestNight.segments
 
             var totalSleepTime: Double = 0
             if !unifiedSegments.isEmpty {
@@ -667,7 +588,6 @@ final class BiometricsViewModel: ObservableObject {
                         sleepGoalMinutes: 420 // Default to 7 hours (420 minutes), could be configurable
                     )
 
-                    debugPrint("Using Polar-style calculation for sleep score: \(totalScore) from \(sleepStart) to \(sleepEnd)")
 
                     // Determine the source based on available data
                     let source: CTMetricSource = {
@@ -676,22 +596,21 @@ final class BiometricsViewModel: ObservableObject {
                         let today = cal.startOfDay(for: Date())
                         let tomorrow = cal.date(byAdding: .day, value: 1, to: today)!
 
-                        let polarSleepData = repo.series(kind: .sleepCore, from: today, to: tomorrow, source: .polar360)
-                                      + repo.series(kind: .sleepDeep, from: today, to: tomorrow, source: .polar360)
-                                      + repo.series(kind: .sleepREM, from: today, to: tomorrow, source: .polar360)
+                        let sourceSleepData = repo.series(kind: .sleepCore, from: today, to: tomorrow, source: sleepMetricSource)
+                                      + repo.series(kind: .sleepDeep, from: today, to: tomorrow, source: sleepMetricSource)
+                                      + repo.series(kind: .sleepREM, from: today, to: tomorrow, source: sleepMetricSource)
 
-                        return !polarSleepData.isEmpty ? .polar360 : .appleHealth
+                        return sleepMetricSource
                     }()
-                    debugPrint("Calculated sleep score: \(totalScore) from \(source.rawValue)")
                     onSleepScoreDidUpdate?(SleepScoreTile(score: totalScore, date: latestNight.date, source: source))
                     return
                 }
             } else {
                 // Alternative: Get all sleep segments for this night to calculate raw time from the metrics repo
-                let allSegments = repo.series(kind: .sleepCore, from: today, to: tomorrow, source: .polar360)
-                              + repo.series(kind: .sleepDeep, from: today, to: tomorrow, source: .polar360)
-                              + repo.series(kind: .sleepREM, from: today, to: tomorrow, source: .polar360)
-                              + repo.series(kind: .sleepAwake, from: today, to: tomorrow, source: .polar360)
+                let allSegments = repo.series(kind: .sleepCore, from: today, to: tomorrow, source: sleepMetricSource)
+                              + repo.series(kind: .sleepDeep, from: today, to: tomorrow, source: sleepMetricSource)
+                              + repo.series(kind: .sleepREM, from: today, to: tomorrow, source: sleepMetricSource)
+                              + repo.series(kind: .sleepAwake, from: today, to: tomorrow, source: sleepMetricSource)
 
                 if !allSegments.isEmpty {
                     let sleepStart = allSegments.min { $0.date < $1.date }?.date ?? Date()
@@ -708,7 +627,6 @@ final class BiometricsViewModel: ObservableObject {
                             sleepGoalMinutes: 420 // Default to 7 hours (420 minutes), could be configurable
                         )
 
-                        debugPrint("Using Polar-style calculation for sleep score: \(totalScore) from \(sleepStart) to \(sleepEnd)")
 
                         // Determine the source based on available data
                         let source: CTMetricSource = {
@@ -717,13 +635,12 @@ final class BiometricsViewModel: ObservableObject {
                             let today = cal.startOfDay(for: Date())
                             let tomorrow = cal.date(byAdding: .day, value: 1, to: today)!
 
-                            let polarSleepData = repo.series(kind: .sleepCore, from: today, to: tomorrow, source: .polar360)
-                                          + repo.series(kind: .sleepDeep, from: today, to: tomorrow, source: .polar360)
-                                          + repo.series(kind: .sleepREM, from: today, to: tomorrow, source: .polar360)
+                            let sourceSleepData = repo.series(kind: .sleepCore, from: today, to: tomorrow, source: sleepMetricSource)
+                                          + repo.series(kind: .sleepDeep, from: today, to: tomorrow, source: sleepMetricSource)
+                                          + repo.series(kind: .sleepREM, from: today, to: tomorrow, source: sleepMetricSource)
 
-                            return !polarSleepData.isEmpty ? .polar360 : .appleHealth
+                            return sleepMetricSource
                         }()
-                        debugPrint("Calculated sleep score: \(totalScore) from \(source.rawValue)")
                         onSleepScoreDidUpdate?(SleepScoreTile(score: totalScore, date: latestNight.date, source: source))
                         return
                     }
@@ -751,13 +668,12 @@ final class BiometricsViewModel: ObservableObject {
                             let today = cal.startOfDay(for: Date())
                             let tomorrow = cal.date(byAdding: .day, value: 1, to: today)!
 
-                            let polarSleepData = repo.series(kind: .sleepCore, from: today, to: tomorrow, source: .polar360)
-                                          + repo.series(kind: .sleepDeep, from: today, to: tomorrow, source: .polar360)
-                                          + repo.series(kind: .sleepREM, from: today, to: tomorrow, source: .polar360)
+                            let sourceSleepData = repo.series(kind: .sleepCore, from: today, to: tomorrow, source: sleepMetricSource)
+                                          + repo.series(kind: .sleepDeep, from: today, to: tomorrow, source: sleepMetricSource)
+                                          + repo.series(kind: .sleepREM, from: today, to: tomorrow, source: sleepMetricSource)
 
-                            return !polarSleepData.isEmpty ? .polar360 : .appleHealth
+                            return sleepMetricSource
                         }()
-                        debugPrint("Calculated sleep score: \(totalScore) from \(source.rawValue)")
                         onSleepScoreDidUpdate?(SleepScoreTile(score: totalScore, date: latestNight.date, source: source))
                         return
                     }
@@ -770,13 +686,11 @@ final class BiometricsViewModel: ObservableObject {
         let cal = Calendar.current
         let today = cal.startOfDay(for: Date())
         let tomorrow = cal.date(byAdding: .day, value: 1, to: today)!
-        let asleep = repo.series(kind: .sleepCore, from: today, to: tomorrow, source: .polar360)
-                  + repo.series(kind: .sleepDeep, from: today, to: tomorrow, source: .polar360)
-                  + repo.series(kind: .sleepREM,  from: today, to: tomorrow, source: .polar360)
-        let awake = repo.series(kind: .sleepAwake, from: today, to: tomorrow, source: .polar360)
+        let asleep = repo.series(kind: .sleepCore, from: today, to: tomorrow, source: sleepMetricSource)
+                  + repo.series(kind: .sleepDeep, from: today, to: tomorrow, source: sleepMetricSource)
+                  + repo.series(kind: .sleepREM,  from: today, to: tomorrow, source: sleepMetricSource)
+        let awake = repo.series(kind: .sleepAwake, from: today, to: tomorrow, source: sleepMetricSource)
 
-        debugPrint("Polar360 Asleep segments count: \(asleep.count)")
-        debugPrint("Polar360 Awake segments count: \(awake.count)")
 
         guard !asleep.isEmpty else {
             // print("No asleep segments found, checking hub for sleep data...")
@@ -791,7 +705,7 @@ final class BiometricsViewModel: ObservableObject {
                 let totalScore = min(100, durationScore + qualityScore + consistencyScore)
 
                 // print("Creating sleep score from hub data: \(totalScore) based on \(hubSleepHours) hours")
-                onSleepScoreDidUpdate?(SleepScoreTile(score: totalScore, date: Date(), source: .polar360))
+                onSleepScoreDidUpdate?(SleepScoreTile(score: totalScore, date: Date(), source: sleepMetricSource))
             } else {
                 // print("No sleep data available anywhere, sending nil")
                 onSleepScoreDidUpdate?(nil)
@@ -802,7 +716,7 @@ final class BiometricsViewModel: ObservableObject {
         // Calculate raw sleep time from sleep start to end (to match Polar's calculation)
         if !asleep.isEmpty {
             // Get the earliest start time and latest end time from all segments
-            let allSegments = asleep + repo.series(kind: .sleepAwake, from: today, to: tomorrow, source: .polar360)
+            let allSegments = asleep + repo.series(kind: .sleepAwake, from: today, to: tomorrow, source: sleepMetricSource)
             let sleepStart = allSegments.min { $0.date < $1.date }?.date ?? Date()
             let sleepEnd = allSegments.max { $0.date < $1.date }?.date ?? Date()
             let totalSleepTime = sleepEnd.timeIntervalSince(sleepStart) / 3600.0 // Convert to hours
@@ -816,19 +730,31 @@ final class BiometricsViewModel: ObservableObject {
             let score = Int(round(durationPart + bedtimePart + interruptionPart))
             let nightEnd = (asleep.last?.date ?? Date())
 
-            debugPrint("Calculated sleep score from Polar360 segments: \(score) with \(totalSleepTime) hours (raw calculation from \(sleepStart) to \(sleepEnd))")
-            onSleepScoreDidUpdate?(SleepScoreTile(score: score, date: nightEnd, source: .polar360))
+            onSleepScoreDidUpdate?(SleepScoreTile(score: score, date: nightEnd, source: sleepMetricSource))
         } else {
-            debugPrint("No sleep segments found, sending nil")
             onSleepScoreDidUpdate?(nil)
         }
+    }
+
+    private func normalizeSleepScoreValue(_ value: Double) -> Int {
+        let rounded = Int(value.rounded())
+        // Support old/legacy persisted 1...5 scores.
+        if (1...5).contains(rounded) {
+            return max(0, min(100, (rounded * 20) - 1))
+        }
+        return max(0, min(100, rounded))
     }
 
     // MARK: - Utils
     private func formatTimeStamp(_ date: Date) -> String { let f = DateFormatter(); f.dateFormat = "h:mm:ss a"; return f.string(from: date) }
     private func formatFullTimestamp(_ date: Date) -> String { let f = DateFormatter(); f.dateFormat = "M/d/yyyy h:mm:ss a"; return f.string(from: date) }
     private func formatDate(_ date: Date) -> String { let f = DateFormatter(); f.dateFormat = "d MMM"; return f.string(from: date) }
-    private func formatHours(_ hours: Double) -> String { let h = Int(hours); let m = Int((hours - Double(h)) * 60.0); return "\(h)hr \(m)min" }
+    private func formatHours(_ hours: Double) -> String {
+        let totalMinutes = Int((hours * 60.0).rounded())
+        let h = totalMinutes / 60
+        let m = totalMinutes % 60
+        return "\(h)hr \(m)min"
+    }
 
     private func windowForLastNight(anchoredAt now: Date = Date()) -> (start: Date, end: Date) {
         let cal = Calendar.current
@@ -839,29 +765,7 @@ final class BiometricsViewModel: ObservableObject {
     }
 
     private func latestNightBefore(date: Date) -> (date: Date, hours: Double)? {
-        // We look 48h back from the anchor
-        let start = date.addingTimeInterval(-48 * 3600)
-        let segs = SleepRepository.shared.unifiedSegments(from: start, to: date)
-        guard let last = segs.last else { return nil }
-
-        let bucket = SleepRepository.shared.sleepDayStart(for: last.start)
-        let nextBucket = bucket.addingTimeInterval(24 * 3600)
-
-        let nightSegs = SleepRepository.shared.unifiedSegments(from: bucket, to: nextBucket)
-
-        // Calculate raw sleep time from sleep start to end (to match Polar's calculation)
-        if !nightSegs.isEmpty {
-            let sleepStart = nightSegs.min { $0.start < $1.start }?.start ?? Date()
-            let sleepEnd = nightSegs.max { $0.end < $1.end }?.end ?? Date()
-            let totalSleepTime = sleepEnd.timeIntervalSince(sleepStart) / 3600.0 // Convert to hours
-            return (bucket, totalSleepTime)
-        } else {
-            // Fallback to the original calculation if no segments found
-            let secs = nightSegs.reduce(0) {
-                $0 + max(0, $1.end.timeIntervalSince($1.start))
-            }
-            return (bucket, secs / 3600.0)
-        }
+        SleepRepository.shared.latestNightBefore(date: date)
     }
 
     // MARK: - App Lifecycle Methods
@@ -939,7 +843,6 @@ final class BiometricsViewModel: ObservableObject {
         var lightSleep: TimeInterval = 0
         var deepSleep: TimeInterval = 0
         var remSleep: TimeInterval = 0
-        var awakeTime: TimeInterval = 0
         
         // Calculate duration for each sleep stage
         for segment in unifiedSegments {
@@ -952,13 +855,12 @@ final class BiometricsViewModel: ObservableObject {
             case .rem:
                 remSleep += duration
             case .awake:
-                awakeTime += duration
+                break
             }
         }
         
         let actualSleep = lightSleep + deepSleep + remSleep
         let actualSleepHours = actualSleep / 3600.0
-        let timeInBedHours = timeInBed
         
         // 4. Sleep Amount Score (0-100)
         let sleepGoalSeconds = Double(sleepGoalMinutes) * 60.0
@@ -979,27 +881,53 @@ final class BiometricsViewModel: ObservableObject {
         
         // 5. Interruptions & Solidity
         let actualSleepPercent = (actualSleep / (timeInBed * 3600.0)) * 100.0
-        
-        // Count wake segments and long interruptions
-        let wakeSegments = unifiedSegments.filter { $0.stage == .awake }
-        let longInterruptions = wakeSegments.filter { ($0.end.timeIntervalSince($0.start) / 60.0) >= 1.0 } // 1+ minute interruptions
-        let longInterruptionTime = longInterruptions.reduce(0) { $0 + $1.end.timeIntervalSince($1.start) }
-        let longInterruptionPercent = (longInterruptionTime / (timeInBed * 3600.0)) * 100.0
-        
+
+        // Merge nearby awake segments to avoid over-counting micro-awakenings.
+        let wakeSegments = unifiedSegments
+            .filter { $0.stage == .awake }
+            .sorted { $0.start < $1.start }
+
+        let wakeMergeGap: TimeInterval = 5 * 60 // 5 min
+        var wakeEpisodes: [SleepSegment] = []
+        for seg in wakeSegments {
+            if var last = wakeEpisodes.last,
+               seg.start.timeIntervalSince(last.end) <= wakeMergeGap {
+                wakeEpisodes.removeLast()
+                wakeEpisodes.append(
+                    SleepSegment(
+                        stage: .awake,
+                        start: last.start,
+                        end: max(last.end, seg.end),
+                        source: last.source
+                    )
+                )
+            } else {
+                wakeEpisodes.append(seg)
+            }
+        }
+
+        let wakeSeconds = wakeEpisodes.reduce(0.0) { $0 + $1.end.timeIntervalSince($1.start) }
+        let wakeMinutes = wakeSeconds / 60.0
+        let wakePercent = (wakeSeconds / (timeInBed * 3600.0)) * 100.0
+
         let solidityScore: Int
-        if longInterruptionPercent < 3.0 {
+        if wakePercent < 3.0 {
             solidityScore = 90
-        } else if longInterruptionPercent < 6.0 {
+        } else if wakePercent < 6.0 {
             solidityScore = 75
-        } else if longInterruptionPercent < 10.0 {
+        } else if wakePercent < 10.0 {
             solidityScore = 60
         } else {
             solidityScore = 45
         }
-        
+
         // 6. Continuity Score (0-5)
-        let wakeCount = Double(wakeSegments.count)
-        let continuityScore = max(0.0, min(5.0, 5.0 - (wakeCount * 0.15) - (Double(longInterruptions.count) * 0.25)))
+        // Gentler penalty than previous version; aligns closer to Polar behavior.
+        let interruptionCount = Double(wakeEpisodes.count)
+        let continuityScore = max(
+            0.0,
+            min(5.0, 5.0 - (interruptionCount * 0.12) - (wakeMinutes * 0.02))
+        )
         
         // 7. Regeneration Score (0-100)
         let deepRatio = deepSleep / actualSleep

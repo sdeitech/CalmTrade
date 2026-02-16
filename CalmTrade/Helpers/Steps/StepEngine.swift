@@ -11,7 +11,6 @@ import Foundation
 enum StepEngine {
     // MARK: - Dependencies
     private static let repo = CTMetricsRepository.shared
-    private static let priority: [CTMetricSource] = [.polar360, .appleHealth]
 
     // MARK: - Cache
     // Cache by [start,end) minute window (second precision is fine here).
@@ -44,15 +43,9 @@ enum StepEngine {
             return cached
         }
 
-        debugPrint("=== StepEngine Debug ===")
-        debugPrint("Fetching steps data from \(start) to \(end)")
-
         // Pull per-source raw points (detached value structs)
         let polar = repo.series(kind: .steps, from: start, to: end, source: .polar360)
         let apple = repo.series(kind: .steps, from: start, to: end, source: .appleHealth)
-
-        debugPrint("Polar360 steps data count: \(polar.count)")
-        debugPrint("Apple Health steps data count: \(apple.count)")
 
         // Aggregate to minute buckets per source
         func aggregate(_ xs: [CTMetricsRepository.CTBiometricPoint]) -> [(Date, Int)] {
@@ -66,39 +59,18 @@ enum StepEngine {
             return m.map { ($0.key, $0.value) }
         }
 
-        let aPolar = aggregate(polar)
-        let aApple = aggregate(apple)
+        let aPolar = aggregate(polar).sorted { $0.0 < $1.0 }
+        let aApple = aggregate(apple).sorted { $0.0 < $1.0 }
 
-        debugPrint("Aggregated Polar360 minutes: \(aPolar.count)")
-        debugPrint("Aggregated Apple Health minutes: \(aApple.count)")
+        // Strict source policy:
+        // - Polar connected -> Polar only
+        // - Polar disconnected -> Apple only
+        let isPolarConnected: Bool = {
+            if case .connected = PolarManager.shared.connectionState { return true }
+            return false
+        }()
 
-        // Merge with priority (fold lower priority first, overwrite with higher)
-        var merged: [Date: (CTMetricSource, Int)] = [:]
-        func fold(_ xs: [(Date, Int)], src: CTMetricSource) {
-            for (ts, v) in xs {
-                if let cur = merged[ts] {
-                    let keepCur = priority.firstIndex(of: cur.0)! <= priority.firstIndex(of: src)!
-                    if !keepCur { merged[ts] = (src, v) }
-                } else {
-                    merged[ts] = (src, v)
-                }
-            }
-        }
-
-        fold(aApple, src: .appleHealth)
-        fold(aPolar, src: .polar360)
-
-        debugPrint("After merging with priority (Polar360 > Apple Health): \(merged.count) unique time slots")
-
-        // Count how many slots came from each source
-        let polarCount = merged.values.filter { $0.0 == .polar360 }.count
-        let appleCount = merged.values.filter { $0.0 == .appleHealth }.count
-        debugPrint("Final merged data - Polar360: \(polarCount) minutes, Apple Health: \(appleCount) minutes")
-
-        let result = merged.keys.sorted().map { ($0, merged[$0]!.1) }
-
-        debugPrint("Final result: \(result.count) minute entries")
-        debugPrint("======================")
+        let result = isPolarConnected ? aPolar : aApple
 
         // Store in cache
         cacheQueue.async(flags: .barrier) { cache[key] = result }

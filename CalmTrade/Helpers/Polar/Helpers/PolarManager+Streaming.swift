@@ -90,18 +90,6 @@ extension PolarManager {
                     self.onRRIntervals?(allRRs, ts)
                 }
                 
-#if DEBUG
-                let rrsPerSample = samples.map { $0.rrsMs.count }
-                let totalRRs = rrsPerSample.reduce(0, +)
-                debugPrint("=== POLAR HR BATCH DEBUG ===")
-                debugPrint("samples=\(samples.count) hrs=[\(samples.map{$0.hr})] rrsMsPerSample=\(rrsPerSample) totalRRs=\(totalRRs)")
-                for (index, sample) in samples.enumerated() {
-                    if !sample.rrsMs.isEmpty {
-                        debugPrint("Sample \(index): RR intervals = \(sample.rrsMs.map { Int($0) })")
-                    }
-                }
-                debugPrint("==========================")
-#endif
             }, onError: { [weak self] error in
                 guard let self = self else { return }
                 print("HR stream error: \(error)")

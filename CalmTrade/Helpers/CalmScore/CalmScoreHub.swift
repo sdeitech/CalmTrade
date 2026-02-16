@@ -219,19 +219,27 @@ final class CalmScoreHub {
 
         let repo = CTMetricsRepository.shared
         let now = Date()
+        let polarPreferred: Bool = {
+            switch DeviceManager.shared.currentSource {
+            case .polar360, .polarH10: return true
+            case .appleHealthKit: return false
+            }
+        }()
 
         let hrLiveWindow: TimeInterval = 5
         let rmssdLiveWindow: TimeInterval = 15
 
         let hrH10 = repo.latestValue(kind: .heartRate, source: .polarH10)
         let hrP36 = repo.latestValue(kind: .heartRate, source: .polar360)
-        let hrAny = repo.latestValue(kind: .heartRate)
+        let hrHK = repo.latestValue(kind: .heartRate, source: .appleHealth)
 
         let rmssdH10 = repo.latestValue(kind: .rmssd, source: .polarH10)
         let rmssdP36 = repo.latestValue(kind: .rmssd, source: .polar360)
-        let rmssdAny = repo.latestValue(kind: .rmssd)
+        let rmssdHK = repo.latestValue(kind: .rmssd, source: .appleHealth)
         let sdnnHK = repo.latestValue(kind: .sdnn, source: .appleHealth)
-        let hrvMs = (rmssdAny?.value ?? sdnnHK?.value) ?? 0
+        let hrvMs = polarPreferred
+            ? (rmssdH10?.value ?? rmssdP36?.value ?? 0)
+            : (rmssdHK?.value ?? sdnnHK?.value ?? 0)
 
         let freshHR = freshestPolarHR(
             now: now,
@@ -243,6 +251,7 @@ final class CalmScoreHub {
         let isStreaming = (freshHR != nil)
 
         var deviceSource: DeviceSource = {
+            if !polarPreferred { return .appleHK }
             if let src = freshHR?.src { return src }
             let freshRmssdH10 = rmssdH10.flatMap { now.timeIntervalSince($0.date) <= rmssdLiveWindow ? $0 : nil }
             let freshRmssdP36 = rmssdP36.flatMap { now.timeIntervalSince($0.date) <= rmssdLiveWindow ? $0 : nil }
@@ -250,25 +259,26 @@ final class CalmScoreHub {
             if freshRmssdP36 != nil { return .calm360 }
             return .appleHK
         }()
-        if !isStreaming { deviceSource = .appleHK }
+        if !polarPreferred { deviceSource = .appleHK }
 
         let hrBpm: Double = {
             switch deviceSource {
-            case .h10:     return hrH10?.value ?? hrAny?.value ?? 0
-            case .calm360: return hrP36?.value ?? hrAny?.value ?? 0
-            default:       return hrAny?.value ?? 0
+            case .h10:     return hrH10?.value ?? (polarPreferred ? 0 : (hrHK?.value ?? 0))
+            case .calm360: return hrP36?.value ?? (polarPreferred ? 0 : (hrHK?.value ?? 0))
+            default:       return hrHK?.value ?? 0
             }
         }()
 
-        let sleepUnion = computeLastNightSleepHoursFromRepo(now: now)
+        let sleepUnion = computeLastNightSleepHoursFromRepo(now: now, preferredSource: polarPreferred ? .ct360 : .appleHealth)
         let sleepHours: Double = sleepUnion?.hours
-            ?? (repo.latestValue(kind: .sleepHours)?.value ?? 0)
+            ?? (repo.latestValue(kind: .sleepHours, source: polarPreferred ? .polar360 : .appleHealth)?.value ?? 0)
 
-        let last2HRVals = lastTwoValues(kind: .heartRate)
-        let last2HRVVals = (rmssdAny != nil
-                            ? lastTwoValues(kind: .rmssd)
-                            : lastTwoValues(kind: .sdnn))
-        let last2SlpVals = lastTwoValues(kind: .sleepHours)
+        let trendSource: CTMetricSource? = polarPreferred ? .polar360 : .appleHealth
+        let last2HRVals = lastTwoValues(kind: .heartRate, source: trendSource)
+        let last2HRVVals = ((polarPreferred ? (rmssdH10 != nil || rmssdP36 != nil) : (rmssdHK != nil))
+                            ? lastTwoValues(kind: .rmssd, source: trendSource)
+                            : lastTwoValues(kind: .sdnn, source: .appleHealth))
+        let last2SlpVals = lastTwoValues(kind: .sleepHours, source: trendSource)
 
         let hrIsDown = (last2HRVals.count == 2)
                        ? (last2HRVals[1] <= last2HRVals[0])
@@ -284,8 +294,8 @@ final class CalmScoreHub {
 
         let lastUpdate = [
             freshHR?.latest.date,
-            rmssdH10?.date, rmssdP36?.date, rmssdAny?.date,
-            sdnnHK?.date, hrAny?.date, sleepUnion?.endDate
+            rmssdH10?.date, rmssdP36?.date, rmssdHK?.date,
+            sdnnHK?.date, hrHK?.date, sleepUnion?.endDate
         ].compactMap { $0 }.max() ?? now
 
         return CalmScoreTileProps(
@@ -307,11 +317,11 @@ final class CalmScoreHub {
     // MARK: - Helpers
     private typealias Latest = CTMetricsRepository.CTBiometricLatest
 
-    private func lastTwoValues(kind: CTMetricKind) -> [Double] {
+    private func lastTwoValues(kind: CTMetricKind, source: CTMetricSource?) -> [Double] {
         let repo = CTMetricsRepository.shared
         let now = Date()
         let from = now.addingTimeInterval(-24 * 3600)
-        let samples = repo.seriesValues(kind: kind, from: from, to: now, source: nil)
+        let samples = repo.seriesValues(kind: kind, from: from, to: now, source: source)
         return samples.suffix(2).map { $0.value }
     }
 
@@ -342,36 +352,13 @@ final class CalmScoreHub {
     }
 
     // MARK: - Sleep helper
-    private func computeLastNightSleepHoursFromRepo(now: Date = Date()) -> (hours: Double, endDate: Date)? {
-        let repo = CTMetricsRepository.shared
-        let win = windowForLastNight(anchoredAt: now)
-        let rem  = repo.seriesValues(kind: .sleepREM,  from: win.start, to: win.end, source: .appleHealth)
-        let core = repo.seriesValues(kind: .sleepCore, from: win.start, to: win.end, source: .appleHealth)
-        let deep = repo.seriesValues(kind: .sleepDeep, from: win.start, to: win.end, source: .appleHealth)
-
-        if rem.isEmpty && core.isEmpty && deep.isEmpty { return nil }
-
-        var intervals: [(Date, Date)] = []
-        for s in rem + core + deep {
-            let st = max(s.date, win.start)
-            let en = min(s.date.addingTimeInterval(s.value), win.end)
-            if en > st { intervals.append((st, en)) }
-        }
-
-        intervals.sort { $0.0 < $1.0 }
-        var merged: [(Date, Date)] = []
-
-        for (s, e) in intervals {
-            guard s < e else { continue }
-            if let last = merged.last, s <= last.1 {
-                merged[merged.count - 1].1 = max(last.1, e)
-            } else {
-                merged.append((s, e))
-            }
-        }
-
-        let seconds = merged.reduce(0.0) { $0 + $1.1.timeIntervalSince($1.0) }
-        return (seconds / 3600.0, win.end)
+    private func computeLastNightSleepHoursFromRepo(
+        now: Date = Date(),
+        preferredSource: SleepDataSource
+    ) -> (hours: Double, endDate: Date)? {
+        guard let night = SleepRepository.shared.latestNight(preferredSource: preferredSource) else { return nil }
+        let endDate = night.segments.map(\.end).max() ?? night.date
+        return (night.hours, endDate)
     }
 
     private func windowForLastNight(anchoredAt now: Date) -> (start: Date, end: Date) {

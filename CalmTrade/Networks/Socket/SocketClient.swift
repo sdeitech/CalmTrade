@@ -33,7 +33,7 @@ final class SocketClient: NSObject {
 
         // Build SocketManager with auth + options
         var cfg: SocketIOClientConfiguration = [
-            .log(true),
+            .log(false),
             .path(socketPath),
             .reconnects(true),
             .reconnectWait(2),
@@ -57,7 +57,6 @@ final class SocketClient: NSObject {
         // --- Event wiring ---
         socket?.on(clientEvent: .connect) { [weak self] _, _ in
             guard let self = self else { return }
-            NSLog("🟢 Socket.IO connected → emitting 'connection' & 'Authenticate'")
 
             // 1) announce connection
             self.emit(key: "connection", payload: ["ts": Int(Date().timeIntervalSince1970)])
@@ -69,31 +68,24 @@ final class SocketClient: NSObject {
         }
 
         socket?.on(clientEvent: .error) { data, _ in
-            NSLog("🔴 Socket.IO error: \(data)")
         }
 
         socket?.on(clientEvent: .disconnect) { data, _ in
-            NSLog("🟠 Socket.IO disconnected: \(data)")
         }
 
         // Example server push handlers (adjust to the events your server emits)
         socket?.on("connection-ack") { data, _ in
-            NSLog("🟢 server ack’d connection \(data)")
         }
         socket?.on("auth-ok") { data, _ in
-            NSLog("🟢 server authenticated token \(data)")
         }
         socket?.on("auth-error") { [weak self] data, _ in
-            NSLog("🔴 auth failed \(data)")
             self?.disconnect()
         }
         socket?.on("server-disconnect") { [weak self] data, _ in
-            NSLog("🟠 server requested disconnect \(data)")
             self?.disconnect()
         }
 
         // Connect
-        NSLog("🔵 Socket.IO connecting → \(baseURL.absoluteString)\(socketPath)")
         socket?.connect()
     }
 
@@ -107,7 +99,6 @@ final class SocketClient: NSObject {
         manager = nil
         socket  = nil
         token   = nil
-        NSLog("🟠 Socket.IO disconnect invoked")
     }
 
     /// Sends a message with your `{key, data}` schema over Socket.IO
