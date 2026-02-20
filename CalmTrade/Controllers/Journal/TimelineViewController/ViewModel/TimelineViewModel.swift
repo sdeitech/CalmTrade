@@ -41,11 +41,19 @@ final class TimelineViewModel {
                 KRProgressHUD.dismiss()
                 switch result {
                 case .Success(let response):
-                    guard let data = response?.data else { return }
+                    guard let data = response?.data else {
+                        self?.items = []
+                        self?.onSummary?(Self.emptySummary())
+                        self?.onReload?()
+                        return
+                    }
                     self?.items = data.timeline
                     self?.onSummary?(Self.makeSummary(from: data.sessionSummary))
                     self?.onReload?()
                 case .Error(let msg):
+                    self?.items = []
+                    self?.onSummary?(Self.emptySummary())
+                    self?.onReload?()
                     self?.onError?(msg)
                 }
             }
@@ -130,7 +138,11 @@ final class TimelineViewModel {
 
 extension TimelineViewModel {
 
-    static func makeSummary(from s: SessionSummary) -> NSAttributedString {
+    static func makeSummary(from s: SessionSummary?) -> NSAttributedString {
+        guard let s else {
+            return emptySummary()
+        }
+
         let result = NSMutableAttributedString()
         
         // MARK: - Helpers
@@ -261,6 +273,16 @@ extension TimelineViewModel {
         )
         
         return result
+    }
+
+    static func emptySummary() -> NSAttributedString {
+        NSAttributedString(
+            string: "No data found for selected date.",
+            attributes: [
+                .font: UIFont.systemFont(ofSize: 14, weight: .regular),
+                .foregroundColor: UIColor.init(hex: "CACACA")
+            ]
+        )
     }
 }
 

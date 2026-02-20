@@ -17,6 +17,7 @@ final class TimelineViewController: UIViewController {
 
     // MARK: - ViewModel
     var viewModel: TimelineViewModel!
+    private let emptyStateLabel = UILabel()
 
     // MARK: - Lifecycle
     override func viewDidLoad() {
@@ -24,6 +25,8 @@ final class TimelineViewController: UIViewController {
 
         setupTable()
         bindViewModel()
+        updateSessionDateLabel()
+        lblSessionSummary.attributedText = TimelineViewModel.emptySummary()
     }
     
     override func viewDidAppear(_ animated: Bool) {
@@ -45,6 +48,12 @@ final class TimelineViewController: UIViewController {
         tableView.separatorStyle = .none
         tableView.estimatedRowHeight = 120
         tableView.rowHeight = UITableView.automaticDimension
+
+        emptyStateLabel.text = "No timeline data found."
+        emptyStateLabel.textColor = UIColor.init(hex: "CACACA")
+        emptyStateLabel.font = .systemFont(ofSize: 14, weight: .regular)
+        emptyStateLabel.textAlignment = .center
+        emptyStateLabel.numberOfLines = 0
     }
 
     // MARK: - Bindings
@@ -52,6 +61,7 @@ final class TimelineViewController: UIViewController {
 
         viewModel.onReload = { [weak self] in
             DispatchQueue.main.async {
+                self?.updateEmptyState()
                 self?.tableView.reloadData()
             }
         }
@@ -79,6 +89,10 @@ final class TimelineViewController: UIViewController {
         }
 
         lblSessionDate.text = "Session: \(outputFormatter.string(from: date))"
+    }
+
+    private func updateEmptyState() {
+        tableView.backgroundView = viewModel.count == 0 ? emptyStateLabel : nil
     }
 }
 

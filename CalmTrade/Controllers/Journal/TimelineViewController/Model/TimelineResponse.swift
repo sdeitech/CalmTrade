@@ -13,7 +13,7 @@ struct TimelineResponse: Decodable {
 }
 
 struct TimelineData: Decodable {
-    let sessionSummary: SessionSummary
+    let sessionSummary: SessionSummary?
     let timeline: [TimelineItem]
 }
 
@@ -41,4 +41,3 @@ struct RiskLimits: Decodable {
     let maxLossPerTradeR:  Double
     let maxLossPerSessionR: Double
 }
-

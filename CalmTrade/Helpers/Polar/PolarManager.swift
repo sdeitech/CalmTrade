@@ -393,9 +393,17 @@ extension PolarManager {
                 NSLog("[PM][ACT] Activity feature ready — starting minute poller")
                 PolarDailySyncCoordinator.shared.startWhileConnected(deviceId: identifier)
                 
-                // Also trigger sleep data sync when activity feature is ready
-                NSLog("[PM][SLEEP] Activity feature ready — triggering sleep sync")
-                Polar360SleepIngestor.shared.syncLastNightsIfNeeded(deviceId: identifier)
+                // Only trigger sleep sync after FTU is confirmed complete.
+                Task { [weak self] in
+                    guard let self else { return }
+                    let isFtuDone = await self.isFtuCompleteForCurrentDevice()
+                    if isFtuDone {
+                        NSLog("[PM][SLEEP] Activity feature ready — FTU complete, triggering sleep sync")
+                        Polar360SleepIngestor.shared.syncLastNightsIfNeeded(deviceId: identifier)
+                    } else {
+                        NSLog("[PM][SLEEP] Activity feature ready — FTU incomplete, skipping sleep sync")
+                    }
+                }
             
         default:
             break
