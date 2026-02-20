@@ -16,6 +16,8 @@ final class RestingHeartRateDetailViewController: BaseViewController {
     @IBOutlet private weak var segmentedControl: UISegmentedControl!
     @IBOutlet private weak var lblAverage: UILabel!
     @IBOutlet private weak var lblDateRange: UILabel!
+    
+    @IBOutlet private weak var subscriptionBlurView: UIVisualEffectView!
 
     // MARK: - Properties
     private let viewModel = RestingHeartRateDetailViewModel()
@@ -29,6 +31,10 @@ final class RestingHeartRateDetailViewController: BaseViewController {
         embedChartHost()
         bindViewModel()
         viewModel.fetchInitialData(for: .weekly)
+    }
+    
+    override func viewWillAppear(_ animated: Bool) {
+        subscriptionBlurView.isHidden = checkAccess()
     }
 
     // MARK: - Setup
@@ -106,6 +112,13 @@ final class RestingHeartRateDetailViewController: BaseViewController {
 
         viewModel.onIsLoading = { _ in } // plug in spinner if you add one
     }
+    
+    private func checkAccess() -> Bool {
+        switch FeatureGate.shared.access(for: FeatureKey.chartsForBiometric) {
+        case .allowed: return true
+        case .locked: return false
+        }
+    }
 
     // MARK: - Actions
     @IBAction private func segmentedControlChanged(_ sender: UISegmentedControl) {
@@ -115,6 +128,10 @@ final class RestingHeartRateDetailViewController: BaseViewController {
 
     @IBAction private func btnBackTapped(_ sender: Any) {
         navigationController?.popViewController()
+    }
+    
+    @IBAction private func btnSubscribeTapped(_ sender: Any) {
+        FeatureGate.shared.presentUpgradeSheet(for: FeatureKey.chartsForBiometric, from: self)
     }
 }
 

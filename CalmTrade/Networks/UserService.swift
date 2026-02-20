@@ -32,7 +32,7 @@ protocol UserServiceProtocol {
 final class UserService: APIService, UserServiceProtocol {
 
     func login(email: String, password: String, completion: @escaping (Result<AuthResponse?>) -> Void) {
-        let param = [Keys.email: email, Keys.password: password,"firebaseToken":UserDefaults.standard.string(forKey: "fcmToken") ?? ""]
+        let param = [Keys.email: email, Keys.password: password,"firebaseToken":UserDefaults.standard.string(forKey: "fcmToken") ?? "","deviceType":"mobile"]
         startService(with: .POST,
                      path: Endpoints.Auth.login.rawValue,
                      parameters: param,
@@ -53,7 +53,7 @@ final class UserService: APIService, UserServiceProtocol {
     func googleAuth(idToken: String, completion: @escaping (Result<AuthResponse?>) -> Void) {
         startService(with: .POST,
                      path: Endpoints.Auth.googleAuth.rawValue,
-                     parameters: ["idToken": idToken,"firebaseToken":UserDefaults.standard.string(forKey: "fcmToken") ?? ""],
+                     parameters: ["idToken": idToken,"firebaseToken":UserDefaults.standard.string(forKey: "fcmToken") ?? "","deviceType":"mobile"],
                      files: [],
                      modelType: AuthResponse.self,
                      completion: completion)
@@ -69,7 +69,8 @@ final class UserService: APIService, UserServiceProtocol {
             "authorizationCode": authorizationCode,
             "givenName": givenName,
             "familyName": familyName,
-            "firebaseToken":UserDefaults.standard.string(forKey: "fcmToken") ?? ""
+            "firebaseToken":UserDefaults.standard.string(forKey: "fcmToken") ?? "",
+            "deviceType":"mobile"
         ]
         startService(with: .POST,
                      path: Endpoints.Auth.appleAuth.rawValue,
@@ -91,7 +92,8 @@ final class UserService: APIService, UserServiceProtocol {
             "email": email,
             "userId": userId,
             "imageUrl": imageUrl,
-            "firebaseToken":UserDefaults.standard.string(forKey: "fcmToken") ?? ""
+            "firebaseToken":UserDefaults.standard.string(forKey: "fcmToken") ?? "",
+            "deviceType":"mobile"
         ]
         startService(with: .POST,
                      path: Endpoints.Auth.facebookAuth.rawValue,
@@ -112,7 +114,7 @@ final class UserService: APIService, UserServiceProtocol {
     }
 
     func verifyOTP(email: String, otp: String, completion: @escaping (Result<VerifyOtpResponse?>) -> Void) {
-        let params = [Keys.email: email, "otp": otp,"firebaseToken":UserDefaults.standard.string(forKey: "fcmToken") ?? ""]
+        let params = [Keys.email: email, "otp": otp,"firebaseToken":UserDefaults.standard.string(forKey: "fcmToken") ?? "","deviceType":"mobile"]
         startService(with: .POST,
                      path: Endpoints.Auth.verifyOTP.rawValue,
                      parameters: params,

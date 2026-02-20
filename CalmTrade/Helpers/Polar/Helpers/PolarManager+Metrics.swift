@@ -190,6 +190,7 @@ extension PolarManager {
             // Default multiplier if no sleep data is available
             var multiplier: Double = 1.0
             
+<<<<<<< Updated upstream
             // Try to get sleep score from repository for the previous night (more relevant for RHR)
             let cal = Calendar.current
             let yesterday = cal.date(byAdding: .day, value: -1, to: date) ?? date.addingTimeInterval(-86400)
@@ -212,6 +213,15 @@ extension PolarManager {
             } else {
                 // If no sleep score, try to infer from sleep stages
                 let sleepSegments = SleepRepository.shared.unifiedSegments(from: startOfYesterday, to: endOfYesterday)
+=======
+            if !sleepSegments.isEmpty {
+                // Calculate sleep efficiency based on deep sleep and total sleep time
+                let deepSleepSegments = sleepSegments.filter { $0.stage == .deep }
+                let remSleepSegments = sleepSegments.filter { $0.stage == .rem }
+                let totalSleepTime = sleepSegments.reduce(0) { $0 + $1.end.timeIntervalSince($1.start) }
+                let deepSleepTime = deepSleepSegments.reduce(0) { $0 + $1.end.timeIntervalSince($1.start) }
+                let remSleepTime = remSleepSegments.reduce(0) { $0 + $1.end.timeIntervalSince($1.start) }
+>>>>>>> Stashed changes
                 
                 if !sleepSegments.isEmpty {
                     // Calculate sleep efficiency based on deep sleep and total sleep time

@@ -84,4 +84,29 @@ final class PolarBundleViewModel {
             }
         }
     }
+    
+    // MARK: - Sync Payment
+    func syncPayment(completion: @escaping (Bool) -> Void) {
+
+        api.startService(
+            with: .POST,
+            path: "orders/sync-my-payment",
+            parameters: nil,
+            files: nil,
+            modelType: GenericResponse.self
+        ) { result in
+
+            DispatchQueue.main.async {
+                switch result {
+
+                case .Success(let res):
+                    completion(res?.success == true)
+
+                case .Error(let msg):
+                    print("❌ Sync payment failed:", msg)
+                    completion(false)
+                }
+            }
+        }
+    }
 }

@@ -766,14 +766,14 @@
                                 <viewLayoutGuide key="contentLayoutGuide" id="qhv-Rb-W6f"/>
                                 <viewLayoutGuide key="frameLayoutGuide" id="ZBy-KB-rms"/>
                             </scrollView>
-                            <visualEffectView hidden="YES" opaque="NO" contentMode="scaleToFill" misplaced="YES" translatesAutoresizingMaskIntoConstraints="NO" id="G4A-pV-QHt">
-                                <rect key="frame" x="0.0" y="7890" width="414" height="779"/>
+                            <visualEffectView hidden="YES" opaque="NO" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="G4A-pV-QHt">
+                                <rect key="frame" x="0.0" y="0.0" width="414" height="779"/>
                                 <view key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" insetsLayoutMarginsFromSafeArea="NO" id="fFx-3A-2Nl">
                                     <rect key="frame" x="0.0" y="0.0" width="414" height="779"/>
                                     <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                     <subviews>
                                         <scrollView clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="YLp-CN-mjD">
-                                            <rect key="frame" x="0.0" y="63" width="414" height="817"/>
+                                            <rect key="frame" x="0.0" y="63" width="414" height="700"/>
                                             <subviews>
                                                 <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="qxr-yv-w7b">
                                                     <rect key="frame" x="0.0" y="0.0" width="414" height="1104.5"/>
@@ -1146,7 +1146,7 @@
                         <viewLayoutGuide key="safeArea" id="W00-RA-MAh"/>
                         <color key="backgroundColor" white="0.0" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                         <constraints>
-                            <constraint firstAttribute="bottom" secondItem="G4A-pV-QHt" secondAttribute="bottom" id="9UK-87-yqD"/>
+                            <constraint firstItem="W00-RA-MAh" firstAttribute="bottom" secondItem="G4A-pV-QHt" secondAttribute="bottom" constant="49" id="9UK-87-yqD"/>
                             <constraint firstItem="G4A-pV-QHt" firstAttribute="top" secondItem="xPc-XU-Ffa" secondAttribute="top" id="BKg-ZM-SIo"/>
                             <constraint firstItem="KtY-06-WJW" firstAttribute="leading" secondItem="W00-RA-MAh" secondAttribute="leading" id="GZF-vy-tQt"/>
                             <constraint firstItem="IQe-8E-mJJ" firstAttribute="leading" secondItem="xPc-XU-Ffa" secondAttribute="leading" id="KPj-nv-VLQ"/>

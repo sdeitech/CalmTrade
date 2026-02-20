@@ -65,9 +65,9 @@
                                                     <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                                     <subviews>
                                                         <visualEffectView opaque="NO" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="moE-Tj-YPa">
-                                                            <rect key="frame" x="0.0" y="0.0" width="391.33333333333331" height="260"/>
+                                                            <rect key="frame" x="0.0" y="0.0" width="392" height="260"/>
                                                             <view key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" insetsLayoutMarginsFromSafeArea="NO" id="McI-lv-h6P">
-                                                                <rect key="frame" x="0.0" y="0.0" width="391.33333333333331" height="260"/>
+                                                                <rect key="frame" x="0.0" y="0.0" width="392" height="260"/>
                                                                 <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                                             </view>
                                                             <vibrancyEffect>
@@ -75,16 +75,16 @@
                                                             </vibrancyEffect>
                                                         </visualEffectView>
                                                         <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" distribution="equalSpacing" spacing="10" translatesAutoresizingMaskIntoConstraints="NO" id="xnB-em-wkK">
-                                                            <rect key="frame" x="40" y="72" width="311.33333333333331" height="116"/>
+                                                            <rect key="frame" x="40" y="72" width="312" height="116"/>
                                                             <subviews>
                                                                 <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Unlock insights to Biometrics with detailed historical charts" textAlignment="center" lineBreakMode="tailTruncation" numberOfLines="0" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="nRC-wm-Nfd">
-                                                                    <rect key="frame" x="0.0" y="0.0" width="311.33333333333331" height="48"/>
+                                                                    <rect key="frame" x="0.0" y="0.0" width="312" height="48"/>
                                                                     <fontDescription key="fontDescription" name="HelveticaNeue-Medium" family="Helvetica Neue" pointSize="20"/>
                                                                     <color key="textColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                                                     <nil key="highlightedColor"/>
                                                                 </label>
                                                                 <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="z8J-5W-jjQ" customClass="DesignableButton" customModule="CalmTrade" customModuleProvider="target">
-                                                                    <rect key="frame" x="0.0" y="58" width="311.33333333333331" height="58"/>
+                                                                    <rect key="frame" x="0.0" y="58" width="312" height="58"/>
                                                                     <constraints>
                                                                         <constraint firstAttribute="height" constant="58" id="EW3-X4-Ig9"/>
                                                                     </constraints>
@@ -754,9 +754,9 @@ Health visualises a history of the heart rate data collected by Apple Watch or a
                                                     <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                                     <subviews>
                                                         <visualEffectView opaque="NO" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="5j6-t5-kpC">
-                                                            <rect key="frame" x="0.0" y="0.0" width="391.33333333333331" height="260"/>
+                                                            <rect key="frame" x="0.0" y="0.0" width="392" height="260"/>
                                                             <view key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" insetsLayoutMarginsFromSafeArea="NO" id="3Tn-aY-87v">
-                                                                <rect key="frame" x="0.0" y="0.0" width="391.33333333333331" height="260"/>
+                                                                <rect key="frame" x="0.0" y="0.0" width="392" height="260"/>
                                                                 <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                                             </view>
                                                             <vibrancyEffect>
@@ -764,16 +764,16 @@ Health visualises a history of the heart rate data collected by Apple Watch or a
                                                             </vibrancyEffect>
                                                         </visualEffectView>
                                                         <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" distribution="equalSpacing" spacing="10" translatesAutoresizingMaskIntoConstraints="NO" id="a6q-x7-Ki7">
-                                                            <rect key="frame" x="40" y="72" width="311.33333333333331" height="116"/>
+                                                            <rect key="frame" x="40" y="72" width="312" height="116"/>
                                                             <subviews>
                                                                 <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Unlock insights to Biometrics with detailed historical charts" textAlignment="center" lineBreakMode="tailTruncation" numberOfLines="0" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="IHL-zv-MyT">
-                                                                    <rect key="frame" x="0.0" y="0.0" width="311.33333333333331" height="48"/>
+                                                                    <rect key="frame" x="0.0" y="0.0" width="312" height="48"/>
                                                                     <fontDescription key="fontDescription" name="HelveticaNeue-Medium" family="Helvetica Neue" pointSize="20"/>
                                                                     <color key="textColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                                                     <nil key="highlightedColor"/>
                                                                 </label>
                                                                 <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="e5O-gq-myz" customClass="DesignableButton" customModule="CalmTrade" customModuleProvider="target">
-                                                                    <rect key="frame" x="0.0" y="58" width="311.33333333333331" height="58"/>
+                                                                    <rect key="frame" x="0.0" y="58" width="312" height="58"/>
                                                                     <constraints>
                                                                         <constraint firstAttribute="height" constant="58" id="xbj-cJ-u03"/>
                                                                     </constraints>
@@ -848,6 +848,9 @@ Health visualises a history of the heart rate data collected by Apple Watch or a
                                                                         </userDefinedRuntimeAttribute>
                                                                         <userDefinedRuntimeAttribute type="boolean" keyPath="hasShadow2" value="YES"/>
                                                                     </userDefinedRuntimeAttributes>
+                                                                    <connections>
+                                                                        <action selector="btnSubscribeTapped:" destination="Lub-vK-lrd" eventType="touchUpInside" id="xk4-BS-x7v"/>
+                                                                    </connections>
                                                                 </button>
                                                             </subviews>
                                                         </stackView>
@@ -1015,6 +1018,7 @@ been inactive or relaxed for several minutes.</string>
                         <outlet property="lblAverage" destination="rTW-tX-8AK" id="0ji-Js-AcV"/>
                         <outlet property="lblDateRange" destination="R09-7x-X8b" id="12E-bd-aQn"/>
                         <outlet property="segmentedControl" destination="qVs-IX-Mfo" id="x4E-qr-cGN"/>
+                        <outlet property="subscriptionBlurView" destination="IGA-2e-4UE" id="2bI-Mh-hgb"/>
                     </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="d81-Jo-iWr" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
@@ -1072,9 +1076,9 @@ been inactive or relaxed for several minutes.</string>
                                                     <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                                     <subviews>
                                                         <visualEffectView opaque="NO" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="XoA-EB-atZ">
-                                                            <rect key="frame" x="0.0" y="0.0" width="391.33333333333331" height="260"/>
+                                                            <rect key="frame" x="0.0" y="0.0" width="392" height="260"/>
                                                             <view key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" insetsLayoutMarginsFromSafeArea="NO" id="xD8-rI-FVt">
-                                                                <rect key="frame" x="0.0" y="0.0" width="391.33333333333331" height="260"/>
+                                                                <rect key="frame" x="0.0" y="0.0" width="392" height="260"/>
                                                                 <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                                             </view>
                                                             <vibrancyEffect>
@@ -1082,16 +1086,16 @@ been inactive or relaxed for several minutes.</string>
                                                             </vibrancyEffect>
                                                         </visualEffectView>
                                                         <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" distribution="equalSpacing" spacing="10" translatesAutoresizingMaskIntoConstraints="NO" id="9jR-Jr-gQP">
-                                                            <rect key="frame" x="40" y="72" width="311.33333333333331" height="116"/>
+                                                            <rect key="frame" x="40" y="72" width="312" height="116"/>
                                                             <subviews>
                                                                 <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Unlock insights to Biometrics with detailed historical charts" textAlignment="center" lineBreakMode="tailTruncation" numberOfLines="0" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="akD-HR-KCG">
-                                                                    <rect key="frame" x="0.0" y="0.0" width="311.33333333333331" height="48"/>
+                                                                    <rect key="frame" x="0.0" y="0.0" width="312" height="48"/>
                                                                     <fontDescription key="fontDescription" name="HelveticaNeue-Medium" family="Helvetica Neue" pointSize="20"/>
                                                                     <color key="textColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                                                     <nil key="highlightedColor"/>
                                                                 </label>
                                                                 <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="Yy0-ws-9yA" customClass="DesignableButton" customModule="CalmTrade" customModuleProvider="target">
-                                                                    <rect key="frame" x="0.0" y="58" width="311.33333333333331" height="58"/>
+                                                                    <rect key="frame" x="0.0" y="58" width="312" height="58"/>
                                                                     <constraints>
                                                                         <constraint firstAttribute="height" constant="58" id="rdw-7l-kew"/>
                                                                     </constraints>
@@ -1166,6 +1170,9 @@ been inactive or relaxed for several minutes.</string>
                                                                         </userDefinedRuntimeAttribute>
                                                                         <userDefinedRuntimeAttribute type="boolean" keyPath="hasShadow2" value="YES"/>
                                                                     </userDefinedRuntimeAttributes>
+                                                                    <connections>
+                                                                        <action selector="btnSubscribeTapped:" destination="fgl-O0-qSn" eventType="touchUpInside" id="Ia3-hI-lYw"/>
+                                                                    </connections>
                                                                 </button>
                                                             </subviews>
                                                         </stackView>
@@ -1331,6 +1338,7 @@ been inactive or relaxed for several minutes.</string>
                         <outlet property="lblAverage" destination="lCW-3P-C8a" id="Hf1-R1-N1i"/>
                         <outlet property="lblDateRange" destination="myn-YW-OyJ" id="DJg-so-bWL"/>
                         <outlet property="segmentedControl" destination="48b-y5-Tq8" id="ACf-Xd-p0H"/>
+                        <outlet property="subscriptionBlurView" destination="3H3-XI-7gJ" id="UKY-6m-Au3"/>
                     </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="zzl-I6-94i" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
@@ -1385,9 +1393,9 @@ been inactive or relaxed for several minutes.</string>
                                                     <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                                     <subviews>
                                                         <visualEffectView opaque="NO" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="CUV-Z1-M6v">
-                                                            <rect key="frame" x="0.0" y="0.0" width="391.33333333333331" height="352"/>
+                                                            <rect key="frame" x="0.0" y="0.0" width="392" height="351.66666666666669"/>
                                                             <view key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" insetsLayoutMarginsFromSafeArea="NO" id="meZ-yY-Smg">
-                                                                <rect key="frame" x="0.0" y="0.0" width="391.33333333333331" height="352"/>
+                                                                <rect key="frame" x="0.0" y="0.0" width="392" height="351.66666666666669"/>
                                                                 <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                                             </view>
                                                             <vibrancyEffect>
@@ -1395,16 +1403,16 @@ been inactive or relaxed for several minutes.</string>
                                                             </vibrancyEffect>
                                                         </visualEffectView>
                                                         <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" distribution="equalSpacing" spacing="10" translatesAutoresizingMaskIntoConstraints="NO" id="1g1-14-Wnv">
-                                                            <rect key="frame" x="40" y="118" width="311.33333333333331" height="116"/>
+                                                            <rect key="frame" x="40" y="118" width="312" height="116"/>
                                                             <subviews>
                                                                 <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Unlock insights to Biometrics with detailed historical charts" textAlignment="center" lineBreakMode="tailTruncation" numberOfLines="0" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="fgO-Nm-7CL">
-                                                                    <rect key="frame" x="0.0" y="0.0" width="311.33333333333331" height="48"/>
+                                                                    <rect key="frame" x="0.0" y="0.0" width="312" height="48"/>
                                                                     <fontDescription key="fontDescription" name="HelveticaNeue-Medium" family="Helvetica Neue" pointSize="20"/>
                                                                     <color key="textColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                                                     <nil key="highlightedColor"/>
                                                                 </label>
                                                                 <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="OBr-4h-raz" customClass="DesignableButton" customModule="CalmTrade" customModuleProvider="target">
-                                                                    <rect key="frame" x="0.0" y="58" width="311.33333333333331" height="58"/>
+                                                                    <rect key="frame" x="0.0" y="58" width="312" height="58"/>
                                                                     <constraints>
                                                                         <constraint firstAttribute="height" constant="58" id="lSI-B7-MlI"/>
                                                                     </constraints>
@@ -1479,6 +1487,9 @@ been inactive or relaxed for several minutes.</string>
                                                                         </userDefinedRuntimeAttribute>
                                                                         <userDefinedRuntimeAttribute type="boolean" keyPath="hasShadow2" value="YES"/>
                                                                     </userDefinedRuntimeAttributes>
+                                                                    <connections>
+                                                                        <action selector="btnSubscribeTapped:" destination="bzM-dg-6Wy" eventType="touchUpInside" id="fNq-dC-1bZ"/>
+                                                                    </connections>
                                                                 </button>
                                                             </subviews>
                                                         </stackView>
@@ -1651,6 +1662,7 @@ been inactive or relaxed for several minutes.</string>
                         <outlet property="lblSleepDate" destination="Iaw-KQ-KHf" id="sXT-fd-2VE"/>
                         <outlet property="lblTimeAsleep" destination="Gra-yg-h7U" id="XTk-Lk-ZmR"/>
                         <outlet property="segmentedControl" destination="UDk-xa-fxx" id="QR3-rc-6P0"/>
+                        <outlet property="subscriptionBlurView" destination="gPY-5H-P5U" id="ryv-ha-Edf"/>
                     </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="D8b-TF-BWN" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>

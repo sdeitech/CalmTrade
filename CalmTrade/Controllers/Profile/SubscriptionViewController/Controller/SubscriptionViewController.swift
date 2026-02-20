@@ -128,7 +128,8 @@ final class SubscriptionViewController: UIViewController {
     }
 
     private func updateCurrentPlanUI(_ sub: SubscriptionRecord) {
-
+        mainScrollView.isHidden = false
+        
         if sub.status == "trial", let trialEnd = sub.trialEndDate {
             lblCurrentPlanExpiry.text = "Trial ends on \(formatDate(trialEnd))"
         } else if let exp = sub.expiryDate {

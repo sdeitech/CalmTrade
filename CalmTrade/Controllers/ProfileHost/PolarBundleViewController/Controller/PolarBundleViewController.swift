@@ -70,6 +70,7 @@ final class PolarBundleViewController: UIViewController {
     private func openCheckout(url: String) {
         let vc = CheckoutWebViewController()
         vc.checkoutURL = url
+        vc.bundleVM = vm
         navigationController?.pushViewController(vc, animated: true)
     }
 

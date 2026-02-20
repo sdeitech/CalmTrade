@@ -118,4 +118,33 @@ final class SubscriptionViewModel: ObservableObject {
             }
         }
     }
+    
+    // MARK: - API: Verify Payment
+    func verifyPayment(completion: @escaping (Bool) -> Void) {
+
+        KRProgressHUD.show()
+
+        api.startService(
+            with: .POST,
+            path: "sub/verify-payment",
+            parameters: nil,
+            files: nil,
+            modelType: GenericResponse.self   // use your standard success model
+        ) { result in
+
+            DispatchQueue.main.async {
+                KRProgressHUD.dismiss()
+
+                switch result {
+
+                case .Success(let res):
+                    completion(res?.success == true)
+
+                case .Error(let msg):
+                    print("❌ Payment verification failed:", msg)
+                    completion(false)
+                }
+            }
+        }
+    }
 }

@@ -21,6 +21,9 @@ final class NotesViewController: UIViewController {
         super.viewDidLoad()
         setupTableView()
         bindViewModel()
+    }
+    
+    override func viewDidAppear(_ animated: Bool) {
         fetchNotes()
     }
 

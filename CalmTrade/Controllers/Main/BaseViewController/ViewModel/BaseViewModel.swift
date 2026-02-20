@@ -56,8 +56,9 @@ class BaseViewModel: NSObject {
     var reloadListViewClosure: (()->())?
     var redirectControllerClosure: (()->())?
 
-    func updateUserToken(_ token: String) {
+    func updateUserToken(_ token: String, refreshToken: String) {
         UserDefaults.standard.set(token, forKey: "accessToken")
+        UserDefaults.standard.set(refreshToken, forKey: "refreshToken")
         UserDefaults.standard.synchronize()
     }
 }

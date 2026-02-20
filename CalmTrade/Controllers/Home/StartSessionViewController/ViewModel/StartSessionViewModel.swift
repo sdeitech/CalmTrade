@@ -93,7 +93,8 @@ final class StartSessionViewModel {
             modelType: PreviousRiskLimitsResponse.self
         ) { [weak self] result in
             DispatchQueue.main.async {
-                self?.onLoading?(false)
+                guard let self = self else { return }
+                self.onLoading?(false)
 
                 switch result {
                 case .Success(let response):
@@ -101,25 +102,36 @@ final class StartSessionViewModel {
                         response?.success == true,
                         let data = response?.data
                     else {
-                        self?.onUseDefaultEnabled?(false)
+                        self.onUseDefaultEnabled?(false)
                         return
                     }
 
-                    self?.defaultTradeLoss = data.maxLossPerTrade
-                    self?.defaultSessionLoss = data.maxLossPerSession
+                    // Store defaults only if > 0
+                    self.defaultTradeLoss = data.maxLossPerTrade > 0 ? data.maxLossPerTrade : nil
+                    self.defaultSessionLoss = data.maxLossPerSession > 0 ? data.maxLossPerSession : nil
 
-                    self?.currentTradeLoss = data.maxLossPerTrade
-                    self?.currentSessionLoss = data.maxLossPerSession
+                    self.currentTradeLoss = self.defaultTradeLoss
+                    self.currentSessionLoss = self.defaultSessionLoss
 
-                    self?.onDefaultsApplied?(
-                        "\(data.maxLossPerTrade)",
-                        "\(data.maxLossPerSession)"
-                    )
+                    let tradeText = data.maxLossPerTrade > 0
+                        ? "\(data.maxLossPerTrade)"
+                        : ""
 
-                    self?.onUseDefaultEnabled?(true)
+                    let sessionText = data.maxLossPerSession > 0
+                        ? "\(data.maxLossPerSession)"
+                        : ""
+
+                    self.onDefaultsApplied?(tradeText, sessionText)
+
+                    // Enable "Use Default" only if at least one valid value exists
+                    let hasValidDefault =
+                        (data.maxLossPerTrade > 0) ||
+                        (data.maxLossPerSession > 0)
+
+                    self.onUseDefaultEnabled?(hasValidDefault)
 
                 case .Error:
-                    self?.onUseDefaultEnabled?(false)
+                    self.onUseDefaultEnabled?(false)
                 }
             }
         }

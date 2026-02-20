@@ -287,15 +287,7 @@ final class ProfileTabsHostViewController: UIViewController {
                 sheet.modalTransitionStyle = .crossDissolve
 
                 sheet.onConfirm = { [weak self] in
-                    UserDefaults.standard.removeObject(forKey: "accessToken")
-                    SocketClient.shared.disconnect()
-
-                    let loginVC = UIStoryboard(
-                        name: Constants.Storyboard.Main,
-                        bundle: nil
-                    ).instantiateViewController(withIdentifier: "LoginViewController") as! LoginViewController
-                    let nav = UINavigationController(rootViewController: loginVC)
-                    UIApplication.shared.setRootViewController(nav)           
+                    SessionLogoutManager.shared.forceLogout()
                 }
 
                 present(sheet, animated: true)

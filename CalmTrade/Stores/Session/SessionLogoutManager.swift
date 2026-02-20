@@ -12,6 +12,8 @@ final class SessionLogoutManager {
 
     static let shared = SessionLogoutManager()
     private var isLoggingOut = false
+    
+    private let api: ApiServiceProtocol = APIService()
 
     private init() {}
 
@@ -42,33 +44,62 @@ final class SessionLogoutManager {
 
         topVC.present(alert, animated: true)
     }
+    
+    func forceLogout() {
 
-    private func forceLogout() {
+        let params: [String: Any] = [
+            "deviceType": "mobile"
+        ]
+
+        api.startService(
+            with: .POST,
+            path: "user/logout",
+            parameters: params,
+            files: nil,
+            modelType: EmptyResponse.self
+        ) { _ in
+            DispatchQueue.main.async {
+                self.performLocalLogout()
+            }
+        }
+    }
+
+    private func performLocalLogout() {
+
         UserDefaults.standard.removeObject(forKey: "accessToken")
+        UserDefaults.standard.removeObject(forKey: "fcmToken")
+
+        if let appDelegate = UIApplication.shared.delegate as? AppDelegate {
+            appDelegate.clearFCMToken()
+        }
+
         SocketClient.shared.disconnect()
 
-        let loginVC = UIStoryboard(
+        let splash = UIStoryboard(
             name: Constants.Storyboard.Main,
             bundle: nil
-        ).instantiateViewController(withIdentifier: "LoginViewController")
+        ).instantiateViewController(withIdentifier: "SplashViewController")
 
-        let nav = UINavigationController(rootViewController: loginVC)
+        let nav = UINavigationController(rootViewController: splash)
+        nav.navigationBar.isHidden = true
+
         UIApplication.shared.setRootViewController(nav)
 
         isLoggingOut = false
     }
+
 }
 
 extension UIApplication {
-
+    
     var topMostViewController: UIViewController? {
         guard let root = connectedScenes
             .compactMap({ ($0 as? UIWindowScene)?.keyWindow })
             .first?.rootViewController else { return nil }
-
+        
         return top(from: root)
     }
-
+    
     private func top(from vc: UIViewController) -> UIViewController {
         if let nav = vc as? UINavigationController {
             return top(from: nav.visibleViewController!)
@@ -86,7 +117,12 @@ extension UIApplication {
         _ viewController: UIViewController,
         animated: Bool = true
     ) {
-        guard let window = (UIApplication.shared.delegate as? AppDelegate)?.window else {
+        
+        guard
+            let windowScene = connectedScenes
+                .first(where: { $0.activationState == .foregroundActive }) as? UIWindowScene,
+            let window = windowScene.windows.first(where: { $0.isKeyWindow })
+        else {
             return
         }
         

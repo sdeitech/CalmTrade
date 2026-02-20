@@ -91,12 +91,12 @@ final class LoginViewModel: BaseViewModel {
                         return
                     }
 
-                    guard let token = resp.accessToken, !token.isEmpty else {
+                    guard let token = resp.accessToken, let refreshToken = resp.refreshToken, !token.isEmpty else {
                         completion(false, "Missing access token", false)
                         return
                     }
                     
-                    self.updateUserToken(token)
+                    self.updateUserToken(token, refreshToken: refreshToken)
 
                     // Fetch profile + finalize login
                     self.finalizeLogin(using: token) { ok, msg in
@@ -132,12 +132,12 @@ final class LoginViewModel: BaseViewModel {
                         return
                     }
 
-                    guard let token = resp.accessToken else {
+                    guard let token = resp.accessToken, let refreshToken = resp.refreshToken else {
                         completion(false, "Missing access token", first)
                         return
                     }
                     
-                    self.updateUserToken(token)
+                    self.updateUserToken(token, refreshToken: refreshToken)
 
                     // Load profile
                     self.finalizeLogin(using: token) { ok, msg in
@@ -181,12 +181,12 @@ final class LoginViewModel: BaseViewModel {
                         return
                     }
 
-                    guard let token = resp.accessToken else {
+                    guard let token = resp.accessToken, let refreshToken = resp.refreshToken else {
                         completion(false, "Missing access token", first)
                         return
                     }
                     
-                    self.updateUserToken(token)
+                    self.updateUserToken(token, refreshToken: refreshToken)
 
                     // Load profile
                     self.finalizeLogin(using: token) { ok, msg in
@@ -231,12 +231,12 @@ final class LoginViewModel: BaseViewModel {
                         return
                     }
 
-                    guard let token = resp.accessToken else {
+                    guard let token = resp.accessToken, let refreshToken = resp.refreshToken else {
                         completion(false, "Missing access token", first)
                         return
                     }
                     
-                    self.updateUserToken(token)
+                    self.updateUserToken(token, refreshToken: refreshToken)
 
                     // Load profile
                     self.finalizeLogin(using: token) { ok, msg in

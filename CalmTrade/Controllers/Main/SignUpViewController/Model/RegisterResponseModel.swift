@@ -48,4 +48,5 @@ struct AuthResponse: Decodable {
     let newAccount: Bool?
     
     let accessToken: String?
+    let refreshToken: String?
 }

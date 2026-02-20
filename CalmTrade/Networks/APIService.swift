@@ -75,6 +75,9 @@ public protocol ApiServiceProtocol {
 // MARK: - Service
 
 public class APIService: NSObject, ApiServiceProtocol {
+    
+    private var isRefreshing = false
+    private var refreshCompletions: [(Bool) -> Void] = []
 
     public func startService<T: Decodable>(
         with method: HttpMethod,
@@ -111,10 +114,110 @@ public class APIService: NSObject, ApiServiceProtocol {
                                       startedAt: startedAt)
             if let error { return completion(.Error(error.localizedDescription)) }
             guard let data = data else { return completion(.Error("Data not found.")) }
+            let status = (response as? HTTPURLResponse)?.statusCode ?? -1
+
+            // 🔥 INTERCEPT 401
+            if status == 401 {
+                self.handle401(
+                    originalMethod: method,
+                    originalPath: path,
+                    originalParameters: parameters,
+                    originalFiles: files,
+                    modelType: modelType,
+                    completion: completion
+                )
+                return
+            }
+
             self.handleResponse(data: data, response: response, modelType: modelType, completion: completion)
         }
         task.resume()
     }
+    
+    private func handle401<T: Decodable>(
+        originalMethod: HttpMethod,
+        originalPath: String,
+        originalParameters: [String: Any]?,
+        originalFiles: [File]?,
+        modelType: T.Type,
+        completion: @escaping (Result<T?>) -> Void
+    ) {
+        refreshTokenIfNeeded { success in
+            if success {
+                // 🔁 Retry original request
+                self.startService(
+                    with: originalMethod,
+                    path: originalPath,
+                    parameters: originalParameters,
+                    files: originalFiles,
+                    modelType: modelType,
+                    completion: completion
+                )
+            } else {
+                // ❌ Refresh failed → logout
+                DispatchQueue.main.async {
+                    NotificationCenter.default.post(name: .authDidExpire, object: nil)
+                }
+                completion(.Error("Session expired"))
+            }
+        }
+    }
+    
+    private func refreshTokenIfNeeded(completion: @escaping (Bool) -> Void) {
+
+        // If already refreshing, queue completion
+        if isRefreshing {
+            refreshCompletions.append(completion)
+            return
+        }
+
+        guard let refreshToken = UserDefaults.standard.string(forKey: "refreshToken"),
+              !refreshToken.isEmpty else {
+            completion(false)
+            return
+        }
+
+        isRefreshing = true
+        refreshCompletions.append(completion)
+
+        let path = "user/refresh-token"
+
+        let params: [String: Any] = [
+            "refreshToken": refreshToken,
+            "deviceType": "mobile"
+        ]
+
+        startService(
+            with: .POST,
+            path: path,
+            parameters: params,
+            files: nil,
+            modelType: RefreshTokenResponse.self
+        ) { result in
+
+            self.isRefreshing = false
+
+            switch result {
+            case .Success(let response):
+
+                if let newToken = response?.data?.accessToken {
+                    UserDefaults.standard.set(newToken, forKey: "accessToken")
+                    self.notifyRefreshSuccess(true)
+                } else {
+                    self.notifyRefreshSuccess(false)
+                }
+
+            case .Error:
+                self.notifyRefreshSuccess(false)
+            }
+        }
+    }
+
+    private func notifyRefreshSuccess(_ success: Bool) {
+        refreshCompletions.forEach { $0(success) }
+        refreshCompletions.removeAll()
+    }
+
 }
 
 // MARK: - Request building
@@ -546,4 +649,14 @@ private extension APIService {
         return nil
     }
 
+}
+
+struct RefreshTokenResponse: Decodable {
+    let status: Int
+    let success: Bool
+    let data: RefreshData?
+}
+
+struct RefreshData: Decodable {
+    let accessToken: String
 }

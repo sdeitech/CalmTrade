@@ -166,6 +166,18 @@ extension PolarManager {
     }
 
     private func attemptAutoReconnectIfNeeded() {
+        
+        let allowed = FeatureGate.shared.access(for: FeatureKey.realtime360Sync)
+        var permission = Bool()
+        switch allowed {
+        case .allowed:
+            permission = true
+        case .locked:
+            permission = false
+        }
+        
+        guard permission else { return }
+        
         switch connectionState {
         case .connected, .connecting: return
         case .disconnected: break

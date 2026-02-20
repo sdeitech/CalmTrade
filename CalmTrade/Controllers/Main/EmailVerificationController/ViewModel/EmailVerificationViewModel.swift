@@ -81,6 +81,7 @@ final class EmailVerificationViewModel: BaseViewModel {
     struct VerifyEmailResponse: Decodable {
         let success: Bool
         let accessToken: String?
+        let refreshToken: String?
         let message: String?
     }
     
@@ -123,8 +124,8 @@ final class EmailVerificationViewModel: BaseViewModel {
                 switch result {
                 case .Success(let resp):
                     if resp?.success == true {
-                        if let token = resp?.accessToken {
-                            self.updateUserToken(token)
+                        if let token = resp?.accessToken, let refreshToken = resp?.refreshToken {
+                            self.updateUserToken(token, refreshToken: refreshToken)
                         }
                         self.stopListening()
                         self.onVerificationStatusChanged?(true)

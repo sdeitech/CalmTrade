@@ -15,6 +15,8 @@ class SleepInsightViewController: BaseViewController {
     @IBOutlet weak var lblTimeAsleep: UILabel!
     @IBOutlet weak var lblSleepDate: UILabel!
     @IBOutlet weak var chartContainerView: UIView!
+    
+    @IBOutlet private weak var subscriptionBlurView: UIVisualEffectView!
 
     // MARK: - Properties
     private let viewModel = SleepInsightViewModel()
@@ -28,6 +30,10 @@ class SleepInsightViewController: BaseViewController {
         setupSegmentedControl()
         setupViewModelBindings()
         viewModel.fetchInitialData(for: .daily)
+    }
+    
+    override func viewWillAppear(_ animated: Bool) {
+        subscriptionBlurView.isHidden = checkAccess()
     }
     
     override func motionEnded(_ motion: UIEvent.EventSubtype, with event: UIEvent?) {
@@ -106,6 +112,13 @@ class SleepInsightViewController: BaseViewController {
         host.didMove(toParent: self)
         self.swiftUIChartVC = host
     }
+    
+    private func checkAccess() -> Bool {
+        switch FeatureGate.shared.access(for: FeatureKey.chartsForBiometric) {
+        case .allowed: return true
+        case .locked: return false
+        }
+    }
 
 
     // MARK: - Actions
@@ -126,5 +139,9 @@ class SleepInsightViewController: BaseViewController {
 
     @IBAction func btnBackTapped(_ sender: Any) {
         navigationController?.popViewController()
+    }
+    
+    @IBAction private func btnSubscribeTapped(_ sender: Any) {
+        FeatureGate.shared.presentUpgradeSheet(for: FeatureKey.chartsForBiometric, from: self)
     }
 }
