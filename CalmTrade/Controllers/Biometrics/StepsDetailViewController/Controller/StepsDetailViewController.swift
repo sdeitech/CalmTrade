@@ -11,7 +11,7 @@ import SwiftUI
 import Combine
 
 final class StepsDetailViewController: BaseViewController {
-
+    
     // MARK: - IBOutlets
     @IBOutlet private weak var chartContainerView: UIView!
     @IBOutlet private weak var segmentedControl: UISegmentedControl!
@@ -19,22 +19,22 @@ final class StepsDetailViewController: BaseViewController {
     @IBOutlet private weak var lblDateRange: UILabel!
     
     @IBOutlet private weak var subscriptionBlurView: UIVisualEffectView!
-
+    
     // MARK: - MVVM
     private let viewModel = StepsDetailViewModel()
     private var cancellables = Set<AnyCancellable>()
-
+    
     // SwiftUI host
     private var host: UIHostingController<StepsSwiftChartView>?
     private var currentBars: [StepBar] = []
     private let calendar = Calendar.current
-
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         setupSegmentedControl()
         embedChartIfNeeded()
         bindViewModel()
-
+        
         viewModel.fetchInitialData(for: .weekly) // default like Health
     }
     
@@ -49,7 +49,7 @@ final class StepsDetailViewController: BaseViewController {
         vc.modalPresentationStyle = .formSheet
         present(vc, animated: true)
     }
-
+    
     // MARK: - UI
     private func setupSegmentedControl() {
         segmentedControl.removeAllSegments()
@@ -69,7 +69,7 @@ final class StepsDetailViewController: BaseViewController {
         segmentedControl.setTitleTextAttributes(normalAttr, for: .normal)
         segmentedControl.setTitleTextAttributes(selAttr, for: .selected)
     }
-
+    
     private func embedChartIfNeeded() {
         guard host == nil else { return }
         // placeholder chart until first data arrives
@@ -93,7 +93,7 @@ final class StepsDetailViewController: BaseViewController {
         hosting.didMove(toParent: self)
         host = hosting
     }
-
+    
     private func updateChart(bars: [StepBar], xDomain: ClosedRange<Date>, yMax: Double, range: StepsChartRange) {
         host?.rootView = StepsSwiftChartView(
             bars: bars,
@@ -102,7 +102,7 @@ final class StepsDetailViewController: BaseViewController {
             yMax: yMax
         )
     }
-
+    
     // MARK: - Bindings
     private func bindViewModel() {
         // Bars + axes
@@ -116,13 +116,13 @@ final class StepsDetailViewController: BaseViewController {
                 self.logStepsDetail(range: range, bars: bars, domain: domain)
             }
             .store(in: &cancellables)
-
+        
         // Labels
         viewModel.$averageText
             .receive(on: DispatchQueue.main)
             .sink { [weak self] in self?.lblAverage.text = $0 }
             .store(in: &cancellables)
-
+        
         viewModel.$headerDateText
             .receive(on: DispatchQueue.main)
             .sink { [weak self] in self?.lblDateRange.text = $0 }
@@ -135,7 +135,7 @@ final class StepsDetailViewController: BaseViewController {
         case .locked: return false
         }
     }
-
+    
     // MARK: - Actions
     // Keep your existing method:
     @IBAction private func segmentedChanged(_ sender: UISegmentedControl) {
@@ -148,28 +148,28 @@ final class StepsDetailViewController: BaseViewController {
         }()
         viewModel.load(range: range)
     }
-
+    
     // Add this bridge so the storyboard's connection resolves:
     @IBAction private func segmentedControlChanged(_ sender: UISegmentedControl) {
         segmentedChanged(sender)
     }
-
-
+    
+    
     @IBAction private func backTapped(_ sender: Any) {
         navigationController?.popViewController()
     }
-
+    
     private func logStepsDetail(range: StepsChartRange, bars: [StepBar], domain: ClosedRange<Date>) {
         let (start, end) = window(for: range)
         let repo = CTMetricsRepository.shared
-
+        
         let periodMerged = Int(StepEngine.stepsTotal(from: start, to: end).rounded())
         let periodPolar = repo.series(kind: .steps, from: start, to: end, source: .polar360)
             .reduce(0) { $0 + Int($1.value.rounded()) }
         let periodApple = repo.series(kind: .steps, from: start, to: end, source: .appleHealth)
             .reduce(0) { $0 + Int($1.value.rounded()) }
         let barsTotal = Int(bars.reduce(0.0) { $0 + $1.value }.rounded())
-
+        
         print("=== StepsDetail \(rangeLabel(range)) ===")
         print("Window: \(start) -> \(end)")
         print("Chart Domain: \(domain.lowerBound) -> \(domain.upperBound)")
@@ -180,7 +180,7 @@ final class StepsDetailViewController: BaseViewController {
         print("Apple Raw Total: \(periodApple)")
         print("==============================")
     }
-
+    
     private func rangeLabel(_ range: StepsChartRange) -> String {
         switch range {
         case .daily: return "Daily"
@@ -188,7 +188,7 @@ final class StepsDetailViewController: BaseViewController {
         case .monthly: return "Monthly"
         }
     }
-
+    
     private func window(for range: StepsChartRange) -> (Date, Date) {
         let now = Date()
         switch range {
@@ -205,9 +205,9 @@ final class StepsDetailViewController: BaseViewController {
             let end = calendar.date(byAdding: .month, value: 1, to: start) ?? now
             return (start, end)
         }
+    }
     
     @IBAction private func btnSubscribeTapped(_ sender: Any) {
         FeatureGate.shared.presentUpgradeSheet(for: FeatureKey.chartsForBiometric, from: self)
     }
 }
- 
