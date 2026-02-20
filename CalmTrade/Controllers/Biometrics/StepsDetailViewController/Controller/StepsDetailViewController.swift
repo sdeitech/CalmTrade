@@ -17,8 +17,6 @@ final class StepsDetailViewController: BaseViewController {
     @IBOutlet private weak var segmentedControl: UISegmentedControl!
     @IBOutlet private weak var lblAverage: UILabel!
     @IBOutlet private weak var lblDateRange: UILabel!
-    
-    @IBOutlet private weak var subscriptionBlurView: UIVisualEffectView!
 
     // MARK: - MVVM
     private let viewModel = StepsDetailViewModel()
@@ -36,10 +34,6 @@ final class StepsDetailViewController: BaseViewController {
         bindViewModel()
 
         viewModel.fetchInitialData(for: .weekly) // default like Health
-    }
-    
-    override func viewWillAppear(_ animated: Bool) {
-        subscriptionBlurView.isHidden = checkAccess()
     }
     
     override func motionEnded(_ motion: UIEvent.EventSubtype, with event: UIEvent?) {
@@ -128,13 +122,6 @@ final class StepsDetailViewController: BaseViewController {
             .sink { [weak self] in self?.lblDateRange.text = $0 }
             .store(in: &cancellables)
     }
-    
-    private func checkAccess() -> Bool {
-        switch FeatureGate.shared.access(for: FeatureKey.chartsForBiometric) {
-        case .allowed: return true
-        case .locked: return false
-        }
-    }
 
     // MARK: - Actions
     // Keep your existing method:
@@ -206,8 +193,5 @@ final class StepsDetailViewController: BaseViewController {
             return (start, end)
         }
     }
-    
-    @IBAction private func btnSubscribeTapped(_ sender: Any) {
-        FeatureGate.shared.presentUpgradeSheet(for: FeatureKey.chartsForBiometric, from: self)
-    }
 }
+ 
