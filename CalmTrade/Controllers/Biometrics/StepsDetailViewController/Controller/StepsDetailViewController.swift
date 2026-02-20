@@ -158,7 +158,6 @@ final class StepsDetailViewController: BaseViewController {
     @IBAction private func backTapped(_ sender: Any) {
         navigationController?.popViewController()
     }
-<<<<<<< Updated upstream
 
     private func logStepsDetail(range: StepsChartRange, bars: [StepBar], domain: ClosedRange<Date>) {
         let (start, end) = window(for: range)
@@ -206,10 +205,9 @@ final class StepsDetailViewController: BaseViewController {
             let end = calendar.date(byAdding: .month, value: 1, to: start) ?? now
             return (start, end)
         }
-=======
+    }
     
     @IBAction private func btnSubscribeTapped(_ sender: Any) {
         FeatureGate.shared.presentUpgradeSheet(for: FeatureKey.chartsForBiometric, from: self)
->>>>>>> Stashed changes
     }
 }

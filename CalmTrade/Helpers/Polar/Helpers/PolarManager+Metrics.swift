@@ -135,85 +135,33 @@ extension PolarManager {
     }
     
     // MARK: - Sleep Quality Multiplier Calculation
-    
-//    private func getSleepQualityMultiplier(for date: Date, source: CTMetricSource) -> Double {
-//        // Default multiplier if no sleep data is available
-//        var multiplier: Double = 1.0
-//        
-//        // Try to get sleep score from repository for the previous night (more relevant for RHR)
-//        let cal = Calendar.current
-//        let yesterday = cal.date(byAdding: .day, value: -1, to: date) ?? date.addingTimeInterval(-86400)
-//        let startOfYesterday = cal.startOfDay(for: yesterday)
-//        let endOfYesterday = cal.startOfDay(for: date)
-//        
-//        // Get sleep score for the previous night (most relevant for today's RHR)
-//        if let sleepScoreValue = CTMetricsRepository.shared.series(
-//            kind: .sleepScore,
-//            from: startOfYesterday,
-//            to: endOfYesterday,
-//            source: source
-//        ).last?.value {
-//            // Normalize sleep score to multiplier (higher sleep score = better recovery = potentially lower RHR)
-//            // A good sleep score (high value) should result in a multiplier that reflects better recovery
-//            let normalizedScore = sleepScoreValue / 100.0
-//            // Invert the relationship: better sleep quality leads to lower RHR (better cardiovascular fitness)
-//            // So if sleep score is high, we might expect a slightly lower RHR
-//            multiplier = max(0.85, min(1.15, 1.05 - (normalizedScore * 0.1))) // Range 0.85-1.15
-//        } else {
-//            // If no sleep score, try to infer from sleep stages
-//            let sleepSegments = SleepRepository.shared.unifiedSegments(from: startOfYesterday, to: endOfYesterday)
-//            
-//            if !sleepSegments.isEmpty {
-//                // Calculate sleep efficiency based on deep sleep and total sleep time
-//                let deepSleepSegments = sleepSegments.filter { $0.stage == .deep }
-//                let remSleepSegments = sleepSegments.filter { $0.stage == .rem }
-//                let totalSleepTime = sleepSegments.reduce(0) { $0 + $0.end.timeIntervalSince($0.start) }
-//                let deepSleepTime = deepSleepSegments.reduce(0) { $0 + $0.end.timeIntervalSince($0.start) }
-//                let remSleepTime = remSleepSegments.reduce(0) { $0 + $0.end.timeIntervalSince($0.start) }
-//                
-//                if totalSleepTime > 0 {
-//                    let deepSleepRatio = deepSleepTime / totalSleepTime
-//                    let remSleepRatio = remSleepTime / totalSleepTime
-//                    
-//                    // Better sleep quality indicators (adequate deep and REM sleep) suggest better recovery
-//                    // This might correlate with lower RHR (better cardiovascular fitness)
-//                    let sleepQualityIndex = (deepSleepRatio * 0.6) + (remSleepRatio * 0.4)
-//                    multiplier = max(0.85, min(1.15, 1.05 - (sleepQualityIndex * 0.15))) // Adjust based on sleep quality
-//                }
-//            }
-//        }
-//        
-//        return multiplier
-//    }
-    
     private func getSleepQualityMultiplier(for date: Date, source: CTMetricSource) -> Double {
-            // Default multiplier if no sleep data is available
-            var multiplier: Double = 1.0
+        // Default multiplier if no sleep data is available
+        var multiplier: Double = 1.0
+        
+        // Try to get sleep score from repository for the previous night (more relevant for RHR)
+        let cal = Calendar.current
+        let yesterday = cal.date(byAdding: .day, value: -1, to: date) ?? date.addingTimeInterval(-86400)
+        let startOfYesterday = cal.startOfDay(for: yesterday)
+        let endOfYesterday = cal.startOfDay(for: date)
+        
+        // Get sleep score for the previous night (most relevant for today's RHR)
+        if let sleepScoreValue = CTMetricsRepository.shared.series(
+            kind: .sleepScore,
+            from: startOfYesterday,
+            to: endOfYesterday,
+            source: source
+        ).last?.value {
+            // Normalize sleep score to multiplier (higher sleep score = better recovery = potentially lower RHR)
+            // A good sleep score (high value) should result in a multiplier that reflects better recovery
+            let normalizedScore = sleepScoreValue / 100.0
+            // Invert the relationship: better sleep quality leads to lower RHR (better cardiovascular fitness)
+            // So if sleep score is high, we might expect a slightly lower RHR
+            multiplier = max(0.85, min(1.15, 1.05 - (normalizedScore * 0.1))) // Range 0.85-1.15
+        } else {
+            // If no sleep score, try to infer from sleep stages
+            let sleepSegments = SleepRepository.shared.unifiedSegments(from: startOfYesterday, to: endOfYesterday)
             
-<<<<<<< Updated upstream
-            // Try to get sleep score from repository for the previous night (more relevant for RHR)
-            let cal = Calendar.current
-            let yesterday = cal.date(byAdding: .day, value: -1, to: date) ?? date.addingTimeInterval(-86400)
-            let startOfYesterday = cal.startOfDay(for: yesterday)
-            let endOfYesterday = cal.startOfDay(for: date)
-            
-            // Get sleep score for the previous night (most relevant for today's RHR)
-            if let sleepScoreValue = CTMetricsRepository.shared.series(
-                kind: .sleepScore,
-                from: startOfYesterday,
-                to: endOfYesterday,
-                source: source
-            ).last?.value {
-                // Normalize sleep score to multiplier (higher sleep score = better recovery = potentially lower RHR)
-                // A good sleep score (high value) should result in a multiplier that reflects better recovery
-                let normalizedScore = sleepScoreValue / 100.0
-                // Invert the relationship: better sleep quality leads to lower RHR (better cardiovascular fitness)
-                // So if sleep score is high, we might expect a slightly lower RHR
-                multiplier = max(0.85, min(1.15, 1.05 - (normalizedScore * 0.1))) // Range 0.85-1.15
-            } else {
-                // If no sleep score, try to infer from sleep stages
-                let sleepSegments = SleepRepository.shared.unifiedSegments(from: startOfYesterday, to: endOfYesterday)
-=======
             if !sleepSegments.isEmpty {
                 // Calculate sleep efficiency based on deep sleep and total sleep time
                 let deepSleepSegments = sleepSegments.filter { $0.stage == .deep }
@@ -221,30 +169,22 @@ extension PolarManager {
                 let totalSleepTime = sleepSegments.reduce(0) { $0 + $1.end.timeIntervalSince($1.start) }
                 let deepSleepTime = deepSleepSegments.reduce(0) { $0 + $1.end.timeIntervalSince($1.start) }
                 let remSleepTime = remSleepSegments.reduce(0) { $0 + $1.end.timeIntervalSince($1.start) }
->>>>>>> Stashed changes
                 
-                if !sleepSegments.isEmpty {
-                    // Calculate sleep efficiency based on deep sleep and total sleep time
-                    let deepSleepSegments = sleepSegments.filter { $0.stage == .deep }
-                    let remSleepSegments = sleepSegments.filter { $0.stage == .rem }
-                    let totalSleepTime = sleepSegments.reduce(0) { $0 + $1.end.timeIntervalSince($1.start) }
-                    let deepSleepTime = deepSleepSegments.reduce(0) { $0 + $1.end.timeIntervalSince($1.start) }
-                    let remSleepTime = remSleepSegments.reduce(0) { $0 + $1.end.timeIntervalSince($1.start) }
+                if totalSleepTime > 0 {
+                    let deepSleepRatio = deepSleepTime / totalSleepTime
+                    let remSleepRatio = remSleepTime / totalSleepTime
                     
-                    if totalSleepTime > 0 {
-                        let deepSleepRatio = deepSleepTime / totalSleepTime
-                        let remSleepRatio = remSleepTime / totalSleepTime
-                        
-                        // Better sleep quality indicators (adequate deep and REM sleep) suggest better recovery
-                        // This might correlate with lower RHR (better cardiovascular fitness)
-                        let sleepQualityIndex = (deepSleepRatio * 0.6) + (remSleepRatio * 0.4)
-                        multiplier = max(0.85, min(1.15, 1.05 - (sleepQualityIndex * 0.15))) // Adjust based on sleep quality
-                    }
+                    // Better sleep quality indicators (adequate deep and REM sleep) suggest better recovery
+                    // This might correlate with lower RHR (better cardiovascular fitness)
+                    let sleepQualityIndex = (deepSleepRatio * 0.6) + (remSleepRatio * 0.4)
+                    multiplier = max(0.85, min(1.15, 1.05 - (sleepQualityIndex * 0.15))) // Adjust based on sleep quality
                 }
             }
-            
-            return multiplier
         }
+        
+        return multiplier
+    }
+     
     
     // MARK: - RHR calculation with sleep stage correlation
     
