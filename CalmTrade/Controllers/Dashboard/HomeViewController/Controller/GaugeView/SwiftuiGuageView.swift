@@ -331,13 +331,20 @@ struct DevicePill: View {
                 Text("Sleep")
                     .foregroundColor(.greyText)
                     .font(.system(size: 18, weight: .medium, design: .rounded))
-                Text("\(trend.sleepIsUp ? "↑" : "↓") \(String(format: "%.1f", trend.sleepHours)) h")
+                Text("\(trend.sleepIsUp ? "↑" : "↓") \(Self.formatSleepHours(trend.sleepHours))")
                     .foregroundColor(trend.sleepIsUp ? .green : .red)
                     .font(.system(size: 16, weight: .light, design: .rounded))
                 
                 Spacer()
             }
             //.font(.system(size: 20, weight: .regular, design: .rounded))
+        }
+
+        private static func formatSleepHours(_ hours: Double) -> String {
+            let totalMinutes = Int((hours * 60.0).rounded())
+            let h = totalMinutes / 60
+            let m = totalMinutes % 60
+            return "\(h)h \(m)m"
         }
     }
     

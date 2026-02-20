@@ -65,25 +65,33 @@ final class SleepInsightViewModel {
 
     // MARK: - Unified Fetch (Repository only)
     func loadData(start: Date, end: Date, isPaginating: Bool) {
-        debugPrint("=== SleepInsightViewModel loadData ===")
-        debugPrint("Requesting data from \(start) to \(end)")
-        debugPrint("======================================")
+        let fetchWindow = resolveFetchWindow(start: start, end: end, for: selectedRange)
+
+        print("=== SleepInsight \(selectedRange.title) Fetch ===")
+        print("Source: SleepRepository.shared.unifiedSegments(from:to:)")
+        print("Window: \(fetchWindow.start) -> \(fetchWindow.end)")
+        print("========================================")
 
         guard !isLoadingData else { return }
         isLoadingData = true
         onIsLoading?(true)
 
-        currentlyDisplayedStartDate = start
-        currentlyDisplayedEndDate   = end
+        currentlyDisplayedStartDate = fetchWindow.start
+        currentlyDisplayedEndDate   = fetchWindow.end
 
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             guard let self else { return }
 
             // Unified (ct360 > HK) from SleepRepository
-            let segs = self.repo.unifiedSegments(from: start, to: end)
+            let segs = self.repo.unifiedSegments(from: fetchWindow.start, to: fetchWindow.end)
 
             DispatchQueue.main.async {
-                self.processUnifiedSegments(segs, start: start, end: end, isPaginating: isPaginating)
+                self.processUnifiedSegments(
+                    segs,
+                    start: fetchWindow.start,
+                    end: fetchWindow.end,
+                    isPaginating: isPaginating
+                )
             }
         }
     }
@@ -95,11 +103,16 @@ final class SleepInsightViewModel {
         end: Date,
         isPaginating: Bool
     ) {
-        debugPrint("=== SleepInsightViewModel processUnifiedSegments ===")
-        debugPrint("Received \(segs.count) segments from repository")
-        for (i, seg) in segs.enumerated() {
-            debugPrint("  Segment \(i): \(seg.stage) from \(seg.start) to \(seg.end) (source: \(seg.source))")
-        }
+        let sourceCounts = Dictionary(grouping: segs, by: \.source).mapValues(\.count)
+        let periodInBedSeconds = Self.totalInBedSeconds(from: segs)
+        let periodAsleepSeconds = Self.totalAsleepUnionSeconds(from: segs)
+
+        print("=== SleepInsight \(selectedRange.title) Data ===")
+        print("Fetched Segments: \(segs.count)")
+        print("Source Breakdown: \(sourceCounts)")
+        print("Period Total In-Bed: \(Self.formatHhMm(seconds: periodInBedSeconds))")
+        print("Period Total Asleep: \(Self.formatHhMm(seconds: periodAsleepSeconds))")
+        print("======================================")
 
         // Coalesce stage segments
         var merged = Self.coalesce(segments: segs.sorted { $0.start < $1.start }, joinThreshold: 60)
@@ -112,26 +125,26 @@ final class SleepInsightViewModel {
 
         sleepSegments.sort { $0.start < $1.start }
 
-        // Calculate raw sleep time from sleep start to end (to match Polar's calculation)
-        var total: TimeInterval = 0
-        if !sleepSegments.isEmpty {
-            let sleepStart = sleepSegments.min { $0.start < $1.start }?.start ?? Date()
-            let sleepEnd = sleepSegments.max { $0.end < $1.end }?.end ?? Date()
-            total = sleepEnd.timeIntervalSince(sleepStart)
+        let total: TimeInterval
+        let sleepDateText: String
 
-            debugPrint("Raw Polar calculation: Start=\(sleepStart), End=\(sleepEnd), Total=\(total) seconds (\(total/3600) hours)")
+        if selectedRange == .daily, let night = repo.latestNight() {
+            total = night.hours * 3600.0
+            sleepDateText = formatSingleSleepDate(night.date)
+            print("Displayed Total (latest canonical night): \(Self.formatHhMm(seconds: total))")
+            print("Displayed Night Date: \(sleepDateText)")
         } else {
-            // Fallback to the original calculation if no segments found
-            total = Self.totalAsleepUnionSeconds(from: sleepSegments)
-            debugPrint("Using fallback calculation: \(total) seconds (\(total/3600) hours)")
+            total = Self.totalInBedSeconds(from: sleepSegments)
+            sleepDateText = formatSleepDate(start, end)
+            print("Displayed Total (period in-bed total): \(Self.formatHhMm(seconds: total))")
+            print("Displayed Date Window: \(sleepDateText)")
         }
-
-        debugPrint("After coalescing: \(sleepSegments.count) segments, total: \(total) seconds (\(total/3600) hours)")
-        debugPrint("=================================================")
+        print("Displayed Segment Count: \(sleepSegments.count)")
+        print("======================================")
 
         let ui = SleepUIData(
             timeAsleepAttributedText: formatTimeAsleep(total),
-            sleepDate: formatSleepDate(start, end),
+            sleepDate: sleepDateText,
             sleepSegments: sleepSegments,
             chartStartDate: start,
             chartEndDate: end
@@ -190,6 +203,12 @@ final class SleepInsightViewModel {
         return merged.reduce(0.0) { $0 + $1.1.timeIntervalSince($1.0) }
     }
 
+    private static func totalInBedSeconds(from segments: [SleepSegment]) -> TimeInterval {
+        segments.reduce(0.0) { acc, seg in
+            acc + max(0.0, seg.end.timeIntervalSince(seg.start))
+        }
+    }
+
     // MARK: - Formatting
 
     private func formatSleepDate(_ start: Date, _ end: Date) -> String {
@@ -197,7 +216,13 @@ final class SleepInsightViewModel {
         df.dateFormat = "MMM d"
         let s = df.string(from: start)
         let e = df.string(from: end)
-        return s == e ? s : "\(s) – \(e)"
+        return s == e ? s : "\(s) - \(e)"
+    }
+
+    private func formatSingleSleepDate(_ date: Date) -> String {
+        let df = DateFormatter()
+        df.dateFormat = "MMM d"
+        return df.string(from: date)
     }
 
     private func formatTimeAsleep(_ i: TimeInterval) -> NSAttributedString {
@@ -216,6 +241,13 @@ final class SleepInsightViewModel {
         return s
     }
 
+    private static func formatHhMm(seconds: TimeInterval) -> String {
+        let totalMinutes = Int((seconds / 60.0).rounded())
+        let h = totalMinutes / 60
+        let m = totalMinutes % 60
+        return "\(h)h \(m)m"
+    }
+
     // MARK: - Paging Periods
 
     private func period(for range: ChartTimeRange, anchoredAt anchor: Date) -> Period {
@@ -228,9 +260,7 @@ final class SleepInsightViewModel {
             return Period(start: start, end: end)
 
         case .weekly:
-            let start = cal.date(from:
-                cal.dateComponents([.yearForWeekOfYear, .weekOfYear], from: anchor)
-            )!
+            let start = startOfWeekSunday(for: anchor, calendar: cal)
             let end = cal.date(byAdding: .day, value: 7, to: start)!
             return Period(start: start, end: end)
 
@@ -246,9 +276,25 @@ final class SleepInsightViewModel {
         let cal = Calendar.current
         switch range {
         case .daily:   return cal.date(byAdding: .day, value: -1, to: anchor)!
-        case .weekly:  return cal.date(byAdding: .weekOfYear, value: -1, to: anchor)!
+        case .weekly:  return cal.date(byAdding: .day, value: -7, to: anchor)!
         case .monthly: return cal.date(byAdding: .month, value: -1, to: anchor)!
         }
+    }
+
+    private func resolveFetchWindow(start: Date, end: Date, for range: ChartTimeRange) -> (start: Date, end: Date) {
+        guard range == .daily else { return (start, end) }
+
+        let lookbackStart = end.addingTimeInterval(-72 * 3600)
+        let sessions = repo.unifiedSessions(from: lookbackStart, to: end)
+        guard let latest = sessions.last else { return (start, end) }
+        return (latest.sessionStart, latest.sessionEnd)
+    }
+
+    private func startOfWeekSunday(for date: Date, calendar: Calendar) -> Date {
+        let dayStart = calendar.startOfDay(for: date)
+        let weekday = calendar.component(.weekday, from: dayStart) // Sunday = 1
+        let daysFromSunday = weekday - 1
+        return calendar.date(byAdding: .day, value: -daysFromSunday, to: dayStart) ?? dayStart
     }
 }
 

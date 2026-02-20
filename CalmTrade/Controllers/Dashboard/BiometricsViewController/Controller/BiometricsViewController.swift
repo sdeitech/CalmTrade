@@ -242,12 +242,30 @@ final class BiometricsViewController: UIViewController {
         lblStepsToday.text = data.stepsToday
         lblStepsDate.text = data.stepsDate
 
-        // Print steps data info
-        debugPrint("=== BiometricsViewController Steps Display ===")
-        debugPrint("Steps Today: \(data.stepsToday)")
-        debugPrint("Steps Weekly Average: \(data.stepsWeeklyAverage)")
-        debugPrint("Steps Date: \(data.stepsDate)")
-        debugPrint("============================================")
+        logBiometricsSteps(data: data)
+    }
+
+    private func logBiometricsSteps(data: BiometricData) {
+        let cal = Calendar.current
+        let start = cal.startOfDay(for: Date())
+        let end = Date()
+        let repo = CTMetricsRepository.shared
+
+        let mergedToday = Int(StepEngine.stepsTotal(from: start, to: end).rounded())
+        let polarToday = repo.series(kind: .steps, from: start, to: end, source: .polar360)
+            .reduce(0) { $0 + Int($1.value.rounded()) }
+        let appleToday = repo.series(kind: .steps, from: start, to: end, source: .appleHealth)
+            .reduce(0) { $0 + Int($1.value.rounded()) }
+
+        print("=== Biometrics Steps Tile ===")
+        print("Displayed Today: \(data.stepsToday)")
+        print("Displayed Weekly Avg: \(data.stepsWeeklyAverage)")
+        print("Displayed Date: \(data.stepsDate)")
+        print("Window: \(start) -> \(end)")
+        print("Merged Today (StepEngine): \(mergedToday)")
+        print("Polar Raw Today: \(polarToday)")
+        print("Apple Raw Today: \(appleToday)")
+        print("=============================")
     }
 
     // MARK: - Sleep Score rendering (single attributed label)

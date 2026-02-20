@@ -89,28 +89,11 @@ final class LatestBiometricsCache {
         // Calculate sleep duration from SleepRepository instead of relying on .sleepHours metric
         var sleepDurationInHours: Double?
         if let latestNight = SleepRepository.shared.latestNight() {
-            // Calculate raw sleep time from sleep start to end (to match Polar's calculation)
-            if !latestNight.segments.isEmpty {
-                let sleepStart = latestNight.segments.min { $0.start < $1.start }?.start ?? Date()
-                let sleepEnd = latestNight.segments.max { $0.end < $1.end }?.end ?? Date()
-                let totalSleepTime = sleepEnd.timeIntervalSince(sleepStart) / 3600.0 // Convert to hours
-                sleepDurationInHours = totalSleepTime
-            } else {
-                // Fallback to the stored hours if no segments available
-                sleepDurationInHours = latestNight.hours
-            }
+            sleepDurationInHours = latestNight.hours
         } else {
             // Fallback to the repository's sleepHours metric if no sleep night available
             sleepDurationInHours = repo.latestValue(kind: .sleepHours)?.value
         }
-//
-//        debugPrint("=== LatestBiometricsCache Snapshot ===")
-//        debugPrint("Heart Rate: \(String(describing: heartRate))")
-//        debugPrint("RMSSD: \(String(describing: hrvInRmssd))")
-//        debugPrint("SDNN: \(String(describing: hrvInSdnn))")
-//        debugPrint("Resting Heart Rate: \(String(describing: restingHeartRate))")
-//        debugPrint("Sleep Duration (Hours): \(String(describing: sleepDurationInHours))")
-//        debugPrint("=====================================")
 
         return CalmScoreBiometricInputs(
             heartRate:            heartRate,
@@ -131,9 +114,6 @@ final class LatestBiometricsCache {
         if let v = bundle.hrvInSdnn        { set(.sdnn,  value: v, date: now) }
         if let v = bundle.restingHeartRate {
             set(.rhr,   value: v, date: now)
-            debugPrint("=== LatestBiometricsCache Update ===")
-            debugPrint("Resting Heart Rate updated: \(v)")
-            debugPrint("===================================")
         }
 
         // Sleep is not taken from the bundle anymore.
@@ -143,33 +123,9 @@ final class LatestBiometricsCache {
     
     func refreshLatestSleepAsync() {
         DispatchQueue.global(qos: .utility).async {
-            guard let night = SleepRepository.shared.latestNight() else {
-                debugPrint("=== LatestBiometricsCache Sleep Refresh ===")
-                debugPrint("No sleep night data available")
-                debugPrint("=========================================")
-                return
-            }
+            guard let night = SleepRepository.shared.latestNight() else { return }
 
-            // Calculate raw sleep time from sleep start to end (to match Polar's calculation)
-            var sleepHours: Double
-            if !night.segments.isEmpty {
-                let sleepStart = night.segments.min { $0.start < $1.start }?.start ?? Date()
-                let sleepEnd = night.segments.max { $0.end < $1.end }?.end ?? Date()
-                sleepHours = sleepEnd.timeIntervalSince(sleepStart) / 3600.0 // Convert to hours
-            } else {
-                // Fallback to the stored hours if no segments available
-                sleepHours = night.hours
-            }
-
-            debugPrint("=== LatestBiometricsCache Sleep Refresh ===")
-            debugPrint("Sleep night date: \(night.date)")
-            debugPrint("Original hours: \(night.hours)")
-            debugPrint("Raw calculation hours: \(sleepHours)")
-            debugPrint("Sleep segments count: \(night.segments.count)")
-            for (index, segment) in night.segments.enumerated() {
-                debugPrint("  Segment \(index): \(segment.stage) from \(segment.start) to \(segment.end) (source: \(segment.source))")
-            }
-            debugPrint("=========================================")
+            let sleepHours = night.hours
 
             self.io.async(flags: .barrier) {
                 self.store[Key.sleep.rawValue] = Record(value: sleepHours, date: night.date)
@@ -179,18 +135,10 @@ final class LatestBiometricsCache {
     }
 
     func composeInputsFromCache() -> CalmScoreBiometricInputs {
-        // For sleep, we should recalculate using raw calculation instead of using cached value
+        // For sleep, always use the canonical latest-night hours.
         var cachedSleepHours: Double?
         if let latestNight = SleepRepository.shared.latestNight() {
-            // Calculate raw sleep time from sleep start to end (to match Polar's calculation)
-            if !latestNight.segments.isEmpty {
-                let sleepStart = latestNight.segments.min { $0.start < $1.start }?.start ?? Date()
-                let sleepEnd = latestNight.segments.max { $0.end < $1.end }?.end ?? Date()
-                cachedSleepHours = sleepEnd.timeIntervalSince(sleepStart) / 3600.0 // Convert to hours
-            } else {
-                // Fallback to the stored hours if no segments available
-                cachedSleepHours = latestNight.hours
-            }
+            cachedSleepHours = latestNight.hours
         } else {
             // Fallback to the cached value if no sleep night available
             cachedSleepHours = get(.sleep)
@@ -223,33 +171,9 @@ extension LatestBiometricsCache {
     /// Stores the NIGHT'S TOTAL (not last fragment).
     func refreshLatestSleep() {
         DispatchQueue.global(qos: .utility).async {
-            guard let night = SleepRepository.shared.latestNight() else {
-                debugPrint("=== LatestBiometricsCache Manual Sleep Refresh ===")
-                debugPrint("No sleep night data available")
-                debugPrint("===============================================")
-                return
-            }
+            guard let night = SleepRepository.shared.latestNight() else { return }
 
-            // Calculate raw sleep time from sleep start to end (to match Polar's calculation)
-            var sleepHours: Double
-            if !night.segments.isEmpty {
-                let sleepStart = night.segments.min { $0.start < $1.start }?.start ?? Date()
-                let sleepEnd = night.segments.max { $0.end < $1.end }?.end ?? Date()
-                sleepHours = sleepEnd.timeIntervalSince(sleepStart) / 3600.0 // Convert to hours
-            } else {
-                // Fallback to the stored hours if no segments available
-                sleepHours = night.hours
-            }
-
-            debugPrint("=== LatestBiometricsCache Manual Sleep Refresh ===")
-            debugPrint("Sleep night date: \(night.date)")
-            debugPrint("Original hours: \(night.hours)")
-            debugPrint("Raw calculation hours: \(sleepHours)")
-            debugPrint("Sleep segments count: \(night.segments.count)")
-            for (index, segment) in night.segments.enumerated() {
-                debugPrint("  Segment \(index): \(segment.stage) from \(segment.start) to \(segment.end) (source: \(segment.source))")
-            }
-            debugPrint("===============================================")
+            let sleepHours = night.hours
 
             self.io.async(flags: .barrier) {
                 self.store[Key.sleep.rawValue] = Record(value: sleepHours, date: night.date)

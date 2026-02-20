@@ -154,8 +154,7 @@ final class HomeViewModel: BaseViewModel {
                     self.mapEmotionCategories(categories)
                     self.onEmotionDataLoaded?()
 
-                case .Error(let message):
-                    print("❌ Emotion tags fetch failed:", message)
+                case .Error: break
                 }
             }
         }
@@ -314,52 +313,17 @@ final class HomeViewModel: BaseViewModel {
 
             let now = Date()
 
-            // Current night (latest) from unified repo - calculate raw sleep time
-            var currentHours: Double?
-            if let currentNight = SleepRepository.shared.latestNight() {
-                // Calculate raw sleep time from sleep start to end (to match Polar's calculation)
-                if !currentNight.segments.isEmpty {
-                    let sleepStart = currentNight.segments.min { $0.start < $1.start }?.start ?? Date()
-                    let sleepEnd = currentNight.segments.max { $0.end < $1.end }?.end ?? Date()
-                    let totalSleepTime = sleepEnd.timeIntervalSince(sleepStart) / 3600.0 // Convert to hours
-                    currentHours = totalSleepTime
-                } else {
-                    // Fallback to the stored hours if no segments available
-                    currentHours = currentNight.hours
-                }
-            }
+            // Canonical current-night sleep value from repository.
+            let currentHours = SleepRepository.shared.latestNight()?.hours
 
-            // Previous night using the same unified pipeline - calculate raw sleep time
+            // Canonical previous-night sleep value from repository.
             let prevAnchor = Calendar.current.date(byAdding: .day, value: -1, to: now)
                 ?? now.addingTimeInterval(-86400)
-            var prevHours: Double?
-            if let prevNight = self.latestNightBefore(date: prevAnchor) {
-                // Calculate raw sleep time from sleep start to end for previous night
-                let cal = Calendar.current
-                let today = cal.startOfDay(for: prevNight.date)
-                let tomorrow = cal.date(byAdding: .day, value: 1, to: today)!
-
-                // Get unified sleep segments from SleepRepository for previous night
-                let unifiedSegments = SleepRepository.shared.unifiedSegments(from: today, to: tomorrow)
-
-                if !unifiedSegments.isEmpty {
-                    let sleepStart = unifiedSegments.min { $0.start < $1.start }?.start ?? Date()
-                    let sleepEnd = unifiedSegments.max { $0.end < $1.end }?.end ?? Date()
-                    let totalSleepTime = sleepEnd.timeIntervalSince(sleepStart) / 3600.0 // Convert to hours
-                    prevHours = totalSleepTime
-                } else {
-                    // Fallback to the original hours if no segments found
-                    prevHours = prevNight.hours
-                }
-            }
+            let prevHours = SleepRepository.shared.latestNightBefore(date: prevAnchor)?.hours
 
             var p = p0
 
             // Print sleep data being retrieved
-            debugPrint("=== HomeViewModel Sleep Data ===")
-            debugPrint("Current night sleep hours: \(String(describing: currentHours))")
-            debugPrint("Previous night sleep hours: \(String(describing: prevHours))")
-            debugPrint("================================")
 
             if let curH = currentHours {
                 var t = p.trend
@@ -371,16 +335,6 @@ final class HomeViewModel: BaseViewModel {
             }
 
             // Print the data we're getting from Health app in the ViewModel
-            debugPrint("=== HomeViewModel Health Data ===")
-            debugPrint("Score: \(p.score)")
-            debugPrint("HRV: \(p.trend.hrvMs) ms (up: \(p.trend.hrvIsUp))")
-            debugPrint("HR: \(p.trend.hrBpm) bpm (down: \(p.trend.hrIsDown))")
-            debugPrint("Sleep: \(p.trend.sleepHours) hours (up: \(p.trend.sleepIsUp))")
-            debugPrint("Device Source: \(p.deviceSource.rawValue)")
-            debugPrint("Is Streaming: \(p.isStreaming)")
-            debugPrint("Last Update: \(p.lastUpdate)")
-            debugPrint("Battery Percent: \(String(describing: p.batteryPercent))")
-            debugPrint("=================================")
 
             self.currentProps = p
             DispatchQueue.main.async {
@@ -406,30 +360,7 @@ final class HomeViewModel: BaseViewModel {
 
     /// Find the last full sleep night strictly before the given anchor.
     private func latestNightBefore(date: Date) -> (date: Date, hours: Double)? {
-        // Look 48h back from anchor for any segments
-        let start = date.addingTimeInterval(-48 * 3600)
-        let segs = SleepRepository.shared.unifiedSegments(from: start, to: date)
-        guard let last = segs.last else { return nil }
-
-        // Bucket to that night's "sleep day start"
-        let bucket = SleepRepository.shared.sleepDayStart(for: last.start)
-        let nextBucket = bucket.addingTimeInterval(24 * 3600)
-
-        let nightSegs = SleepRepository.shared.unifiedSegments(from: bucket, to: nextBucket)
-
-        // Calculate raw sleep time from sleep start to end (to match Polar's calculation)
-        if !nightSegs.isEmpty {
-            let sleepStart = nightSegs.min { $0.start < $1.start }?.start ?? Date()
-            let sleepEnd = nightSegs.max { $0.end < $1.end }?.end ?? Date()
-            let totalSleepTime = sleepEnd.timeIntervalSince(sleepStart) / 3600.0 // Convert to hours
-            return (bucket, totalSleepTime)
-        } else {
-            // Fallback to the original calculation if no segments found
-            let secs = nightSegs.reduce(0.0) {
-                $0 + max(0.0, $1.end.timeIntervalSince($1.start))
-            }
-            return (bucket, secs / 3600.0)
-        }
+        SleepRepository.shared.latestNightBefore(date: date)
     }
     
     private func postSessionEmotion(
@@ -454,8 +385,7 @@ final class HomeViewModel: BaseViewModel {
             case .Success:
                 break // fire-and-forget by design
 
-            case .Error(let message):
-                print("❌ session/emotions failed:", message)
+            case .Error: break
             }
         }
     }

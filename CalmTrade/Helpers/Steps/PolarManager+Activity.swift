@@ -15,36 +15,142 @@ extension PolarManager {
     ///  A) [ { timestamp: Date, steps: Int } ]
     ///  B) [ { secondsFromStart: Int, steps: Int } ] + parent day start
     private func _extractMinutePairs(from dayObj: Any, dayStart: Date) -> [(Date, Int)] {
-        var out: [(Date, Int)] = []
+        var minutePairs: [(Date, Int)] = []
+        var sampleObjects: [Any] = []
+        var dayLevelTotals: [Int] = []
+        var stepSamplesSeries: [Int] = []
+        var dayStartCandidate: Date?
+        var stepIntervalSeconds: Int?
 
-        // Find "samples" array on the day object
-        let dayMirror = Mirror(reflecting: dayObj)
-        let samplesAny = dayMirror.children.first { label, _ in
-            label?.lowercased().contains("sample") == true
-        }?.value
-
-        guard let samples = samplesAny as? [Any] else { return out }
-
-        for s in samples {
-            let m = Mirror(reflecting: s)
-
-            // 1) timestamp: Date
-            let tsDate = (m.children.first { $0.label?.lowercased().contains("time") == true }?.value as? Date)
-                      ?? (m.children.first { $0.label?.lowercased().contains("timestamp") == true }?.value as? Date)
-
-            // 2) seconds offset (if present)
-            let seconds = (m.children.first { $0.label?.lowercased().contains("second") == true }?.value as? Int)
-                       ?? (m.children.first { $0.label?.lowercased().contains("second") == true }?.value as? UInt).map { Int($0) }
-
-            let steps = (m.children.first { $0.label?.lowercased().contains("step") == true }?.value as? Int)
-                     ?? (m.children.first { $0.label?.lowercased().contains("step") == true }?.value as? UInt).map { Int($0) }
-
-            guard let st = steps, st > 0 else { continue }
-
-            if let tsDate { out.append((tsDate, st)) }
-            else if let seconds { out.append((dayStart.addingTimeInterval(TimeInterval(seconds)), st)) }
+        func minuteFloor(_ date: Date) -> Date {
+            Calendar.current.date(bySetting: .second, value: 0, of: date) ?? date
         }
-        return out
+
+        func intValue(_ any: Any) -> Int? {
+            if let v = any as? Int { return v }
+            if let v = any as? UInt { return Int(v) }
+            if let v = any as? UInt32 { return Int(v) }
+            if let v = any as? UInt64 { return Int(v) }
+            if let v = any as? Double { return Int(v.rounded()) }
+            if let v = any as? Float { return Int(v.rounded()) }
+            if let v = any as? NSNumber { return v.intValue }
+            return nil
+        }
+
+        func dateValue(_ any: Any) -> Date? {
+            if let d = any as? Date { return d }
+            return nil
+        }
+
+        func intArrayValue(_ any: Any) -> [Int] {
+            if let arr = any as? [Int] { return arr }
+            if let arr = any as? [UInt] { return arr.map { Int($0) } }
+            if let arr = any as? [UInt32] { return arr.map { Int($0) } }
+            if let arr = any as? [NSNumber] { return arr.map(\.intValue) }
+            return []
+        }
+
+        func walk(_ any: Any, depth: Int) {
+            guard depth <= 5 else { return }
+
+            let mirror = Mirror(reflecting: any)
+            if mirror.displayStyle == .optional {
+                if let child = mirror.children.first { walk(child.value, depth: depth + 1) }
+                return
+            }
+
+            for child in mirror.children {
+                guard let rawLabel = child.label else { continue }
+                let label = rawLabel.lowercased()
+                let value = child.value
+
+                if dayStartCandidate == nil,
+                   (label.contains("starttime") ||
+                    label == "start" ||
+                    label.contains("start_date") ||
+                    label == "date"),
+                   let d = dateValue(value) {
+                    dayStartCandidate = d
+                }
+
+                if stepIntervalSeconds == nil,
+                   (label.contains("steprecordinginterval") ||
+                    (label.contains("step") && label.contains("interval"))),
+                   let interval = intValue(value), interval > 0 {
+                    stepIntervalSeconds = interval
+                }
+
+                if label.contains("stepsamples") {
+                    let arr = intArrayValue(value)
+                    if !arr.isEmpty { stepSamplesSeries = arr }
+                }
+
+                if label.contains("sample"), let arr = value as? [Any], !arr.isEmpty {
+                    sampleObjects.append(contentsOf: arr)
+                }
+
+                if label.contains("step"), !label.contains("sample"), let v = intValue(value), v > 0 {
+                    dayLevelTotals.append(v)
+                }
+
+                walk(value, depth: depth + 1)
+            }
+        }
+
+        walk(dayObj, depth: 0)
+
+        let baseStart = dayStartCandidate ?? dayStart
+
+        for sample in sampleObjects {
+            let m = Mirror(reflecting: sample)
+            var sampleDate: Date?
+            var sampleSecondOffset: Int?
+            var sampleSteps: Int?
+
+            for c in m.children {
+                guard let rawLabel = c.label else { continue }
+                let label = rawLabel.lowercased()
+                let value = c.value
+
+                if sampleDate == nil && (label.contains("time") || label.contains("timestamp")) {
+                    sampleDate = dateValue(value)
+                }
+                if sampleSecondOffset == nil && (label.contains("second") || label.contains("offset")) {
+                    sampleSecondOffset = intValue(value)
+                }
+                if sampleSteps == nil && label.contains("step") {
+                    sampleSteps = intValue(value)
+                }
+            }
+
+            guard let st = sampleSteps, st > 0 else { continue }
+            if let ts = sampleDate {
+                minutePairs.append((minuteFloor(ts), st))
+            } else if let sec = sampleSecondOffset {
+                let ts = baseStart.addingTimeInterval(TimeInterval(sec))
+                minutePairs.append((minuteFloor(ts), st))
+            }
+        }
+
+        if minutePairs.isEmpty, !stepSamplesSeries.isEmpty {
+            let interval = max(1, stepIntervalSeconds ?? 60)
+            for (idx, steps) in stepSamplesSeries.enumerated() where steps > 0 {
+                let ts = baseStart.addingTimeInterval(TimeInterval(idx * interval))
+                minutePairs.append((minuteFloor(ts), steps))
+            }
+        }
+
+        if minutePairs.isEmpty, let total = dayLevelTotals.filter({ $0 > 0 }).max() {
+            // Some Polar payloads expose only day cumulative steps.
+            minutePairs.append((minuteFloor(dayStart), total))
+        }
+
+        var aggregated: [Date: Int] = [:]
+        for (ts, steps) in minutePairs {
+            guard steps > 0 else { continue }
+            aggregated[ts, default: 0] += steps
+        }
+        return aggregated.keys.sorted().map { ($0, aggregated[$0] ?? 0) }
     }
 
     /// Public: fetch Polar 360 minute steps for a given civil day.
