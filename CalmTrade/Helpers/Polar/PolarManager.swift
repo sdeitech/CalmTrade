@@ -222,9 +222,7 @@ extension PolarManager {
         NSLog("[PM] deviceConnected id=\(dev.id) name=\(dev.name)")
         
         NSLog("[PM] deviceConnected → arming FTU")
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
-            self.probeFtuStatus(reason: "post-connect")
-        }
+        armFtuEvaluation(for: dev)
         
         let lowered = dev.name.lowercased()
         DeviceManager.shared.currentSource = lowered.contains("h10") ? .polarH10 : .polar360

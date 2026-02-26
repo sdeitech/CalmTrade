@@ -55,13 +55,18 @@ extension PolarManager {
                 let done = try await api.isFtuDone(dev.id).value
                 NSLog("[PM][FTU] isFtuDone -> \(done)")
                 self.markFtuComplete(for: dev.id, completed: done)
-                if !done { self.onFirstTimeUseNeeded?(dev) }
+                if done {
+                    self.ftuEvalPendingDeviceId = nil
+                    return
+                }
+                self.ftuEvalPendingDeviceId = nil
+                self.onFirstTimeUseNeeded?(dev)
             } catch let gatt as BleGattException {
                 NSLog("[PM][FTU] isFtuDone gatt error: \(gatt)")
-                self.onFirstTimeUseNeeded?(dev)
+                // Transient on reconnect. Do not prompt FTU on uncertain state.
             } catch {
                 NSLog("[PM][FTU] isFtuDone error: \(error)")
-                self.onFirstTimeUseNeeded?(dev)
+                // Transient/unknown. Wait for a later successful probe.
             }
         }
     }
@@ -81,10 +86,15 @@ extension PolarManager {
                 let done = try await api.isFtuDone(dev.id).value
                 NSLog("[PM][FTU] isFtuDone -> \(done)")
                 self.markFtuComplete(for: dev.id, completed: done)
-                if !done { self.onFirstTimeUseNeeded?(dev) }
+                if done {
+                    self.ftuEvalPendingDeviceId = nil
+                    return
+                }
+                self.ftuEvalPendingDeviceId = nil
+                self.onFirstTimeUseNeeded?(dev)
             } catch {
                 NSLog("[PM][FTU] isFtuDone error: \(error)")
-                self.onFirstTimeUseNeeded?(dev)
+                // Do not show FTU UI on probe failure; retry loop/feature-ready callback will probe again.
             }
         }
     }
@@ -111,10 +121,15 @@ extension PolarManager {
                 let done = try await api.isFtuDone(id).value
                 NSLog("[PM][FTU] isFtuDone(%@) -> %@", id, done.description)
                 self.markFtuComplete(for: id, completed: done)
-                if !done { self.onFirstTimeUseNeeded?(dev) }
+                if done {
+                    self.ftuEvalPendingDeviceId = nil
+                    return
+                }
+                self.ftuEvalPendingDeviceId = nil
+                self.onFirstTimeUseNeeded?(dev)
             } catch {
                 NSLog("[PM][FTU] isFtuDone error: %@", String(describing: error))
-                self.onFirstTimeUseNeeded?(dev)
+                // Keep state unchanged on errors; avoid false FTU prompts.
             }
         }
     }

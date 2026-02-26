@@ -61,6 +61,8 @@ final class CalmScoreStore {
     private let stack = CoreDataStack.shared
     private let cal = Calendar.current
     private let switchCoordinator = UserStoreSwitchCoordinator.shared
+    private let saveQueue = DispatchQueue(label: "com.calmtrade.calmscore.save")
+    private let maxSaveAttempts = 3
 
     private var userId: String {
         SessionManager.shared.current?.id ?? "_anonymous"
@@ -77,35 +79,63 @@ final class CalmScoreStore {
 
     // MARK: - Save (dedup by minute)
     func save(value: Double, at date: Date = Date(), source: String? = nil) {
-        switchCoordinator.withRead {
-            let ctx = stack.newBackgroundContext()
-            ctx.perform {
-                let rounded = self.cal.date(bySetting: .second, value: 0, of: date) ?? date
+        saveQueue.async { [weak self] in
+            guard let self else { return }
+            self.switchCoordinator.withRead {
+                let ctx = self.stack.newBackgroundContext()
+                ctx.performAndWait {
+                    let rounded = self.cal.date(bySetting: .second, value: 0, of: date) ?? date
 
-                let req: NSFetchRequest<CalmScoreSample> = CalmScoreSample.fetchRequest()
-                var predicates: [NSPredicate] = [NSPredicate(format: "timestamp == %@", rounded as NSDate)]
-                if let userPred = self.safeUserPredicate(in: ctx) {
-                    predicates.append(userPred)
-                }
-                req.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: predicates)
-                req.fetchLimit = 1
-
-                let existing = (try? ctx.fetch(req))?.first
-                let obj = existing ?? CalmScoreSample(context: ctx)
-                obj.timestamp = rounded
-                obj.value = value
-                obj.source = source
-                if obj.responds(to: #selector(setter: CalmScoreSample.userId)) {
-                    obj.userId = self.userId
-                }
-
-                do {
-                    try ctx.save()
-                } catch {
-                    NSLog("[CalmScoreStore] Save error: \(error.localizedDescription)")
+                    for attempt in 1...self.maxSaveAttempts {
+                        do {
+                            try self.upsertSample(in: ctx, rounded: rounded, value: value, source: source)
+                            return
+                        } catch {
+                            if self.isRetryableSaveError(error), attempt < self.maxSaveAttempts {
+                                ctx.rollback()
+                                continue
+                            }
+                            NSLog("[CalmScoreStore] Save error: \(error.localizedDescription)")
+                            return
+                        }
+                    }
                 }
             }
         }
+    }
+
+    private func upsertSample(
+        in ctx: NSManagedObjectContext,
+        rounded: Date,
+        value: Double,
+        source: String?
+    ) throws {
+        let req: NSFetchRequest<CalmScoreSample> = CalmScoreSample.fetchRequest()
+        var predicates: [NSPredicate] = [NSPredicate(format: "timestamp == %@", rounded as NSDate)]
+        if let userPred = safeUserPredicate(in: ctx) {
+            predicates.append(userPred)
+        }
+        req.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: predicates)
+        req.fetchLimit = 1
+
+        let existing = try ctx.fetch(req).first
+        let obj = existing ?? CalmScoreSample(context: ctx)
+        obj.timestamp = rounded
+        obj.value = value
+        obj.source = source
+        if obj.responds(to: #selector(setter: CalmScoreSample.userId)) {
+            obj.userId = userId
+        }
+        try ctx.save()
+    }
+
+    private func isRetryableSaveError(_ error: Error) -> Bool {
+        let ns = error as NSError
+        let text = ns.localizedDescription.lowercased()
+        if text.contains("optimistic locking") || text.contains("merge conflict") {
+            return true
+        }
+        return ns.userInfo["conflictList"] != nil
     }
 
     // MARK: - Graph Series (THREAD-SAFE)

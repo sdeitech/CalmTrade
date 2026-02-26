@@ -44,7 +44,7 @@ class PolarConnectionViewController: UIViewController, UITableViewDataSource, UI
         viewModel.stopSearch()
     }
     
-    // MARK: - Setup
+    // MARK: - Setup   
     private func setupViewModelBindings() {
         // Devices list
         viewModel.onDeviceListUpdated = { [weak self] in
@@ -71,13 +71,13 @@ class PolarConnectionViewController: UIViewController, UITableViewDataSource, UI
             // next step: determine FTU state
             self.viewModel.checkFtuStatus()
         }
-
+ 
         viewModel.onConnectionFailed = { [weak self] errorMessage in
             DispatchQueue.main.async {
                 self?.showAlert(message: errorMessage)
             }
         }
-
+  
         // ---------- Firmware Update wiring (new) ----------
 
         // 1) Firmware check (available / not / failed)
