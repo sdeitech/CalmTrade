@@ -114,6 +114,21 @@ final class PolarConnectionViewModel {
     
     func checkFtuStatus() {
         guard let dev = polarManager.connectedDevice else { return }
+        let name = dev.name.lowercased()
+        let isWristLike = name.contains("360")
+            || name.contains("verity")
+            || name.contains("oh1")
+            || name.contains("ignite")
+            || name.contains("pacer")
+            || name.contains("unite")
+            || name.contains("vantage")
+            || name.contains("grit")
+
+        // FTU is for optical/wrist-like devices only.
+        guard isWristLike else {
+            onFtuNotNeeded?()
+            return
+        }
 
         Task {
             do {
@@ -124,8 +139,8 @@ final class PolarConnectionViewModel {
                     onFirstTimeUseNeeded?(dev.name)
                 }
             } catch {
-                // If querying fails, assume FTU needed
-                onFirstTimeUseNeeded?(dev.name)
+                // Transient reconnect/BLE errors should not force FTU UI.
+                onFtuNotNeeded?()
             }
         }
     }

@@ -19,6 +19,8 @@ extension PolarManager {
     // MARK: - Discovery
 
     func startDeviceSearch() {
+        shouldResumeSearchAfterBluetoothOn = true
+
         // If BT is off, prompt immediately and bail early.
         if central.state == .poweredOff {
             presentBluetoothOffAlertIfNeeded()
@@ -56,6 +58,9 @@ extension PolarManager {
     // MARK: - Connect / Disconnect
 
     func connect(to device: ScannedPolarDevice) {
+        // We are moving from manual scan to active connection flow.
+        shouldResumeSearchAfterBluetoothOn = false
+
         if central.state == .poweredOff {
             presentBluetoothOffAlertIfNeeded()
             return

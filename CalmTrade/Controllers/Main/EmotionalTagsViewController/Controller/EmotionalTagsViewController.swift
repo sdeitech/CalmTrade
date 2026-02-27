@@ -69,11 +69,13 @@ class EmotionalTagsViewController: UIViewController, UICollectionViewDataSource,
         let nib = UINib(nibName: "EmotionTagCell", bundle: nil)
         collectionView.register(nib, forCellWithReuseIdentifier: EmotionTagCell.reuseIdentifier)
         
-        let layout = UICollectionViewFlowLayout()
+        // Use left-aligned layout so dynamic-width chips don't get unevenly justified.
+        let layout = LeftAlignedCollectionViewFlowLayout()
         layout.scrollDirection = .vertical
         layout.estimatedItemSize = UICollectionViewFlowLayout.automaticSize
-        layout.minimumInteritemSpacing = 25
-        layout.minimumLineSpacing = 20
+        layout.minimumInteritemSpacing = 12
+        layout.minimumLineSpacing = 14
+        layout.sectionInset = UIEdgeInsets(top: 0, left: 16, bottom: 0, right: 16)
         collectionView.collectionViewLayout = layout
     }
     

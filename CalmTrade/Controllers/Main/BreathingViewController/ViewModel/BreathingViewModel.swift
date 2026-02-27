@@ -29,28 +29,38 @@ final class BreathingViewModel {
         requestMindfulAuthorization { [weak self] ok, err in
             guard let self else { return }
             if let err = err {
-                self.showError?("HealthKit Error", "Could not get permission: \(err.localizedDescription)")
+                DispatchQueue.main.async {
+                    self.showError?("HealthKit Error", "Could not get permission: \(err.localizedDescription)")
+                }
                 return
             }
             guard ok else {
-                self.showError?("Permission Denied", "Please enable Health access in Settings to use this feature.")
+                DispatchQueue.main.async {
+                    self.showError?("Permission Denied", "Please enable Health access in Settings to use this feature.")
+                }
                 return
             }
 
             // Begin observing new Mindful Session samples (read-only)
             self.startObservingMindfulnessSessions {
                 // Called when a new session is detected
-                self.navigateToEmotionalTags?()
+                DispatchQueue.main.async {
+                    self.navigateToEmotionalTags?()
+                }
             }
 
             // Ask user to start the breathing/mindfulness session on the watch
-            self.showUserInstruction?()
+            DispatchQueue.main.async {
+                self.showUserInstruction?()
+            }
         }
     }
 
     /// Called when the "Skip" button is tapped.
     func skipTapped() {
-        navigateToDashboard?()
+        DispatchQueue.main.async {
+            self.navigateToDashboard?()
+        }
     }
 
     /// Called when the view is about to disappear to clean up resources.

@@ -153,9 +153,12 @@ final class PolarManager: NSObject,
     var isHrReady = false
     var hrStartRetry = 0
 
-    let central = CBCentralManager(delegate: nil, queue: nil, options: [
-        CBCentralManagerOptionShowPowerAlertKey: false
-    ])
+    // Use self as delegate so BT on/off transitions are observed.
+    lazy var central: CBCentralManager = {
+        CBCentralManager(delegate: self, queue: nil, options: [
+            CBCentralManagerOptionShowPowerAlertKey: false
+        ])
+    }()
 
     var isShowingBluetoothAlert = false
     var lastBluetoothAlertAt: Date?
@@ -167,6 +170,7 @@ final class PolarManager: NSObject,
 
     var offlineStartInFlight = Set<String>()
     var offlineActive        = Set<String>()
+    var shouldResumeSearchAfterBluetoothOn = false
 
     let firstUseKeyPrefix = "ct.polar.firstUse."
     var autoOfflineSyncOnConnect: Bool = true

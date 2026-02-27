@@ -27,7 +27,7 @@ extension PolarManager {
 
     // MARK: - FTU Evaluation Helpers
 
-    private func armFtuEvaluation(for dev: ScannedPolarDevice) {
+    func armFtuEvaluation(for dev: ScannedPolarDevice) {
         ftuEvalPendingDeviceId = dev.id
         ftuEvalRetryCount = 0
         maybeEvaluateFTU(reason: "initial-after-connect")
@@ -99,7 +99,7 @@ extension PolarManager {
         }
     }
 
-    // MARK: - External FTU Evaluator
+    // MARK: - External FTU Evaluator	
 
     func evaluateFirstTimeUseIfNeeded(for dev: ScannedPolarDevice) {
         Task {
