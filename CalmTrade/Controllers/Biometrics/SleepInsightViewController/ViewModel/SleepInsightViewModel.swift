@@ -142,12 +142,18 @@ final class SleepInsightViewModel {
         print("Displayed Segment Count: \(sleepSegments.count)")
         print("======================================")
 
+        let totals = Self.stageTotals(from: sleepSegments)
+
         let ui = SleepUIData(
             timeAsleepAttributedText: formatTimeAsleep(total),
             sleepDate: sleepDateText,
             sleepSegments: sleepSegments,
             chartStartDate: start,
-            chartEndDate: end
+            chartEndDate: end,
+            awakeSeconds: totals.awake,
+            remSeconds: totals.rem,
+            coreSeconds: totals.core,
+            deepSeconds: totals.deep
         )
 
         onDataUpdate?(ui, isPaginating)
@@ -295,6 +301,63 @@ final class SleepInsightViewModel {
         let weekday = calendar.component(.weekday, from: dayStart) // Sunday = 1
         let daysFromSunday = weekday - 1
         return calendar.date(byAdding: .day, value: -daysFromSunday, to: dayStart) ?? dayStart
+    }
+    
+    private static func stageTotals(from segments: [SleepSegment]) -> (
+        awake: TimeInterval,
+        rem: TimeInterval,
+        core: TimeInterval,
+        deep: TimeInterval
+    ) {
+        var awake: TimeInterval = 0
+        var rem: TimeInterval = 0
+        var core: TimeInterval = 0
+        var deep: TimeInterval = 0
+
+        for seg in segments {
+            let duration = max(0, seg.end.timeIntervalSince(seg.start))
+
+            switch seg.stage {
+            case .awake: awake += duration
+            case .rem:   rem   += duration
+            case .core:  core  += duration
+            case .deep:  deep  += duration
+            }
+        }
+
+        return (awake, rem, core, deep)
+    }
+    
+    func formatStageTime(_ seconds: TimeInterval) -> NSAttributedString {
+        let hours = Int(seconds) / 3600
+        let minutes = (Int(seconds) / 60) % 60
+
+        let big = UIFont(name: "HelveticaNeue-Bold", size: 30)//UIFont.boldSystemFont(ofSize: 30)
+        let small = UIFont(name: "HelveticaNeue-Bold", size: 16)
+
+        let s = NSMutableAttributedString()
+
+        s.append(NSAttributedString(
+            string: "\(hours)",
+            attributes: [.font: big, .foregroundColor: UIColor.white]
+        ))
+
+        s.append(NSAttributedString(
+            string: " hr ",
+            attributes: [.font: small, .foregroundColor: UIColor.white]
+        ))
+
+        s.append(NSAttributedString(
+            string: "\(minutes)",
+            attributes: [.font: big, .foregroundColor: UIColor.white]
+        ))
+
+        s.append(NSAttributedString(
+            string: " min",
+            attributes: [.font: small, .foregroundColor: UIColor.white]
+        ))
+
+        return s
     }
 }
 

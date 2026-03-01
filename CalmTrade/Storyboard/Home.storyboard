@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="23504" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES">
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="23727" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES">
     <device id="retina6_5" orientation="portrait" appearance="light"/>
     <dependencies>
-        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="23506"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="23721"/>
         <capability name="Named colors" minToolsVersion="9.0"/>
         <capability name="Safe area layout guides" minToolsVersion="9.0"/>
         <capability name="collection view cell content view" minToolsVersion="11.0"/>
@@ -395,8 +395,8 @@ Total</string>
                                                             <color key="textColor" name="placeholderColor"/>
                                                             <nil key="highlightedColor"/>
                                                         </label>
-                                                        <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="2" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="rFb-uV-hef">
-                                                            <rect key="frame" x="42" y="62.666666666666664" width="9" height="19.333333333333336"/>
+                                                        <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="8 trades" textAlignment="right" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" minimumScaleFactor="0.5" translatesAutoresizingMaskIntoConstraints="NO" id="rFb-uV-hef">
+                                                            <rect key="frame" x="8" y="62.666666666666664" width="43" height="19.333333333333336"/>
                                                             <fontDescription key="fontDescription" name="HelveticaNeue-Medium" family="Helvetica Neue" pointSize="16"/>
                                                             <color key="textColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                                             <nil key="highlightedColor"/>
@@ -405,6 +405,7 @@ Total</string>
                                                     <constraints>
                                                         <constraint firstItem="FhM-Zy-tDd" firstAttribute="top" secondItem="XXh-xF-Rdi" secondAttribute="bottom" constant="9.0000000000000036" id="0Ms-lH-3GV"/>
                                                         <constraint firstAttribute="trailing" secondItem="XXh-xF-Rdi" secondAttribute="trailing" constant="8" id="6GT-ev-xp7"/>
+                                                        <constraint firstItem="rFb-uV-hef" firstAttribute="leading" secondItem="Ufq-Xc-HOj" secondAttribute="leading" constant="8" id="UiN-rl-aIy"/>
                                                         <constraint firstItem="XXh-xF-Rdi" firstAttribute="top" secondItem="Ufq-Xc-HOj" secondAttribute="top" constant="6" id="VnS-7J-qOf"/>
                                                         <constraint firstAttribute="trailing" secondItem="rFb-uV-hef" secondAttribute="trailing" constant="8" id="f0S-dm-dnl"/>
                                                         <constraint firstItem="FhM-Zy-tDd" firstAttribute="centerY" relation="lessThanOrEqual" secondItem="Ufq-Xc-HOj" secondAttribute="centerY" id="iDT-cX-Qx6"/>

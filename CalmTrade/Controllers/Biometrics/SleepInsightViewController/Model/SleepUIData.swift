@@ -16,4 +16,9 @@ struct SleepUIData {
     let sleepSegments: [SleepSegment]
     let chartStartDate: Date?
     let chartEndDate: Date?
+    
+    let awakeSeconds: TimeInterval
+    let remSeconds: TimeInterval
+    let coreSeconds: TimeInterval
+    let deepSeconds: TimeInterval
 }

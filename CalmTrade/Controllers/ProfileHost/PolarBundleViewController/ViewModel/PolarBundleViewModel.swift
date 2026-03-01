@@ -89,7 +89,7 @@ final class PolarBundleViewModel {
     func syncPayment(completion: @escaping (Bool) -> Void) {
 
         api.startService(
-            with: .POST,
+            with: .GET,
             path: "orders/sync-my-payment",
             parameters: nil,
             files: nil,

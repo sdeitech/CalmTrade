@@ -17,6 +17,11 @@ class SleepInsightViewController: BaseViewController {
     @IBOutlet weak var chartContainerView: UIView!
     
     @IBOutlet private weak var subscriptionBlurView: UIVisualEffectView!
+    
+    @IBOutlet weak var lblAwakeTime: UILabel!
+    @IBOutlet weak var lblREMTime: UILabel!
+    @IBOutlet weak var lblCoreTime: UILabel!
+    @IBOutlet weak var lblDeepTime: UILabel!
 
     // MARK: - Properties
     private let viewModel = SleepInsightViewModel()
@@ -51,11 +56,20 @@ class SleepInsightViewController: BaseViewController {
             self.lblTimeAsleep.attributedText = uiData.timeAsleepAttributedText
             self.lblSleepDate.text = uiData.sleepDate
 
-            guard let start = uiData.chartStartDate, let end = uiData.chartEndDate else { return }
-            self.setupOrUpdateSwiftUIChart(segments: uiData.sleepSegments,
-                                           startDate: start,
-                                           endDate: end,
-                                           isPaginating: isPaginating)
+            self.lblAwakeTime.attributedText = self.viewModel.formatStageTime(uiData.awakeSeconds)
+            self.lblREMTime.attributedText   = self.viewModel.formatStageTime(uiData.remSeconds)
+            self.lblCoreTime.attributedText  = self.viewModel.formatStageTime(uiData.coreSeconds)
+            self.lblDeepTime.attributedText  = self.viewModel.formatStageTime(uiData.deepSeconds)
+
+            guard let start = uiData.chartStartDate,
+                  let end = uiData.chartEndDate else { return }
+
+            self.setupOrUpdateSwiftUIChart(
+                segments: uiData.sleepSegments,
+                startDate: start,
+                endDate: end,
+                isPaginating: isPaginating
+            )
         }
     }
 
