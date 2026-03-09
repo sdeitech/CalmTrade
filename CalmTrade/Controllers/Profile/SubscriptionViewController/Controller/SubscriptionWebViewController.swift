@@ -62,22 +62,22 @@ final class SubscriptionWebViewController: UIViewController, WKNavigationDelegat
 
             decisionHandler(.cancel)
 
-            vm.verifyPayment { [weak self] success in
-                guard let self = self else { return }
-
-                if success {
+//            vm.verifyPayment { [weak self] success in
+//                guard let self = self else { return }
+//
+//                if success {
                     self.vm.fetchCurrentSubscription()
                     self.navigationController?.popViewController(animated: true)
-                } else {
-                    let alert = UIAlertController(
-                        title: "Verification Failed",
-                        message: "We couldn't verify your payment. Please contact support.",
-                        preferredStyle: .alert
-                    )
-                    alert.addAction(UIAlertAction(title: "OK", style: .default))
-                    self.present(alert, animated: true)
-                }
-            }
+//                } else {
+//                    let alert = UIAlertController(
+//                        title: "Verification Failed",
+//                        message: "We couldn't verify your payment. Please contact support.",
+//                        preferredStyle: .alert
+//                    )
+//                    alert.addAction(UIAlertAction(title: "OK", style: .default))
+//                    self.present(alert, animated: true)
+//                }
+//            }
 
             return
         }

@@ -52,12 +52,12 @@ class LoginViewController: BaseViewController {
         vm.email = txtEmail.text ?? ""
         vm.password = txtPassword.text ?? ""
         sender.isEnabled = false
-        KRProgressHUD.show()
+        LoaderManager.shared.show()
         
         vm.submit { [weak self] success, message, needsVerification in
             guard let self = self else { return }
             sender.isEnabled = true
-            KRProgressHUD.dismiss()
+            LoaderManager.shared.hide()
             
             if success {
                 // Dashboard
@@ -98,11 +98,11 @@ class LoginViewController: BaseViewController {
                             self.showAlert(message: "Couldn’t retrieve Google ID token.")
                             return
                         }
-                        KRProgressHUD.show()
+                        LoaderManager.shared.show()
                         self.viewModel.googleAuth(idToken: idToken) { [weak self] ok, msg, isFirst  in
                             print("🟢 VC completion thread:", Thread.isMainThread)
                             guard let self = self else { return }
-                            KRProgressHUD.dismiss()
+                            LoaderManager.shared.hide()
                             UserDefaults.standard.set(LoginHandler.google.rawValue, forKey: kLoginHandler)
                             if ok {
                                 if isFirst {
@@ -145,10 +145,10 @@ class LoginViewController: BaseViewController {
                         self.showAlert(message: "Facebook login succeeded, but access token is missing.")
                         return
                     }
-                    KRProgressHUD.show()
+                    LoaderManager.shared.show()
                     self.viewModel.facebookAuth(accessToken: token,name: name,email: email,userId: userId, imageUrl: imageUrl) { [weak self] ok, msg, isFirst in
                         guard let self = self else { return }
-                        KRProgressHUD.dismiss()
+                        LoaderManager.shared.hide()
                         if ok {
                             UserDefaults.standard.set(LoginHandler.facebook.rawValue, forKey: kLoginHandler)
                             if isFirst {
@@ -189,9 +189,9 @@ class LoginViewController: BaseViewController {
                         self.showAlert(message: "Missing Apple given name or family name.")
                         return
                     }
-                    KRProgressHUD.show()
+                    LoaderManager.shared.show()
                     self.viewModel.appleAuth(identityToken: idToken, authorizationCode: authCode, givenName: givenName, familyName: familyName) { [weak self] ok, msg, isFirst in
-                        KRProgressHUD.dismiss()
+                        LoaderManager.shared.hide()
                         guard let self = self else { return }
                         if ok {
                             UserDefaults.standard.set(LoginHandler.apple.rawValue, forKey: kLoginHandler)

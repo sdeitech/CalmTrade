@@ -67,7 +67,7 @@ final class ChangeEmailOTPViewController: BaseViewController {
 
     private func bindViewModel() {
         viewModel.onLoading = { loading in
-            loading ? KRProgressHUD.show() : KRProgressHUD.dismiss()
+            loading ? LoaderManager.shared.show() : LoaderManager.shared.hide()
         }
 
         viewModel.onError = { [weak self] message in

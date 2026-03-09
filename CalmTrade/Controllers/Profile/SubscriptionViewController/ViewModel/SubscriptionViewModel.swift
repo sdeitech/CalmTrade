@@ -24,7 +24,7 @@ final class SubscriptionViewModel: ObservableObject {
 
     // MARK: - API: Fetch Current Subscription
     func fetchCurrentSubscription() {
-        KRProgressHUD.show()
+        LoaderManager.shared.show()
 
         api.startService(
             with: .GET,
@@ -35,7 +35,7 @@ final class SubscriptionViewModel: ObservableObject {
         ) { result in
 
             DispatchQueue.main.async {
-                KRProgressHUD.dismiss()
+                LoaderManager.shared.hide()
 
                 switch result {
 
@@ -54,7 +54,7 @@ final class SubscriptionViewModel: ObservableObject {
 
     // MARK: - API: Fetch Available Plans
     func fetchPlans() {
-        KRProgressHUD.show()
+        LoaderManager.shared.show()
 
         api.startService(
             with: .GET,
@@ -65,7 +65,7 @@ final class SubscriptionViewModel: ObservableObject {
         ) { result in
 
             DispatchQueue.main.async {
-                KRProgressHUD.dismiss()
+                LoaderManager.shared.hide()
 
                 switch result {
 
@@ -93,7 +93,7 @@ final class SubscriptionViewModel: ObservableObject {
             "cancelUrl": "https://mail.google.com/"
         ]
 
-        KRProgressHUD.show()
+        LoaderManager.shared.show()
 
         api.startService(
             with: .POST,
@@ -104,7 +104,7 @@ final class SubscriptionViewModel: ObservableObject {
         ) { result in
 
             DispatchQueue.main.async {
-                KRProgressHUD.dismiss()
+                LoaderManager.shared.hide()
 
                 switch result {
 
@@ -122,7 +122,7 @@ final class SubscriptionViewModel: ObservableObject {
     // MARK: - API: Verify Payment
     func verifyPayment(completion: @escaping (Bool) -> Void) {
 
-        KRProgressHUD.show()
+        LoaderManager.shared.show()
 
         api.startService(
             with: .POST,
@@ -133,7 +133,7 @@ final class SubscriptionViewModel: ObservableObject {
         ) { result in
 
             DispatchQueue.main.async {
-                KRProgressHUD.dismiss()
+                LoaderManager.shared.hide()
 
                 switch result {
 

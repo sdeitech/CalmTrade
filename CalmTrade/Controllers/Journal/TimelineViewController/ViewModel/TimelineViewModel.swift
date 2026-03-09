@@ -29,7 +29,7 @@ final class TimelineViewModel {
 
     func fetch() {
         let param = ["date": selectedDate]
-        KRProgressHUD.show()
+        LoaderManager.shared.show()
         api.startService(
             with: .GET,
             path: "session/timeline",
@@ -38,7 +38,7 @@ final class TimelineViewModel {
             modelType: TimelineResponse.self
         ) { [weak self] result in
             DispatchQueue.main.async {
-                KRProgressHUD.dismiss()
+                LoaderManager.shared.hide()
                 switch result {
                 case .Success(let response):
                     guard let data = response?.data else {

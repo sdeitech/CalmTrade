@@ -39,12 +39,12 @@ final class CheckoutWebViewController: UIViewController, WKNavigationDelegate {
 
             decisionHandler(.cancel)
 
-            KRProgressHUD.show()
+            LoaderManager.shared.show()
 
             bundleVM?.syncPayment { [weak self] success in
                 guard let self = self else { return }
 
-                KRProgressHUD.dismiss()
+                LoaderManager.shared.hide()
 
                 if success {
 

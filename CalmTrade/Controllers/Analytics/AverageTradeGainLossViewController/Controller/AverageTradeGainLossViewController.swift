@@ -38,7 +38,7 @@ final class AverageTradeGainLossViewController: UIViewController {
 
     private func setupVM() {
         vm.onLoading = { isLoading in
-            isLoading ? KRProgressHUD.show() : KRProgressHUD.dismiss()
+            isLoading ? LoaderManager.shared.show() : LoaderManager.shared.hide()
         }
 
         vm.onData = { [weak self] data in

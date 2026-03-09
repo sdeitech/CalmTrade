@@ -129,7 +129,7 @@ final class ProfileTabsHostViewController: UIViewController {
         }
         
         deleteAccountViewModel.onLoading = { isLoading in
-            isLoading ? KRProgressHUD.show() : KRProgressHUD.dismiss()
+            isLoading ? LoaderManager.shared.show() : LoaderManager.shared.hide()
         }
 
         deleteAccountViewModel.onSuccess = { [weak self] in
@@ -264,6 +264,7 @@ final class ProfileTabsHostViewController: UIViewController {
                 case .allowed:
                     let twoFactorVC = UIStoryboard(name: Constants.Storyboard.Devices, bundle: nil)
                         .instantiateViewController(withIdentifier: "PolarConnectionViewController") as! PolarConnectionViewController
+                    twoFactorVC.isFromStart = false
                     self.navigationController?.pushViewController(twoFactorVC)
                 case .locked:
                     FeatureGate.shared.presentUpgradeSheet(for: FeatureKey.realtime360Sync, from: self)

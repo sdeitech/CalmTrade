@@ -24,7 +24,7 @@ final class NotificationSettingsViewModel {
 
     // MARK: - Fetch
     func fetchSettings() {
-        KRProgressHUD.show()
+        LoaderManager.shared.show()
 
         api.startService(
             with: .GET,
@@ -34,7 +34,7 @@ final class NotificationSettingsViewModel {
             modelType: NotificationSettingsResponse.self
         ) { [weak self] result in
             DispatchQueue.main.async {
-                KRProgressHUD.dismiss()
+                LoaderManager.shared.hide()
 
                 switch result {
                 case .Success(let response):
@@ -72,7 +72,7 @@ final class NotificationSettingsViewModel {
     private func sendUpdate() {
         guard let params = settings?.toParams() else { return }
 
-        KRProgressHUD.show()
+        LoaderManager.shared.show()
 
         api.startService(
             with: .PATCH,
@@ -82,7 +82,7 @@ final class NotificationSettingsViewModel {
             modelType: NotificationSettingsResponse.self
         ) { [weak self] result in
             DispatchQueue.main.async {
-                KRProgressHUD.dismiss()
+                LoaderManager.shared.hide()
 
                 switch result {
                 case .Success(let response):

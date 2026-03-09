@@ -79,17 +79,17 @@ final class StartSessionViewController: UIViewController {
         }
 
         viewModel.onLoading = { loading in
-            loading ? KRProgressHUD.show()
-                    : KRProgressHUD.dismiss()
+            loading ? LoaderManager.shared.show()
+                    : LoaderManager.shared.hide()
         }
 
         viewModel.onSuccess = { [weak self] in
-            KRProgressHUD.dismiss()
+            LoaderManager.shared.hide()
             self?.navigationController?.popViewController()
         }
 
         viewModel.onError = { [weak self] message in
-            KRProgressHUD.dismiss()
+            LoaderManager.shared.hide()
             self?.showAlert(message)
         }
     }

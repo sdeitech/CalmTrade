@@ -116,6 +116,7 @@ class HomeViewController: BaseViewController, UICollectionViewDataSource, UIColl
             guard let self = self else { return }
             let vc = UIStoryboard(name: Constants.Storyboard.Devices, bundle: nil)
                 .instantiateViewController(withIdentifier: "PolarConnectionViewController") as! PolarConnectionViewController
+            vc.isFromStart = false
             self.navigationController?.pushViewController(vc, animated: true)
         }
 
@@ -163,6 +164,7 @@ class HomeViewController: BaseViewController, UICollectionViewDataSource, UIColl
                     guard let self = self else { return }
                     let vc = UIStoryboard(name: Constants.Storyboard.Devices, bundle: nil)
                         .instantiateViewController(withIdentifier: "PolarConnectionViewController") as! PolarConnectionViewController
+                    vc.isFromStart = false
                     self.navigationController?.pushViewController(vc, animated: true)
                 }
 

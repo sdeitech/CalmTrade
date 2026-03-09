@@ -33,7 +33,7 @@ enum BuildConfig {
 
     static var baseURL: String {
         switch current {
-        case .local:   return "https://vdfqw6hb-8086.inc1.devtunnels.ms/"
+        case .local:   return "https://pnh6dngr-8086.inc1.devtunnels.ms/"
         case .staging: return "http://44.211.113.36:8086/"
         case .live:    return "https://api.yourdomain.com"
         }

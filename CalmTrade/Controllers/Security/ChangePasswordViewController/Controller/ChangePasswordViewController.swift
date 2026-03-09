@@ -68,12 +68,12 @@ final class ChangePasswordViewController: BaseViewController {
         }
 
         sender.isEnabled = false
-        KRProgressHUD.show()
+        LoaderManager.shared.show()
 
         viewModel.submit { [weak self] success, message in
             guard let self else { return }
             sender.isEnabled = true
-            KRProgressHUD.dismiss()
+            LoaderManager.shared.hide()
 
             if success {
                 self.navigationController?.popViewController()

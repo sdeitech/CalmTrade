@@ -45,22 +45,22 @@ extension AnalyticsPageViewController: UIPageViewControllerDataSource {
         guard let index = orderedVCs.firstIndex(of: viewController),
               index > 0 else { return nil }
 
-        let targetSection = vm.sectionFor(index: index - 1)
+        let previousIndex = index - 1
+        let targetSection = vm.sectionFor(index: previousIndex)
 
-        // Gate access here
         if targetSection != .topAnalytics {
             let access = FeatureGate.shared.access(for: FeatureKey.tradeAnalyticsStats)
             switch access {
             case .allowed:
-                return orderedVCs[index + 1]
-            case .locked(let plan):
+                return orderedVCs[previousIndex]   // ✅ correct index
+            case .locked:
                 FeatureGate.shared.presentUpgradeSheet(for: FeatureKey.tradeAnalyticsStats,
                                                        from: self)
                 return nil
             }
         }
 
-        return orderedVCs[index - 1]
+        return orderedVCs[previousIndex]
     }
 
     func pageViewController(_ pageViewController: UIPageViewController,
@@ -69,14 +69,15 @@ extension AnalyticsPageViewController: UIPageViewControllerDataSource {
         guard let index = orderedVCs.firstIndex(of: viewController),
               index < orderedVCs.count - 1 else { return nil }
 
-        let targetSection = vm.sectionFor(index: index + 1)
+        let nextIndex = index + 1
+        let targetSection = vm.sectionFor(index: nextIndex)
 
-        // Gate access here
         if targetSection != .topAnalytics {
             let access = FeatureGate.shared.access(for: FeatureKey.tradeAnalyticsStats)
+
             switch access {
             case .allowed:
-                return orderedVCs[index + 1]
+                return orderedVCs[nextIndex]
             case .locked:
                 FeatureGate.shared.presentUpgradeSheet(for: FeatureKey.tradeAnalyticsStats,
                                                        from: self)
@@ -84,8 +85,9 @@ extension AnalyticsPageViewController: UIPageViewControllerDataSource {
             }
         }
 
-        return orderedVCs[index + 1]
+        return orderedVCs[nextIndex]
     }
+
 }
 
 

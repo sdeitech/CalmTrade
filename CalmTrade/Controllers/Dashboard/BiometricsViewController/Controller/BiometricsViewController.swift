@@ -117,6 +117,7 @@ final class BiometricsViewController: UIViewController {
             guard let self = self else { return }
             let vc = UIStoryboard(name: Constants.Storyboard.Devices, bundle: nil)
                 .instantiateViewController(withIdentifier: "PolarConnectionViewController") as! PolarConnectionViewController
+            vc.isFromStart = false
             self.navigationController?.pushViewController(vc, animated: true)
         }
 
@@ -169,6 +170,7 @@ final class BiometricsViewController: UIViewController {
                 guard let self = self else { return }
                 let vc = UIStoryboard(name: Constants.Storyboard.Devices, bundle: nil)
                     .instantiateViewController(withIdentifier: "PolarConnectionViewController") as! PolarConnectionViewController
+                vc.isFromStart = false
                 self.navigationController?.pushViewController(vc, animated: true)
             }
 
@@ -373,6 +375,18 @@ final class BiometricsViewController: UIViewController {
     @IBAction func btnSleepDataTapped(_ sender: Any) {
         let vc = UIStoryboard(name: Constants.Storyboard.Biometrics, bundle: nil)
             .instantiateViewController(withIdentifier: "SleepInsightViewController")
+        self.navigationController?.pushViewController(vc, transitionType: .fade)
+    }
+    
+    @IBAction func btnSleepScoreTapped(_ sender: Any) {
+        let vc = UIStoryboard(name: Constants.Storyboard.Biometrics, bundle: nil)
+            .instantiateViewController(withIdentifier: "SleepScoreViewController") as! SleepScoreViewController
+        self.navigationController?.pushViewController(vc, transitionType: .fade)
+    }
+    
+    @IBAction func btnNightlyRechargeTapped(_ sender: Any) {
+        let vc = UIStoryboard(name: Constants.Storyboard.Biometrics, bundle: nil)
+            .instantiateViewController(withIdentifier: "NightlyRechargeViewController") as! NightlyRechargeViewController
         self.navigationController?.pushViewController(vc, transitionType: .fade)
     }
     

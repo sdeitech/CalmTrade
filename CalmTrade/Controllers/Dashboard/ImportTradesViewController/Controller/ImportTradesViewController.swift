@@ -44,7 +44,7 @@ final class ImportTradesViewController: BaseViewController, UIDocumentPickerDele
     private func setupBindings() {
         viewModel.onLoading = { [weak self] loading in
             self?.view.isUserInteractionEnabled = !loading
-            loading ? KRProgressHUD.show() : KRProgressHUD.dismiss()
+            loading ? LoaderManager.shared.show() : LoaderManager.shared.hide()
         }
 
         viewModel.onError = { [weak self] msg in

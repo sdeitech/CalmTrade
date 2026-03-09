@@ -75,6 +75,7 @@ class ConnectViewController: BaseViewController {
     
     @IBAction func btnConnectPolarTapped(_ sender: UIButton) {
         let polarVC = UIStoryboard(name: Constants.Storyboard.Devices, bundle: nil).instantiateViewController(withIdentifier: "PolarConnectionViewController") as! PolarConnectionViewController
+        polarVC.isFromStart = true
         navigationController?.pushViewController(polarVC, transitionType: .fade, duration: 0.03)
     }
 }

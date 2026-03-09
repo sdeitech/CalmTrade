@@ -61,7 +61,7 @@ final class ChangeEmailViewController: BaseViewController {
 
     private func bindViewModel() {
         viewModel.onLoading = { isLoading in
-            isLoading ? KRProgressHUD.show() : KRProgressHUD.dismiss()
+            isLoading ? LoaderManager.shared.show() : LoaderManager.shared.hide()
         }
 
         viewModel.onError = { [weak self] message in

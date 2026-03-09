@@ -24,7 +24,7 @@ final class DataManagementViewController: UIViewController {
     private func bindViewModel() {
 
         viewModel.onLoading = { isLoading in
-            isLoading ? KRProgressHUD.show() : KRProgressHUD.dismiss()
+            isLoading ? LoaderManager.shared.show() : LoaderManager.shared.hide()
         }
         
         viewModel.onSuccess = { [weak self] message in

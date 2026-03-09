@@ -250,6 +250,7 @@ extension PolarManager {
 
         isHrReady = false
         hrStartRetry = 0
+        setLocalTimeNow()
 
         NSLog("[PM] connected; waiting for DIS callbacks (firmware/software revision)")
         broadcastSnapshotIfCurrent()

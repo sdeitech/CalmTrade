@@ -51,10 +51,10 @@ final class BrokerWebViewController: UIViewController, WKNavigationDelegate {
     }
 
     private func handleBrokerSuccess(url: URL) {
-        KRProgressHUD.show()
+        LoaderManager.shared.show()
         viewModel?.callBrokerCallbackAndSync() { [weak self] ok in
             guard let self else { return }
-            KRProgressHUD.dismiss()
+            LoaderManager.shared.hide()
 
             if ok {
                 self.navigationController?.popViewController()

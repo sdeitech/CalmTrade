@@ -5,6 +5,8 @@
 
 import Foundation
 import UIKit
+import UserNotifications
+
 
 extension Notification.Name {
     /// Posted whenever a device snapshot (battery/firmware/charging or settings) changes.
@@ -25,6 +27,9 @@ final class CTPolarDeviceRepository: CTDeviceRepository {
         lastSnapshotPost = now
         NotificationCenter.default.post(name: .ctDeviceSnapshotDidChange, object: nil)
     }
+    private let lowBatteryThreshold = 20
+    private let recoveryThreshold = 25
+    private let notificationCooldown: TimeInterval = 60 * 15 // 15 minutes
 
     private init() {
         // Keep device list warm as discovery/connection changes
@@ -81,13 +86,24 @@ final class CTPolarDeviceRepository: CTDeviceRepository {
         // Lean battery callback (optional if you also emit a full onSnapshot)
         pm.onBatteryUpdate = { [weak self] id, level, charging in
             guard let self else { return }
+
+            let intLevel = Int(level)
+            let isCharging = charging ?? false
+
+            // Update cache (existing behavior)
             if var s = self.cache[id] {
-                s.batteryPercent = Int(level)
-                s.isCharging     = charging
+                s.batteryPercent = intLevel
+                s.isCharging     = isCharging
                 s.lastSyncedAt   = Date()
                 self.cache[id]   = s
                 self.postSnapshotChange()
             }
+
+            self.handleBatteryLifecycle(
+                id: id,
+                level: intLevel,
+                charging: isCharging
+            )
         }
     }
 
@@ -118,6 +134,9 @@ final class CTPolarDeviceRepository: CTDeviceRepository {
 
     private func appBatteryNotif(for id: String) -> Bool {
         ud.bool(forKey: "ct.dev.\(id).batteryNotif")
+    }
+    private func key(_ id: String, _ suffix: String) -> String {
+        "ct.dev.\(id).\(suffix)"
     }
     private func setAppBatteryNotif(_ enabled: Bool, id: String) {
         ud.set(enabled, forKey: "ct.dev.\(id).batteryNotif")
@@ -217,6 +236,106 @@ final class CTPolarDeviceRepository: CTDeviceRepository {
                 }
             }
         }
+    }
+    
+    private func handleBatteryLifecycle(
+        id: String,
+        level: Int,
+        charging: Bool
+    ) {
+        guard appBatteryNotif(for: id) else { return }
+
+        let now = Date()
+
+        let lowNotifiedKey = key(id, "lowNotified")
+        let chargingStartedKey = key(id, "chargingStartedNotified")
+        let chargingCompletedKey = key(id, "chargingCompletedNotified")
+        let lastChargingStateKey = key(id, "lastChargingState")
+        let lastNotificationDateKey = key(id, "lastNotificationDate")
+
+        let previousCharging = UserDefaults.standard.bool(forKey: lastChargingStateKey)
+
+        // Cooldown guard
+        if let lastDate = UserDefaults.standard.object(forKey: lastNotificationDateKey) as? Date {
+            if now.timeIntervalSince(lastDate) < notificationCooldown {
+                UserDefaults.standard.set(charging, forKey: lastChargingStateKey)
+                return
+            }
+        }
+
+        // ---------------------------
+        // 🔻 LOW BATTERY
+        // ---------------------------
+        if !charging && level <= lowBatteryThreshold {
+            let already = UserDefaults.standard.bool(forKey: lowNotifiedKey)
+            if !already {
+                triggerNotification(
+                    title: "Low Battery",
+                    body: "Your Polar device battery is at \(level)%."
+                )
+                UserDefaults.standard.set(true, forKey: lowNotifiedKey)
+                UserDefaults.standard.set(now, forKey: lastNotificationDateKey)
+            }
+        }
+
+        // Reset low battery if recovered
+        if level >= recoveryThreshold {
+            UserDefaults.standard.set(false, forKey: lowNotifiedKey)
+        }
+
+        // ---------------------------
+        // ⚡ CHARGING STARTED
+        // ---------------------------
+        if charging && !previousCharging {
+            let already = UserDefaults.standard.bool(forKey: chargingStartedKey)
+            if !already {
+                triggerNotification(
+                    title: "Charging Started",
+                    body: "Your Polar device is now charging."
+                )
+                UserDefaults.standard.set(true, forKey: chargingStartedKey)
+                UserDefaults.standard.set(false, forKey: chargingCompletedKey)
+                UserDefaults.standard.set(now, forKey: lastNotificationDateKey)
+            }
+        }
+
+        // Reset charging-start flag if unplugged
+        if !charging {
+            UserDefaults.standard.set(false, forKey: chargingStartedKey)
+        }
+
+        // ---------------------------
+        // 🔋 CHARGING COMPLETED
+        // ---------------------------
+        if previousCharging && !charging && level == 100 {
+            let already = UserDefaults.standard.bool(forKey: chargingCompletedKey)
+            if !already {
+                triggerNotification(
+                    title: "Charging Complete",
+                    body: "Your Polar device is fully charged."
+                )
+                UserDefaults.standard.set(true, forKey: chargingCompletedKey)
+                UserDefaults.standard.set(now, forKey: lastNotificationDateKey)
+            }
+        }
+
+        // Store latest charging state
+        UserDefaults.standard.set(charging, forKey: lastChargingStateKey)
+    }
+    
+    private func triggerNotification(title: String, body: String) {
+        let content = UNMutableNotificationContent()
+        content.title = title
+        content.body = body
+        content.sound = .default
+
+        let request = UNNotificationRequest(
+            identifier: UUID().uuidString,
+            content: content,
+            trigger: nil
+        )
+
+        UNUserNotificationCenter.current().add(request)
     }
 }
 

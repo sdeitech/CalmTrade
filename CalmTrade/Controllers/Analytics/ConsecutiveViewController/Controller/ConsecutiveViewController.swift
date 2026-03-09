@@ -56,9 +56,9 @@ final class ConsecutiveViewController: UIViewController {
             DispatchQueue.main.async {
                 // integrate KRProgressHUD if needed
                 if isLoading {
-                    // KRProgressHUD.show()
+                    // LoaderManager.shared.show()
                 } else {
-                    // KRProgressHUD.dismiss()
+                    // LoaderManager.shared.hide()
                 }
             }
         }

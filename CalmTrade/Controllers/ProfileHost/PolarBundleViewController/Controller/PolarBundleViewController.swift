@@ -56,13 +56,13 @@ final class PolarBundleViewController: UIViewController {
 
         vm.onError = { [weak self] msg in
             guard let s = self else { return }
-            KRProgressHUD.dismiss()
+            LoaderManager.shared.hide()
             s.showAlert(message: msg)
         }
 
         vm.onCheckoutCreated = { [weak self] checkoutURL in
             guard let self else { return }
-            KRProgressHUD.dismiss()
+            LoaderManager.shared.hide()
             self.openCheckout(url: checkoutURL)
         }
     }
@@ -133,7 +133,7 @@ final class PolarBundleViewController: UIViewController {
     }
 
     @IBAction func btnContinueTapped(_ sender: Any) {
-        KRProgressHUD.show()
+        LoaderManager.shared.show()
         vm.startCheckout()
     }
 }

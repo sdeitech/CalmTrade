@@ -40,17 +40,17 @@ final class TwoFactorViewController: UIViewController {
 
             switch state {
             case .idle:
-                KRProgressHUD.dismiss()
+                LoaderManager.shared.hide()
 
             case .loading:
-                KRProgressHUD.show()
+                LoaderManager.shared.show()
 
             case .showOTP:
-                KRProgressHUD.dismiss()
+                LoaderManager.shared.hide()
                 self.presentOTPVerification(isDisabling: false)
 
             case .error(let message):
-                KRProgressHUD.dismiss()
+                LoaderManager.shared.hide()
                 self.revertSwitch()
                 self.showError(message)
             }
