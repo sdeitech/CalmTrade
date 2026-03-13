@@ -7,7 +7,6 @@
 //
 
 import Foundation
-import FirebaseAuth
 
 // MARK: - Service Protocol
 

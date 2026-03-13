@@ -54,7 +54,7 @@ final class CalmScoreHub {
 
         publish(phase: phase)
         attachObservers(for: phase)
-        startHeartbeat()
+//        startHeartbeat()
     }
 
     func stop() {
@@ -78,10 +78,10 @@ final class CalmScoreHub {
 
     private func attachObservers(for phase: CalmScorePhase) {
 
-        // Mirror (bulk update)
-        let tok1 = NotificationCenter.default.addObserver(
-            forName: .ctMetricsDidMirror, object: nil, queue: .main
-        ) { [weak self] _ in self?.publish(phase: phase) }
+//        // Mirror (bulk update)
+//        let tok1 = NotificationCenter.default.addObserver(
+//            forName: .ctMetricsDidMirror, object: nil, queue: .main
+//        ) { [weak self] _ in self?.publish(phase: phase) }
 
         // Individual metric updates
         let tok2 = NotificationCenter.default.addObserver(
@@ -96,7 +96,8 @@ final class CalmScoreHub {
             }
         }
 
-        observeTokens.append(contentsOf: [tok1, tok2])
+        observeTokens.append(contentsOf: [tok2])
+//        observeTokens.append(contentsOf: [tok1, tok2])
     }
 
     private var lastActiveTime: Date = Date()

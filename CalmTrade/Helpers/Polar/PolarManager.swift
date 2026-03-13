@@ -230,17 +230,6 @@ extension PolarManager {
         
         let lowered = dev.name.lowercased()
         DeviceManager.shared.currentSource = lowered.contains("h10") ? .polarH10 : .polar360
-        
-        // ✅ Ensure Polar 360/OH1/Verity offline PPG recording is active
-        if lowered.contains("360") || lowered.contains("verity") || lowered.contains("oh1") {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { [weak self] in
-                self?.start360OfflinePpg(dev.id)
-            }
-        }
-        
-        //        if lowered.contains("360"), isFirstTimeUse(for: dev) {
-        //            DispatchQueue.main.async { [weak self] in self?.onFirstTimeUseNeeded?(dev) }
-        //        }
 
         defaults.set(dev.id,   forKey: lastDeviceIdKey)
         defaults.set(dev.name, forKey: lastDeviceNameKey)
@@ -250,6 +239,8 @@ extension PolarManager {
 
         isHrReady = false
         hrStartRetry = 0
+        ppiStartDesired = false
+        offlineStartInFlight.remove(dev.id)
         setLocalTimeNow()
 
         NSLog("[PM] connected; waiting for DIS callbacks (firmware/software revision)")
@@ -391,6 +382,9 @@ extension PolarManager {
         case .feature_polar_features_configuration_service:
             NSLog("[PM][FTU] CFG feature became ready; evaluating FTU now")
             maybeEvaluateFTU(reason: "feature-ready-callback")
+
+        case .feature_polar_device_time_setup:
+            setLocalTimeNow(identifier)
             
         case .feature_polar_activity_data:
                 NSLog("[PM][ACT] Activity feature ready — starting minute poller")
@@ -429,6 +423,15 @@ extension Notification.Name {
 // MARK: - Capability checks
 
 extension PolarManager {
+
+    func isRealtime360SyncAllowed() -> Bool {
+        switch FeatureGate.shared.access(for: FeatureKey.realtime360Sync) {
+        case .allowed:
+            return true
+        case .locked:
+            return false
+        }
+    }
 
     func supportsDeviceManagement(_ deviceId: String) -> Bool {
         api.isFeatureReady(deviceId, feature: .feature_polar_features_configuration_service)

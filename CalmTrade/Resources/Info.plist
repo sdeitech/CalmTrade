@@ -4,8 +4,8 @@
 <dict>
 	<key>BGTaskSchedulerPermittedIdentifiers</key>
 	<array>
-		<string>com.burnscapital.calmtradeapp.refresh</string>
-		<string>com.burnscapital.calmtradeapp.processing</string>
+		<string>com.calmtrade.calmScore.refresh</string>
+		<string>com.calmtrade.calmScore.processing</string>
 	</array>
 	<key>CFBundleURLTypes</key>
 	<array>

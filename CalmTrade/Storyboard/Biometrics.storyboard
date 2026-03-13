@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="23727" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES">
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="23504" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES">
     <device id="retina6_9" orientation="portrait" appearance="light"/>
     <dependencies>
-        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="23721"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="23506"/>
         <capability name="Image references" minToolsVersion="12.0"/>
         <capability name="Named colors" minToolsVersion="9.0"/>
         <capability name="Safe area layout guides" minToolsVersion="9.0"/>
@@ -2724,10 +2724,10 @@ been inactive or relaxed for several minutes.</string>
             </objects>
             <point key="canvasLocation" x="25.90909090909091" y="717.9916317991632"/>
         </scene>
-        <!--Nightly Recharge View Controller-->
+        <!--View Controller-->
         <scene sceneID="XYp-0d-sQJ">
             <objects>
-                <viewController storyboardIdentifier="NightlyRechargeViewController" id="xf0-8b-NRK" customClass="NightlyRechargeViewController" customModule="CalmTrade" customModuleProvider="target" sceneMemberID="viewController">
+                <viewController id="xf0-8b-NRK" sceneMemberID="viewController">
                     <view key="view" contentMode="scaleToFill" id="7UT-aU-Laf">
                         <rect key="frame" x="0.0" y="0.0" width="440" height="956"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
@@ -2872,8 +2872,8 @@ been inactive or relaxed for several minutes.</string>
                                         <color key="textColor" red="0.20000000000000001" green="0.81568627449999997" blue="0.80784313730000001" alpha="1" colorSpace="calibratedRGB"/>
                                         <nil key="highlightedColor"/>
                                     </label>
-                                    <view contentMode="scaleToFill" ambiguous="YES" translatesAutoresizingMaskIntoConstraints="NO" id="R31-2z-5pt">
-                                        <rect key="frame" x="24" y="246" width="393" height="128"/>
+                                    <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="R31-2z-5pt">
+                                        <rect key="frame" x="24" y="231" width="393" height="143"/>
                                         <color key="backgroundColor" systemColor="systemBackgroundColor"/>
                                     </view>
                                 </subviews>
@@ -2896,6 +2896,7 @@ been inactive or relaxed for several minutes.</string>
                                     <constraint firstItem="TzO-z8-4hb" firstAttribute="centerX" secondItem="zYy-EE-3wR" secondAttribute="centerX" id="q0s-ut-Ild"/>
                                     <constraint firstItem="EAb-cQ-qlK" firstAttribute="centerX" secondItem="k9t-wQ-Aah" secondAttribute="centerX" id="rad-Qt-fSZ"/>
                                     <constraint firstItem="dKQ-v3-RaZ" firstAttribute="top" secondItem="TzO-z8-4hb" secondAttribute="bottom" constant="19" id="x6D-t3-Nsy"/>
+                                    <constraint firstAttribute="bottom" secondItem="R31-2z-5pt" secondAttribute="bottom" constant="417" id="xaF-QC-Z6c"/>
                                     <constraint firstItem="k9t-wQ-Aah" firstAttribute="trailing" secondItem="dKQ-v3-RaZ" secondAttribute="trailing" constant="-11" id="zj7-Yx-bZk"/>
                                 </constraints>
                             </view>

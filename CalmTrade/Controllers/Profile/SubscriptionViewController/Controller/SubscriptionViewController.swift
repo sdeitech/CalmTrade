@@ -54,7 +54,6 @@ final class SubscriptionViewController: UIViewController {
 
         bindViewModel()
 
-        
         vm.fetchPlans()                 // load upgrade options
     }
     

@@ -60,8 +60,6 @@ enum SubscriptionPlanCase {
     }
 }
 
-
-
 final class FeatureGate {
 
     static let shared = FeatureGate()
@@ -70,14 +68,16 @@ final class FeatureGate {
 
     func access(for feature: String) -> FeatureAccess {
         guard let user = SessionManager.shared.current else {
-            return .locked(plan: .free)
+//            return .locked(plan: .free)
+            return .allowed
         }
 
         if user.hasFeature(feature) {
             return .allowed
         }
 
-        return .locked(plan: requiredPlan(for: feature))
+//        return .locked(plan: requiredPlan(for: feature))
+        return .allowed
     }
 
     private func requiredPlan(for feature: String) -> SubscriptionPlanCase {

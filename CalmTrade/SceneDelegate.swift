@@ -6,13 +6,9 @@
 //
 
 import UIKit
-import FirebaseCore
 import GoogleSignIn
-import IQKeyboardManagerSwift
 import FBSDKCoreKit
 import BackgroundTasks
-import FirebaseCrashlytics
-import StoreKit
 
 class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     
@@ -22,43 +18,10 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
         guard let windowScene = (scene as? UIWindowScene) else { return }
 
-        // EARLIEST INITIALIZATION - Firebase must be configured before any other Firebase services are accessed
-        // Only configure Firebase if it hasn't been configured elsewhere (e.g., AppDelegate for iOS 12 and earlier)
-        if FirebaseApp.app() == nil {
-            FirebaseApp.configure()
-        }
-        Crashlytics.crashlytics().setCrashlyticsCollectionEnabled(true)
-
-        // 1. FASTEST POSSIBLE UI SETUP
         let window = UIWindow(windowScene: windowScene)
         window.rootViewController = initialRootViewController()
         window.makeKeyAndVisible()
         self.window = window
-
-        let center = UNUserNotificationCenter.current()
-        center.delegate = self    // REQUIRED
-        center.requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
-            print("Notification permission granted: \(granted)")
-        }
-
-        // 2. OTHER LIGHTWEIGHT CRITICAL INITIALIZATION
-        IQKeyboardManager.shared.enableAutoToolbar = true
-        IQKeyboardManager.shared.isEnabled = true
-
-        // Initialize StoreKit helper to prevent authentication errors
-//        StoreKitHelper.shared.configureStoreKit()
-
-        // Initialize Core Data without blocking UI (deferring heavy work until after UI is visible)
-        DispatchQueue.main.async {
-            if let appDelegate = UIApplication.shared.delegate as? AppDelegate {
-                _ = appDelegate.persistentContainer.viewContext
-            }
-        }
-
-        // 3. DEFER ALL HEAVY WORK (runs after UI is visible)
-        DispatchQueue.global(qos: .userInitiated).async {
-            self.initializeBackgroundSystems(scene, session: session, connectionOptions: connectionOptions)
-        }
         
         NotificationCenter.default.addObserver(
             self,
@@ -66,53 +29,6 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
             name: .authDidExpire,
             object: nil
         )
-    }
-    
-    // MARK: - Deferred initialization
-    private func initializeBackgroundSystems(
-        _ scene: UIScene,
-        session: UISceneSession,
-        connectionOptions: UIScene.ConnectionOptions
-    ) {
-        // Initialize Polar ingestion services in background
-        DispatchQueue.global(qos: .background).async {
-            let polarSleepSource = PolarBleSleepSource()
-            Polar360SleepIngestor.shared.configure(source: polarSleepSource)
-
-            PolarManager.shared.on360OfflinePpg = { ppg, start in
-                guard let devId = PolarManager.shared.connectedDevice?.id else { return }
-                _ = OfflinePPGIngestor.shared.ingest(
-                    deviceId: devId,
-                    start: start,
-                    ppg: ppg,
-                    sampleRateHz: 40
-                )
-            }
-        }
-
-        // Initialize Facebook SDK asynchronously to prevent blocking
-        DispatchQueue.global(qos: .background).async {
-            FacebookManager.shared.configureFacebookSDK()
-        }
-
-        // Register background tasks
-        DispatchQueue.global(qos: .background).async {
-            BGTaskScheduler.shared.register(
-                forTaskWithIdentifier: "com.calmtrade.calmScore.refresh",
-                using: nil
-            ) { task in
-                self.handleCalmScoreRefresh(task: task as! BGAppRefreshTask)
-            }
-
-            BGTaskScheduler.shared.register(
-                forTaskWithIdentifier: "com.calmtrade.calmScore.processing",
-                using: nil
-            ) { task in
-                self.handleCalmScoreProcessing(task: task as! BGProcessingTask)
-            }
-
-            self.scheduleCalmScoreRefresh()
-        }
     }
     
     func sceneDidDisconnect(_ scene: UIScene) {

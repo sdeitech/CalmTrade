@@ -77,6 +77,10 @@ extension PolarManager {
     // MARK: - TIME SYNC (SET LOCAL TIME)
     func setLocalTimeNow(_ deviceId: String? = nil) {
         guard let id = deviceId ?? currentIdentifier else { return }
+        guard api.isFeatureReady(id, feature: .feature_polar_device_time_setup) else {
+            NSLog("[PM][Ctrl] setLocalTime skipped; time setup feature not ready for \(id)")
+            return
+        }
 
         NSLog("[PM][Ctrl] setLocalTimeNow for \(id)")
         let now = Date()

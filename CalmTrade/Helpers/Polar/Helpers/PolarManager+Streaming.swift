@@ -26,6 +26,13 @@ extension PolarManager {
         let isOptical = name.contains("360") || name.contains("verity") || name.contains("oh1")
         
         if isOptical {
+            guard isRealtime360SyncAllowed() else {
+                ppiStartDesired = false
+                #if DEBUG
+                print("Realtime 360 sync is locked; skipping PPI auto-start")
+                #endif
+                return
+            }
             // We want PPI, but only once the feature is ready
             ppiStartDesired = true
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.30) {
@@ -171,6 +178,10 @@ extension PolarManager {
 
     func maybeStartPpiWhenReady(for device: ScannedPolarDevice, retry: Int = 0) {
         guard ppiStartDesired else { return }
+        guard isRealtime360SyncAllowed() else {
+            ppiStartDesired = false
+            return
+        }
         if ppiStreamDisposable != nil || isPpiStarting { return }
 
         let ready = api.isFeatureReady(device.id, feature: .feature_polar_online_streaming)
