@@ -100,6 +100,9 @@ final class LiveDataRouter {
                                             unit: "bpm",
                                             source: src,
                                             date: ts)
+            NotificationCenter.default.post(name: .ctMetricUpdated,
+                                            object: nil,
+                                            userInfo: ["kind": "heartRate", "date": ts])
             NotificationCenter.default.post(name: .ctMetricsDidMirror, object: nil)
         }
 
@@ -141,6 +144,18 @@ final class LiveDataRouter {
 
         let rr300 = rrBuffer.filter { $0.ts >= ts.addingTimeInterval(-windowSecSDNN) }.map { $0.ms }
         let rr200 = rrBuffer.filter { $0.ts >= ts.addingTimeInterval(-windowSecRMSSD) }.map { $0.ms }
+        let src = label.ctMetricSource
+
+        if let liveBpm = computeHeartRate(rr200), liveBpm.isFinite, liveBpm > 0 {
+            CTMetricsRepository.shared.save(kind: .heartRate,
+                                            value: liveBpm,
+                                            unit: "bpm",
+                                            source: src,
+                                            date: ts)
+            NotificationCenter.default.post(name: .ctMetricUpdated,
+                                            object: nil,
+                                            userInfo: ["kind": "heartRate", "date": ts])
+        }
 
         var sdnnComputed: Double?
         var rmssdSmoothed: Double?
@@ -155,12 +170,14 @@ final class LiveDataRouter {
                 lnEMA = limited
                 rmssdSmoothed = exp(limited)
 
-                let src = label.ctMetricSource
                 CTMetricsRepository.shared.save(kind: .rmssd,
                                                 value: rmssdSmoothed!,
                                                 unit: "ms",
                                                 source: src,
                                                 date: ts)
+                NotificationCenter.default.post(name: .ctMetricUpdated,
+                                                object: nil,
+                                                userInfo: ["kind": "rmssd", "date": ts])
                 NotificationCenter.default.post(name: .ctMetricsDidMirror, object: nil)
             }
         }
@@ -170,12 +187,14 @@ final class LiveDataRouter {
             let sdnn = computeSDNN(rr300)
             if sdnn.isFinite, sdnn > 0 {
                 sdnnComputed = sdnn
-                let src = label.ctMetricSource
                 CTMetricsRepository.shared.save(kind: .sdnn,
                                                 value: sdnn,
                                                 unit: "ms",
                                                 source: src,
                                                 date: ts)
+                NotificationCenter.default.post(name: .ctMetricUpdated,
+                                                object: nil,
+                                                userInfo: ["kind": "sdnn", "date": ts])
                 NotificationCenter.default.post(name: .ctMetricsDidMirror, object: nil)
             }
         }
@@ -232,6 +251,13 @@ final class LiveDataRouter {
         let mean = rr.reduce(0.0) { $0 + Double($1) } / Double(rr.count)
         let sumSq = rr.reduce(0.0) { $0 + pow(Double($1) - mean, 2.0) }
         return sqrt(sumSq / Double(rr.count - 1))
+    }
+
+    private func computeHeartRate(_ rr: [Int]) -> Double? {
+        guard !rr.isEmpty else { return nil }
+        let meanRR = rr.reduce(0.0) { $0 + Double($1) } / Double(rr.count)
+        guard meanRR > 0 else { return nil }
+        return 60000.0 / meanRR
     }
 
     private func median(_ xs: [Int]) -> Double {

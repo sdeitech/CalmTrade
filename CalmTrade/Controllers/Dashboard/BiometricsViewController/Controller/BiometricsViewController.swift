@@ -82,6 +82,13 @@ final class BiometricsViewController: UIViewController {
             object: nil
         )
 
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(appDidEnterBackground),
+            name: UIApplication.didEnterBackgroundNotification,
+            object: nil
+        )
+
         viewModel.start()
     }
 
@@ -190,7 +197,9 @@ final class BiometricsViewController: UIViewController {
 
         // Legacy labels
         viewModel.onDataUpdated = { [weak self] data in
-            self?.updateUI(with: data)
+            DispatchQueue.main.async {
+                self?.updateUI(with: data)
+            }
         }
 
         // Sleep Score tile
@@ -244,7 +253,7 @@ final class BiometricsViewController: UIViewController {
         lblStepsToday.text = data.stepsToday
         lblStepsDate.text = data.stepsDate
 
-        logBiometricsSteps(data: data)
+//        logBiometricsSteps(data: data)
     }
 
     private func logBiometricsSteps(data: BiometricData) {
@@ -332,6 +341,10 @@ final class BiometricsViewController: UIViewController {
 
     @objc private func appDidBecomeActive() {
         viewModel.handleAppDidBecomeActive()
+    }
+
+    @objc private func appDidEnterBackground() {
+        viewModel.handleAppDidEnterBackground()
     }
 
     deinit {
