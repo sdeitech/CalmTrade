@@ -100,6 +100,7 @@ final class PolarManager: NSObject,
 
     var onRHRComputed: ((Double, CTMetricSource, String) -> Void)?
     var onOfflinePpgIngested: ((Date, Int) -> Void)?
+    var sleepRecordingObservers: [UUID: (Bool, Bool) -> Void] = [:]
 
     var pendingBgCompletion: (() -> Void)?
     var lastBgAt: Date?
@@ -140,6 +141,7 @@ final class PolarManager: NSObject,
     var api: PolarBleApi!
     var searchDisposable: Disposable?
     var fwDisposable: Disposable?
+    var sleepRecordingDisposable: Disposable?
     var hrStreamDisposable: Disposable?
     var ppiStreamDisposable: Disposable?
     var ecgStreamDisposable: Disposable?
@@ -167,6 +169,15 @@ final class PolarManager: NSObject,
     var isPpiStarting = false
     var ppiStartRetry = 0
     var ppiStartDesired = false
+    private(set) var sleepRecordingState: (available: Bool, enabled: Bool) = (false, false) {
+        didSet {
+            guard oldValue != sleepRecordingState else { return }
+            NSLog("[PM][SLEEP] recording state changed available=\(sleepRecordingState.available) enabled=\(sleepRecordingState.enabled)")
+            for cb in sleepRecordingObservers.values {
+                cb(sleepRecordingState.available, sleepRecordingState.enabled)
+            }
+        }
+    }
 
     var offlineStartInFlight = Set<String>()
     var offlineActive        = Set<String>()
@@ -242,6 +253,7 @@ extension PolarManager {
         ppiStartDesired = false
         offlineStartInFlight.remove(dev.id)
         setLocalTimeNow()
+        startObservingSleepRecordingState()
 
         NSLog("[PM] connected; waiting for DIS callbacks (firmware/software revision)")
         broadcastSnapshotIfCurrent()
@@ -271,6 +283,7 @@ extension PolarManager {
         ppiStartRetry = 0
         isHrReady = false
         hrStartRetry = 0
+        stopObservingSleepRecordingState()
     }
 
     func hrValueReceived(_ identifier: String,
@@ -464,5 +477,139 @@ extension PolarManager {
                 NSLog("[PM][SLEEP] Sleep sync failed: \(error.localizedDescription)")
             }
         }
+    }
+
+    @discardableResult
+    func addSleepRecordingObserver(_ block: @escaping (Bool, Bool) -> Void) -> UUID {
+        let id = UUID()
+        sleepRecordingObservers[id] = block
+        block(sleepRecordingState.available, sleepRecordingState.enabled)
+        return id
+    }
+
+    func removeSleepRecordingObserver(_ id: UUID) {
+        sleepRecordingObservers.removeValue(forKey: id)
+    }
+
+    func startObservingSleepRecordingState() {
+        guard let deviceId = currentIdentifier else {
+            updateSleepRecordingState(available: false, enabled: false)
+            return
+        }
+
+        sleepRecordingDisposable?.dispose()
+        sleepRecordingDisposable = api.observeSleepRecordingState(identifier: deviceId)
+            .observe(on: MainScheduler.instance)
+            .subscribe(
+                onNext: { [weak self] enabledValues in
+                    guard let enabled = enabledValues.last else { return }
+                    self?.updateSleepRecordingState(available: true, enabled: enabled)
+                },
+                onError: { [weak self] error in
+                    NSLog("[PM][SLEEP] observe sleep recording state failed: %@", error.localizedDescription)
+                    self?.updateSleepRecordingState(available: false, enabled: false)
+                }
+            )
+
+        refreshSleepRecordingState()
+    }
+
+    func refreshSleepRecordingState() {
+        guard let deviceId = currentIdentifier else {
+            updateSleepRecordingState(available: false, enabled: false)
+            return
+        }
+
+        api.getSleepRecordingState(identifier: deviceId)
+            .observe(on: MainScheduler.instance)
+            .subscribe(
+                onSuccess: { [weak self] enabled in
+                    self?.updateSleepRecordingState(available: true, enabled: enabled)
+                },
+                onFailure: { [weak self] error in
+                    NSLog("[PM][SLEEP] get sleep recording state failed: %@", error.localizedDescription)
+                    self?.updateSleepRecordingState(available: false, enabled: false)
+                }
+            )
+            .disposed(by: disposeBag)
+    }
+
+    func stopSleepRecording(completion: ((Swift.Result<Void, Error>) -> Void)? = nil) {
+        guard let deviceId = currentIdentifier else {
+            let error = NSError(
+                domain: "PolarManager.SleepRecording",
+                code: -1,
+                userInfo: [NSLocalizedDescriptionKey: "No Polar device connected"]
+            )
+            completion?(.failure(error))
+            return
+        }
+
+        api.stopSleepRecording(identifier: deviceId)
+            .observe(on: MainScheduler.instance)
+            .subscribe(
+                onCompleted: { [weak self] in
+                    NSLog("[PM][SLEEP] stop sleep recording completed")
+                    self?.refreshSleepRecordingState()
+                    completion?(.success(()))
+                },
+                onError: { error in
+                    NSLog("[PM][SLEEP] stop sleep recording failed: %@", error.localizedDescription)
+                    completion?(.failure(error))
+                }
+            )
+            .disposed(by: disposeBag)
+    }
+
+    func maybeStopSleepRecordingAfterSuccessfulFetch(for deviceId: String) {
+        guard currentIdentifier == deviceId else {
+            NSLog("[PM][SLEEP] skip auto-stop; fetched device %@ is not the active connected device", deviceId)
+            return
+        }
+
+        let stopIfNeeded: (Bool) -> Void = { [weak self] isEnabled in
+            guard let self else { return }
+            guard isEnabled else {
+                NSLog("[PM][SLEEP] auto-stop skipped; recording already off")
+                return
+            }
+
+            self.stopSleepRecording { result in
+                switch result {
+                case .success:
+                    NSLog("[PM][SLEEP] auto-stop after fetch succeeded")
+                case .failure(let error):
+                    NSLog("[PM][SLEEP] auto-stop after fetch failed: %@", error.localizedDescription)
+                }
+            }
+        }
+
+        if sleepRecordingState.available {
+            stopIfNeeded(sleepRecordingState.enabled)
+            return
+        }
+
+        api.getSleepRecordingState(identifier: deviceId)
+            .observe(on: MainScheduler.instance)
+            .subscribe(
+                onSuccess: { [weak self] enabled in
+                    self?.updateSleepRecordingState(available: true, enabled: enabled)
+                    stopIfNeeded(enabled)
+                },
+                onFailure: { error in
+                    NSLog("[PM][SLEEP] auto-stop state check failed: %@", error.localizedDescription)
+                }
+            )
+            .disposed(by: disposeBag)
+    }
+
+    private func stopObservingSleepRecordingState() {
+        sleepRecordingDisposable?.dispose()
+        sleepRecordingDisposable = nil
+        updateSleepRecordingState(available: false, enabled: false)
+    }
+
+    private func updateSleepRecordingState(available: Bool, enabled: Bool) {
+        sleepRecordingState = (available, enabled)
     }
 }
