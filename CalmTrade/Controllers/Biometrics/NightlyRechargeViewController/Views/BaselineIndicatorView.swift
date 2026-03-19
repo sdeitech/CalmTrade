@@ -81,7 +81,8 @@ final class BaselineIndicatorView: UIView {
         valueBubble.text = valueText
 
         let maxOffset = trackView.bounds.width * 0.35
-        let offset = maxOffset * offsetRatio
+        let clampedRatio = min(1, max(-1, offsetRatio))
+        let offset = maxOffset * clampedRatio
 
         bubbleCenterConstraint.constant = offset
 

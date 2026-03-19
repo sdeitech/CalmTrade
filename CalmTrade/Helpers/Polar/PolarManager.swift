@@ -48,6 +48,10 @@ struct FirmwareProgress {
     let fraction: Double?
 }
 
+struct PolarNightlyRechargeSnapshot {
+    let entries: [PolarNightlyRechargeData]
+}
+
 // MARK: - Main Manager Class
 
 final class PolarManager: NSObject,
@@ -477,6 +481,71 @@ extension PolarManager {
                 NSLog("[PM][SLEEP] Sleep sync failed: \(error.localizedDescription)")
             }
         }
+    }
+
+    func fetchNightlyRecharge(
+        from start: Date,
+        to end: Date,
+        completion: @escaping (Swift.Result<PolarNightlyRechargeSnapshot, Error>) -> Void
+    ) {
+        guard let deviceId = currentIdentifier else {
+            let error = NSError(
+                domain: "PolarManager.NightlyRecharge",
+                code: -1,
+                userInfo: [NSLocalizedDescriptionKey: "No Polar device connected"]
+            )
+            completion(.failure(error))
+            return
+        }
+
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd HH:mm:ss Z"
+        NSLog(
+            "[PM][NR] fetching nightly recharge for device %@ range %@ -> %@",
+            deviceId,
+            formatter.string(from: start),
+            formatter.string(from: end)
+        )
+
+        api.getNightlyRecharge(identifier: deviceId, fromDate: start, toDate: end)
+            .observe(on: MainScheduler.instance)
+            .subscribe(
+                onSuccess: { entries in
+                    NSLog("[PM][NR] fetched %ld nightly recharge entries", entries.count)
+                    let encoder = JSONEncoder()
+                    encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+                    let formatter = DateFormatter()
+                    formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
+                    encoder.dateEncodingStrategy = .formatted(formatter)
+
+                    if let jsonData = try? encoder.encode(entries),
+                       let jsonString = String(data: jsonData, encoding: .utf8) {
+                        NSLog("[PM][NR] full nightly recharge payload:\n%@", jsonString)
+                    } else {
+                        NSLog("[PM][NR] failed to encode full nightly recharge payload")
+                    }
+
+                    for entry in entries {
+                        let resultDate = entry.sleepResultDate.flatMap { Calendar.current.date(from: $0) }
+                        let resultDateText = resultDate.map { formatter.string(from: $0) } ?? "n/a"
+                        NSLog(
+                            "[PM][NR] entry sleepResultDate=%@ created=%@ recoveryIndicator=%@ ansStatus=%@ ansRate=%@ sleepRate=%@",
+                            resultDateText,
+                            formatter.string(from: entry.createdTimestamp),
+                            entry.recoveryIndicator.map { String($0) } ?? "nil",
+                            entry.ansStatus.map { String($0) } ?? "nil",
+                            entry.ansRate.map { String($0) } ?? "nil",
+                            entry.scoreRateObsolete.map { String($0) } ?? "nil"
+                        )
+                    }
+                    completion(.success(PolarNightlyRechargeSnapshot(entries: entries)))
+                },
+                onFailure: { error in
+                    NSLog("[PM][NR] fetch nightly recharge failed: %@", error.localizedDescription)
+                    completion(.failure(error))
+                }
+            )
+            .disposed(by: disposeBag)
     }
 
     @discardableResult
