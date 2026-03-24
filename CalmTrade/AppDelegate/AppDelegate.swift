@@ -95,6 +95,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
 
         // EARLIEST INITIALIZATION - Firebase must be configured before any other Firebase services are accessed
         // Only configure Firebase if it hasn't been configured elsewhere (e.g., SceneDelegate for iOS 13+)
+        setenv("SQLITE_ENABLE_WAL_CHECKPOINT_LOG", "0", 1)
+        
         if FirebaseApp.app() == nil {
             FirebaseApp.configure()
         }

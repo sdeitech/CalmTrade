@@ -35,15 +35,23 @@
 				<string>com.googleusercontent.apps.206278247451-k3bfkkfp4q2spec80napovapbno0tlih</string>
 			</array>
 		</dict>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>panel.getcalmtrade.com</string>
+			</array>
+		</dict>
 	</array>
+	<key>FacebookAdvertiserIDCollectionEnabled</key>
+	<false/>
 	<key>FacebookAppID</key>
 	<string>1439790770608266</string>
 	<key>FacebookClientToken</key>
 	<string>893bcbdd5f41249f62748adba97e1687</string>
 	<key>FacebookDisplayName</key>
 	<string>CalmTrade</string>
-	<key>FacebookAdvertiserIDCollectionEnabled</key>
-	<false/>
 	<key>GIDClientID</key>
 	<string>206278247451-k3bfkkfp4q2spec80napovapbno0tlih.apps.googleusercontent.com</string>
 	<key>LSApplicationQueriesSchemes</key>
@@ -75,14 +83,6 @@
 		<string>Outfit-Bold.ttf</string>
 		<string>Outfit-Black.ttf</string>
 	</array>
-	<key>UIBackgroundModes</key>
-	<array>
-		<string>bluetooth-peripheral</string>
-		<string>processing</string>
-		<string>fetch</string>
-		<string>bluetooth-central</string>
-		<string>remote-notification</string>
-	</array>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
@@ -102,5 +102,13 @@
 			</array>
 		</dict>
 	</dict>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>bluetooth-peripheral</string>
+		<string>processing</string>
+		<string>fetch</string>
+		<string>bluetooth-central</string>
+		<string>remote-notification</string>
+	</array>
 </dict>
 </plist>

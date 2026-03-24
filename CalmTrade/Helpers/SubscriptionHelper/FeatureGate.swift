@@ -69,15 +69,15 @@ final class FeatureGate {
     private init() {}
 
     func access(for feature: String) -> FeatureAccess {
-        guard let user = SessionManager.shared.current else {
-            return .locked(plan: .free)
-        }
+//        guard let user = SessionManager.shared.current else {
+//            return .locked(plan: .free)
+//        }
 
-        if user.hasFeature(feature) {
+//        if user.hasFeature(feature) {
             return .allowed
-        }
+//        }
 
-        return .locked(plan: requiredPlan(for: feature))
+//        return .locked(plan: requiredPlan(for: feature))
     }
 
     private func requiredPlan(for feature: String) -> SubscriptionPlanCase {

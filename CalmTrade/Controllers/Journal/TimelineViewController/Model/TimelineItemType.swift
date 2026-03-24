@@ -7,14 +7,40 @@
 
 import Foundation
 
-enum TimelineItemType: String, Decodable {
-    case Trades, Emotion, NoTrade
+enum TimelineItemType: Decodable, Equatable, Hashable {
+    case trade
+    case emotion
+    case noTrade
+    case unknown(String)
+
+    init(from decoder: Decoder) throws {
+        let value = try decoder.singleValueContainer().decode(String.self)
+
+        switch value {
+        case "Trade":
+            self = .trade
+        case "Emotion":
+            self = .emotion
+        case "NoTrade":
+            self = .noTrade
+        default:
+            self = .unknown(value)
+        }
+    }
 }
 
 struct TimelineItem: Decodable {
+
     let type: TimelineItemType
 
-    // Existing
+    // MARK: - Trade Fields (NEW)
+    let quantity: Int?
+    let side: String?
+    let pnl: Double?
+    let price: DecimalWrapper?
+    let notes: String?
+
+    // MARK: - Existing
     let _id: String?
     let time: String?
     let timeRange: String?
@@ -29,7 +55,7 @@ struct TimelineItem: Decodable {
     let colorCode: String?
     let entryPrice: Double?
 
-    // 🔴 NEW – ISO timestamps from API
+    // MARK: - ISO timestamps
     let timestamp: String?
     let entryTime: String?
     let exitTime: String?
@@ -39,6 +65,21 @@ struct Metrics: Decodable {
     let calmScore: Double?
     let heartRate: String?
     let hrv: String?
+}
+
+struct DecimalWrapper: Decodable {
+
+    let value: Double
+
+    enum CodingKeys: String, CodingKey {
+        case numberDecimal = "$numberDecimal"
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let string = try container.decode(String.self, forKey: .numberDecimal)
+        value = Double(string) ?? 0
+    }
 }
 
 enum TimelineDateFormatter {
