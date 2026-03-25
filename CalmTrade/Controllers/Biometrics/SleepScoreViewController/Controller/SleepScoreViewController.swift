@@ -28,8 +28,9 @@ final class SleepScoreViewController: UIViewController {
         setupCollection()
         setupSegment()
         
-        viewModel.loadData()
-        collectionView.reloadData()
+        viewModel.loadData { [weak self] in
+            self?.collectionView.reloadData()
+        }
     }
     
     private func setupCollection() {
@@ -40,6 +41,10 @@ final class SleepScoreViewController: UIViewController {
         collectionView.register(
             SleepScoreCollectionCell.self,
             forCellWithReuseIdentifier: SleepScoreCollectionCell.identifier
+        )
+        collectionView.register(
+            SleepScoreBreakdownCell.self,
+            forCellWithReuseIdentifier: SleepScoreBreakdownCell.identifier
         )
     }
     
@@ -90,6 +95,9 @@ extension SleepScoreViewController: UICollectionViewDataSource {
                     withReuseIdentifier: SleepScoreBreakdownCell.identifier,
                     for: indexPath
                 ) as! SleepScoreBreakdownCell
+                if let model = viewModel.model(at: 0) {
+                    cell.configure(model: model)
+                }
                 return cell
             }
             
@@ -145,5 +153,4 @@ extension SleepScoreViewController: UICollectionViewDelegateFlowLayout {
         return 12
     }
 }
-
 
