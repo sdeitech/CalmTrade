@@ -78,6 +78,7 @@ final class BiometricsViewModel: ObservableObject {
     // Work queue + coalescing
     private let workQ = DispatchQueue(label: "ct.biometrics.vm", qos: .userInitiated)
     private var pendingWork: DispatchWorkItem?
+    private var backgroundedAt: Date?
 
     // MARK: - Source policy
     private var isPolarConnected: Bool {
@@ -145,10 +146,16 @@ final class BiometricsViewModel: ObservableObject {
 
     // MARK: - CalmScore hub (override sleep trend fields)
     func startLiveUpdates() {
+        if let existing = hubToken {
+            CalmScoreHub.shared.removeListener(existing)
+            hubToken = nil
+        }
+
         hubToken = CalmScoreHub.shared.addListener { [weak self] _, _, props in
             guard let self else { return }
             // Remember base props; we'll override sleep before emitting.
             self.lastCalmProps = props
+            self.emitImmediateLiveLabelUpdate(from: props)
             // print("=== BiometricsViewModel Hub Props ===")
             // print("Score: \(props.score)")
             // print("HRV: \(props.trend.hrvMs) ms (up: \(props.trend.hrvIsUp))")
@@ -483,6 +490,39 @@ final class BiometricsViewModel: ObservableObject {
         return data
     }
 
+    // Keep UIKit labels responsive while repository writes catch up.
+    private func emitImmediateLiveLabelUpdate(from props: CalmScoreTileProps) {
+        guard props.isStreaming || props.trend.hrBpm > 0 || props.trend.hrvMs > 0 else { return }
+
+        let timestamp = formatTimeStamp(props.lastUpdate)
+
+        DispatchQueue.main.async {
+            var data = self.biometricData
+            data.lastUpdateTimestamp = "Last update \(self.formatFullTimestamp(props.lastUpdate))"
+
+            if props.trend.hrBpm > 0 {
+                let liveHr = "\(Int(props.trend.hrBpm.rounded()))"
+                print("[Biometrics] Live HR: \(liveHr) bpm @ \(timestamp)")
+                data.heartRateLatest = liveHr
+                data.heartRateAverage = liveHr
+                self.lastHrUpdate = props.lastUpdate
+            }
+
+            // CalmScoreHub's live HRV is RMSSD for Polar streaming, so mirror it here.
+            if self.isPolarConnected, props.trend.hrvMs > 0 {
+                let liveRmssd = "\(Int(props.trend.hrvMs.rounded()))"
+                data.rmssdLatest = liveRmssd
+                data.rmssdAverage = liveRmssd
+                data.rmssdTimestamp = timestamp
+                data.lastRmssdUpdate = props.lastUpdate
+                self.lastRmssdUpdate = props.lastUpdate
+            }
+
+            self.biometricData = data
+            self.onDataUpdated?(data)
+        }
+    }
+
     // MARK: - Gauge props override (sleep only)
     private func emitGaugeProps(overridingSleepHours hours: Double?, isUp: Bool) {
         let base = lastCalmProps ?? CalmScoreTileProps(
@@ -770,8 +810,15 @@ final class BiometricsViewModel: ObservableObject {
 
     // MARK: - App Lifecycle Methods
     func handleAppWillEnterForeground() {
+        let backgroundDuration = backgroundedAt.map { Date().timeIntervalSince($0) } ?? 0
+
         // Force refresh when app returns from background
         scheduleFullRefresh(force: true)
+
+        // After a long suspension, rebuild the live listener instead of stacking another one later.
+        if backgroundDuration > 300 {
+            stopLiveUpdates()
+        }
 
         // Reconnect to Polar if needed
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
@@ -785,18 +832,24 @@ final class BiometricsViewModel: ObservableObject {
     }
 
     func handleAppDidBecomeActive() {
+        backgroundedAt = nil
+
         // Restart live updates
         startLiveUpdates()
 
         // Schedule a refresh after a short delay to allow connections to stabilize
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-            self.scheduleFullRefresh()
+            self.scheduleFullRefresh(force: true)
         }
 
         // Refresh sleep data as well
         DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
             self._refreshSleepScore()
         }
+    }
+
+    func handleAppDidEnterBackground() {
+        backgroundedAt = Date()
     }
 
     // MARK: - Polar-Style Sleep Score Calculation

@@ -139,8 +139,11 @@ extension PolarManager {
                 guard let self else { return }
                 if let dev = self.connectedDevice {
                     self.startBestStreaming(for: dev)
-                    if self.autoOfflineSyncOnConnect {
+                    let offlineReady = self.api.isFeatureReady(dev.id, feature: .feature_polar_offline_recording)
+                    if self.autoOfflineSyncOnConnect && offlineReady {
                         self.ensureOfflinePipeline(for: dev.id)
+                    } else if self.autoOfflineSyncOnConnect {
+                        NSLog("[PM] waitForConnection: offline feature not ready yet for \(dev.id); waiting for feature callback")
                     }
                 }
             }, onError: { err in print("waitForConnection error:", err) })

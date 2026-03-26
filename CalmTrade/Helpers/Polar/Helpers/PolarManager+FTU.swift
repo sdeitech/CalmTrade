@@ -48,6 +48,10 @@ extension PolarManager {
     func probeFtuStatus(reason: String, attempt: Int = 0) {
         guard case .connected(let dev) = connectionState else { return }
         if isFtuMarkedComplete(for: dev.id) { return }
+        guard api.isFeatureReady(dev.id, feature: .feature_polar_features_configuration_service) else {
+            NSLog("[PM][FTU] probe(\(reason)) skipped; CFG feature not ready")
+            return
+        }
         NSLog("[PM][FTU] probe(\(reason)) attempt=\(attempt+1)")
 
         Task {
@@ -79,6 +83,10 @@ extension PolarManager {
             || n.contains("ignite") || n.contains("pacer") || n.contains("unite")
             || n.contains("vantage") || n.contains("grit")
         guard looksLikeWrist else { return }
+        guard api.isFeatureReady(dev.id, feature: .feature_polar_features_configuration_service) else {
+            NSLog("[PM][FTU] maybeEvaluateFTU(\(reason)) skipped; CFG feature not ready")
+            return
+        }
 
         NSLog("[PM][FTU] maybeEvaluateFTU(\(reason)) – probing isFtuDone()")
         Task {

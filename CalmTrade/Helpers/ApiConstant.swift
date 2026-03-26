@@ -25,9 +25,9 @@ enum BuildConfig {
 //        #if DEVELOPMENT
 //        return .local
 //        #elseif STAGING
-//        return .staging
+        return .staging
 //        #else
-        return .live
+//        return .live
 //        #endif
     }()
 

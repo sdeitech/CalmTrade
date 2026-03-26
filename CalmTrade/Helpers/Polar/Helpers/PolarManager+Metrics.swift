@@ -698,6 +698,9 @@ final class PolarBleSleepSource: Polar360SleepSource {
                         ).value
                         
                         let processedNights = self.processSleepNights(nights)
+                        if !processedNights.isEmpty {
+                            PolarManager.shared.maybeStopSleepRecordingAfterSuccessfulFetch(for: deviceId)
+                        }
                         completion(.success(processedNights))
                     } catch {
                         NSLog("[P360SleepSource] Delayed fetch ERROR: \(error.localizedDescription)")
@@ -721,6 +724,9 @@ final class PolarBleSleepSource: Polar360SleepSource {
                 NSLog("[P360SleepSource] Polar returned \(nights.count) nights")
 
                 let processedNights = self.processSleepNights(nights)
+                if !processedNights.isEmpty {
+                    PolarManager.shared.maybeStopSleepRecordingAfterSuccessfulFetch(for: deviceId)
+                }
                 completion(.success(processedNights))
 
             } catch {

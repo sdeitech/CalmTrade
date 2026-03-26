@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="23727" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES" initialViewController="qDl-eA-RSp">
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="23504" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES" initialViewController="qDl-eA-RSp">
     <device id="retina6_1" orientation="portrait" appearance="light"/>
     <dependencies>
-        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="23721"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="23506"/>
         <capability name="Image references" minToolsVersion="12.0"/>
         <capability name="Named colors" minToolsVersion="9.0"/>
         <capability name="Safe area layout guides" minToolsVersion="9.0"/>
@@ -10,9 +10,6 @@
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
     </dependencies>
     <customFonts key="customFonts">
-        <array key="HelveticaNeue.ttc">
-            <string>HelveticaNeue</string>
-        </array>
         <array key="Outfit-Regular.ttf">
             <string>Outfit-Regular</string>
         </array>
@@ -23,7 +20,7 @@
             <objects>
                 <viewController storyboardIdentifier="JournalTabsHostViewController" id="Y6W-OH-hqX" customClass="JournalTabsHostViewController" customModule="CalmTrade" customModuleProvider="target" sceneMemberID="viewController">
                     <view key="view" contentMode="scaleToFill" id="5EZ-qb-Rvc">
-                        <rect key="frame" x="0.0" y="0.0" width="414" height="779"/>
+                        <rect key="frame" x="0.0" y="0.0" width="414" height="813"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
                             <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="Background" translatesAutoresizingMaskIntoConstraints="NO" id="Y1n-DZ-l6j">
@@ -33,10 +30,10 @@
                                 </constraints>
                             </imageView>
                             <scrollView clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="lgr-HP-Bxl">
-                                <rect key="frame" x="0.0" y="0.0" width="414" height="779"/>
+                                <rect key="frame" x="0.0" y="0.0" width="414" height="813"/>
                                 <subviews>
                                     <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="P2a-x1-dj9">
-                                        <rect key="frame" x="0.0" y="0.0" width="414" height="779"/>
+                                        <rect key="frame" x="0.0" y="0.0" width="414" height="813"/>
                                         <subviews>
                                             <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="447-dC-wng">
                                                 <rect key="frame" x="24" y="45" width="366" height="40"/>
@@ -160,7 +157,7 @@
                                                 </connections>
                                             </segmentedControl>
                                             <containerView opaque="NO" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="C46-vy-64j">
-                                                <rect key="frame" x="0.0" y="170" width="414" height="609"/>
+                                                <rect key="frame" x="0.0" y="170" width="414" height="643"/>
                                                 <connections>
                                                     <segue destination="EBw-1C-jCy" kind="embed" id="jYG-Vz-bEN"/>
                                                 </connections>
@@ -234,7 +231,7 @@
                                 </constraints>
                             </imageView>
                             <scrollView clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="KtY-06-WJW">
-                                <rect key="frame" x="0.0" y="0.0" width="414" height="828"/>
+                                <rect key="frame" x="0.0" y="0.0" width="414" height="862"/>
                                 <subviews>
                                     <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="aNx-vg-EHv">
                                         <rect key="frame" x="0.0" y="0.0" width="414" height="903"/>
@@ -767,13 +764,13 @@
                                 <viewLayoutGuide key="frameLayoutGuide" id="ZBy-KB-rms"/>
                             </scrollView>
                             <visualEffectView hidden="YES" opaque="NO" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="G4A-pV-QHt">
-                                <rect key="frame" x="0.0" y="0.0" width="414" height="779"/>
+                                <rect key="frame" x="0.0" y="0.0" width="414" height="813"/>
                                 <view key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" insetsLayoutMarginsFromSafeArea="NO" id="fFx-3A-2Nl">
-                                    <rect key="frame" x="0.0" y="0.0" width="414" height="779"/>
+                                    <rect key="frame" x="0.0" y="0.0" width="414" height="813"/>
                                     <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                     <subviews>
                                         <scrollView clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="YLp-CN-mjD">
-                                            <rect key="frame" x="0.0" y="63" width="414" height="700"/>
+                                            <rect key="frame" x="0.0" y="63" width="414" height="734"/>
                                             <subviews>
                                                 <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="qxr-yv-w7b">
                                                     <rect key="frame" x="0.0" y="0.0" width="414" height="1104.5"/>
@@ -1598,7 +1595,7 @@ Close(%)</string>
             <objects>
                 <viewController storyboardIdentifier="AnalyticsViewController" id="PuA-7f-O7a" customClass="AnalyticsViewController" customModule="CalmTrade" customModuleProvider="target" sceneMemberID="viewController">
                     <view key="view" contentMode="scaleToFill" id="4Xx-rP-6pA">
-                        <rect key="frame" x="0.0" y="0.0" width="414" height="779"/>
+                        <rect key="frame" x="0.0" y="0.0" width="414" height="813"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
                             <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="Background" translatesAutoresizingMaskIntoConstraints="NO" id="VZk-wr-CMu">
@@ -1608,10 +1605,10 @@ Close(%)</string>
                                 </constraints>
                             </imageView>
                             <scrollView clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="9YO-1O-PbG">
-                                <rect key="frame" x="0.0" y="0.0" width="414" height="779"/>
+                                <rect key="frame" x="0.0" y="0.0" width="414" height="813"/>
                                 <subviews>
                                     <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="986-rv-ieA">
-                                        <rect key="frame" x="0.0" y="0.0" width="414" height="779"/>
+                                        <rect key="frame" x="0.0" y="0.0" width="414" height="813"/>
                                         <subviews>
                                             <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="dmh-x0-WD5">
                                                 <rect key="frame" x="24" y="45" width="366" height="40"/>
@@ -1712,7 +1709,7 @@ Close(%)</string>
                                                 </connections>
                                             </segmentedControl>
                                             <containerView opaque="NO" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="GEH-56-asU">
-                                                <rect key="frame" x="0.0" y="170" width="414" height="609"/>
+                                                <rect key="frame" x="0.0" y="170" width="414" height="643"/>
                                                 <connections>
                                                     <segue destination="AWK-Z9-fBi" kind="embed" id="10m-ar-ANl"/>
                                                 </connections>
@@ -1774,7 +1771,7 @@ Close(%)</string>
             <objects>
                 <viewController storyboardIdentifier="BiometricsViewController" automaticallyAdjustsScrollViewInsets="NO" id="bed-ks-3du" customClass="BiometricsViewController" customModule="CalmTrade" customModuleProvider="target" sceneMemberID="viewController">
                     <view key="view" contentMode="scaleToFill" id="eLq-8Y-KWq">
-                        <rect key="frame" x="0.0" y="0.0" width="414" height="779"/>
+                        <rect key="frame" x="0.0" y="0.0" width="414" height="813"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
                             <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="Background" translatesAutoresizingMaskIntoConstraints="NO" id="cb4-dv-1Ij">
@@ -1784,7 +1781,7 @@ Close(%)</string>
                                 </constraints>
                             </imageView>
                             <scrollView clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleToFill" bounces="NO" bouncesZoom="NO" translatesAutoresizingMaskIntoConstraints="NO" id="v6l-uP-QmU">
-                                <rect key="frame" x="0.0" y="0.0" width="414" height="779"/>
+                                <rect key="frame" x="0.0" y="0.0" width="414" height="813"/>
                                 <subviews>
                                     <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="wHb-Hf-FDY">
                                         <rect key="frame" x="0.0" y="0.0" width="414" height="1877.5"/>
@@ -3253,6 +3250,7 @@ Close(%)</string>
                         <outlet property="lblStepsAverage" destination="bTT-tJ-i4y" id="JoV-RZ-sTn"/>
                         <outlet property="lblStepsDate" destination="AL4-Mm-w5U" id="tQx-c5-2tj"/>
                         <outlet property="lblStepsToday" destination="YpW-6H-Q2A" id="Csy-nL-fDp"/>
+                        <outlet property="sleepCycleContainer" destination="lRA-U8-QQC" id="wQ0-Rz-C8b"/>
                         <outlet property="sleepScoreContainer" destination="avQ-Ef-lEL" id="poD-1O-DsY"/>
                         <outlet property="sleepScoreDateLabel" destination="V0A-76-DfJ" id="O6K-dX-5GX"/>
                         <outlet property="sleepScoreLabel" destination="jI4-gl-GHN" id="OJY-yr-jhJ"/>
@@ -3268,7 +3266,7 @@ Close(%)</string>
             <objects>
                 <viewController storyboardIdentifier="HomeViewController" wantsFullScreenLayout="YES" automaticallyAdjustsScrollViewInsets="NO" modalPresentationStyle="fullScreen" id="ekX-Ji-Ctg" customClass="HomeViewController" customModule="CalmTrade" customModuleProvider="target" sceneMemberID="viewController">
                     <view key="view" contentMode="scaleToFill" id="CEp-od-VNE">
-                        <rect key="frame" x="0.0" y="0.0" width="414" height="779"/>
+                        <rect key="frame" x="0.0" y="0.0" width="414" height="813"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
                             <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="Background" translatesAutoresizingMaskIntoConstraints="NO" id="QDq-Tx-pII">
@@ -3278,7 +3276,7 @@ Close(%)</string>
                                 </constraints>
                             </imageView>
                             <scrollView clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleToFill" insetsLayoutMarginsFromSafeArea="NO" bounces="NO" showsHorizontalScrollIndicator="NO" showsVerticalScrollIndicator="NO" bouncesZoom="NO" translatesAutoresizingMaskIntoConstraints="NO" id="Jm0-zD-Etm">
-                                <rect key="frame" x="0.0" y="0.0" width="414" height="779"/>
+                                <rect key="frame" x="0.0" y="0.0" width="414" height="813"/>
                                 <subviews>
                                     <view contentMode="scaleToFill" insetsLayoutMarginsFromSafeArea="NO" translatesAutoresizingMaskIntoConstraints="NO" id="2BF-uf-yh0">
                                         <rect key="frame" x="0.0" y="0.0" width="414" height="802.5"/>

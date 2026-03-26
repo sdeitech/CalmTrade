@@ -145,5 +145,3 @@ extension SleepScoreViewController: UICollectionViewDelegateFlowLayout {
         return 12
     }
 }
-
-

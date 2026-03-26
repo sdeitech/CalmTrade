@@ -24,6 +24,14 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
     private var bgTask: UIBackgroundTaskIdentifier = .invalid
     
     private var polarSyncService: Polar360SyncService!
+
+    override init() {
+        super.init()
+        // Some startup paths touch Firebase-backed modules before launch finishes.
+        if FirebaseApp.app() == nil {
+            FirebaseApp.configure()
+        }
+    }
     
 //    func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
 //        
@@ -97,6 +105,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
         // Only configure Firebase if it hasn't been configured elsewhere (e.g., SceneDelegate for iOS 13+)
         setenv("SQLITE_ENABLE_WAL_CHECKPOINT_LOG", "0", 1)
         
+        // Firebase may already be configured from AppDelegate.init().
         if FirebaseApp.app() == nil {
             FirebaseApp.configure()
         }
@@ -117,18 +126,16 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
         }
         Messaging.messaging().delegate = self
 
-        // Check if we're running on iOS 13+ and should defer UI setup to SceneDelegate
         if #available(iOS 13.0, *) {
-            // On iOS 13+, UI setup is handled by SceneDelegate
+            // UI is provided by SceneDelegate.
         } else {
-            // On iOS 12 and earlier, setup UI in AppDelegate
             let win = UIWindow(frame: UIScreen.main.bounds)
             win.rootViewController = initialRootViewController()
             win.makeKeyAndVisible()
             self.window = win
         }
 
-        // 3. DEFER ALL HEAVY WORK (runs after UI is visible)
+        // Defer non-UI startup work until after launch returns.
         DispatchQueue.global(qos: .userInitiated).async {
             self.initializeBackgroundSystems(application, launchOptions: launchOptions)
         }
@@ -162,8 +169,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
             }
         }
 
-        // Initialize Facebook SDK asynchronously to prevent blocking
-        DispatchQueue.global(qos: .background).async {
+        // Facebook expects launch wiring from the app delegate path.
+        DispatchQueue.main.async {
             ApplicationDelegate.shared.application(
                 application,
                 didFinishLaunchingWithOptions: launchOptions
