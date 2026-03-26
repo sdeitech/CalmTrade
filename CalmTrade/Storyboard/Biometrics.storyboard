@@ -2802,13 +2802,13 @@ been inactive or relaxed for several minutes.</string>
                             <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="zYy-EE-3wR">
                                 <rect key="frame" x="0.0" y="165" width="440" height="791"/>
                                 <subviews>
-                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="0" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="TzO-z8-4hb">
+                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" ambiguous="YES" text="0" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="TzO-z8-4hb">
                                         <rect key="frame" x="215.66666666666666" y="24" width="9" height="19.333333333333329"/>
                                         <fontDescription key="fontDescription" name="HelveticaNeue-Bold" family="Helvetica Neue" pointSize="16"/>
                                         <color key="textColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                         <nil key="highlightedColor"/>
                                     </label>
-                                    <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="dKQ-v3-RaZ" customClass="BaselineIndicatorView" customModule="CalmTrade" customModuleProvider="target">
+                                    <view contentMode="scaleToFill" ambiguous="YES" translatesAutoresizingMaskIntoConstraints="NO" id="dKQ-v3-RaZ" customClass="BaselineIndicatorView" customModule="CalmTrade" customModuleProvider="target">
                                         <rect key="frame" x="24" y="62.333333333333343" width="392" height="43"/>
                                         <color key="backgroundColor" red="0.19215686269999999" green="0.19215686269999999" blue="0.19215686269999999" alpha="1" colorSpace="custom" customColorSpace="displayP3"/>
                                         <constraints>
@@ -2820,13 +2820,13 @@ been inactive or relaxed for several minutes.</string>
                                             </userDefinedRuntimeAttribute>
                                         </userDefinedRuntimeAttributes>
                                     </view>
-                                    <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="Line 100" translatesAutoresizingMaskIntoConstraints="NO" id="ONg-zq-Nps">
+                                    <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" ambiguous="YES" image="Line 100" translatesAutoresizingMaskIntoConstraints="NO" id="ONg-zq-Nps">
                                         <rect key="frame" x="219.66666666666666" y="46.333333333333343" width="1" height="60"/>
                                         <constraints>
                                             <constraint firstAttribute="width" constant="1" id="qE4-2v-FgV"/>
                                         </constraints>
                                     </imageView>
-                                    <stackView opaque="NO" contentMode="scaleToFill" distribution="equalSpacing" translatesAutoresizingMaskIntoConstraints="NO" id="k9t-wQ-Aah">
+                                    <stackView opaque="NO" contentMode="scaleToFill" ambiguous="YES" distribution="equalSpacing" translatesAutoresizingMaskIntoConstraints="NO" id="k9t-wQ-Aah">
                                         <rect key="frame" x="34" y="117.33333333333331" width="371" height="16.333333333333343"/>
                                         <subviews>
                                             <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="-10" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="ezu-Qc-WXg">
@@ -2867,19 +2867,19 @@ been inactive or relaxed for several minutes.</string>
                                             </label>
                                         </subviews>
                                     </stackView>
-                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="ANS Charge" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="EAb-cQ-qlK">
+                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" ambiguous="YES" text="ANS Charge" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="EAb-cQ-qlK">
                                         <rect key="frame" x="149.66666666666669" y="157.66666666666669" width="139.66666666666669" height="28.666666666666657"/>
                                         <fontDescription key="fontDescription" name="HelveticaNeue-Bold" family="Helvetica Neue" pointSize="24"/>
                                         <color key="textColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                         <nil key="highlightedColor"/>
                                     </label>
-                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Above usual" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="3fx-V6-Jhl">
+                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" ambiguous="YES" text="Above usual" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="3fx-V6-Jhl">
                                         <rect key="frame" x="168.33333333333334" y="191.33333333333331" width="102.66666666666666" height="21.666666666666657"/>
                                         <fontDescription key="fontDescription" name="HelveticaNeue-Medium" family="Helvetica Neue" pointSize="18"/>
                                         <color key="textColor" red="0.20000000000000001" green="0.81568627449999997" blue="0.80784313730000001" alpha="1" colorSpace="calibratedRGB"/>
                                         <nil key="highlightedColor"/>
                                     </label>
-                                    <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="R31-2z-5pt">
+                                    <view contentMode="scaleToFill" ambiguous="YES" translatesAutoresizingMaskIntoConstraints="NO" id="R31-2z-5pt">
                                         <rect key="frame" x="24" y="231" width="393" height="164"/>
                                         <subviews>
                                             <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="UX5-hN-IWB">
@@ -2921,7 +2921,7 @@ been inactive or relaxed for several minutes.</string>
                                                 </constraints>
                                             </imageView>
                                             <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Heart rate" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="ydw-sS-Zi1">
-                                                <rect key="frame" x="39.000000000000007" y="50.333333333333314" width="73.666666666666686" height="19.333333333333329"/>
+                                                <rect key="frame" x="39.000000000000007" y="50.333333333333371" width="73.666666666666686" height="19.333333333333329"/>
                                                 <fontDescription key="fontDescription" name="HelveticaNeue-Medium" family="Helvetica Neue" pointSize="16"/>
                                                 <color key="textColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                                 <nil key="highlightedColor"/>
@@ -2957,13 +2957,13 @@ been inactive or relaxed for several minutes.</string>
                                                 </attributedString>
                                                 <nil key="highlightedColor"/>
                                             </label>
-                                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Beat-to-beat interval avg" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="uNH-o6-Fss">
+                                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" ambiguous="YES" text="Beat-to-beat interval avg" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="uNH-o6-Fss">
                                                 <rect key="frame" x="39.000000000000014" y="98.666666666666686" width="184.33333333333337" height="19.333333333333329"/>
                                                 <fontDescription key="fontDescription" name="HelveticaNeue-Medium" family="Helvetica Neue" pointSize="16"/>
                                                 <color key="textColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                                 <nil key="highlightedColor"/>
                                             </label>
-                                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" usesAttributedText="YES" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="wXP-G7-sQS">
+                                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" ambiguous="YES" usesAttributedText="YES" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="wXP-G7-sQS">
                                                 <rect key="frame" x="302" y="94" width="73" height="28.666666666666671"/>
                                                 <attributedString key="attributedText">
                                                     <fragment content="1155">
@@ -2994,7 +2994,7 @@ been inactive or relaxed for several minutes.</string>
                                                 </attributedString>
                                                 <nil key="highlightedColor"/>
                                             </label>
-                                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Baseline: 54 bpm (1094 ms)" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="nW8-Dx-fIJ">
+                                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" ambiguous="YES" text="Baseline: 54 bpm (1094 ms)" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="nW8-Dx-fIJ">
                                                 <rect key="frame" x="39" y="135" width="178" height="17"/>
                                                 <fontDescription key="fontDescription" name="HelveticaNeue-Medium" family="Helvetica Neue" pointSize="14"/>
                                                 <color key="textColor" name="textOverColor"/>
@@ -3027,7 +3027,7 @@ been inactive or relaxed for several minutes.</string>
                                         </userDefinedRuntimeAttributes>
                                     </view>
                                     <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="LRp-vA-ZSU">
-                                        <rect key="frame" x="24" y="420" width="392" height="120.66666666666663"/>
+                                        <rect key="frame" x="24" y="399" width="392" height="120.66666666666663"/>
                                         <subviews>
                                             <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="Ohc-Pb-jCK">
                                                 <rect key="frame" x="0.0" y="0.0" width="392" height="34"/>
@@ -3133,7 +3133,7 @@ been inactive or relaxed for several minutes.</string>
                                         </userDefinedRuntimeAttributes>
                                     </view>
                                     <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="e2V-09-suF">
-                                        <rect key="frame" x="24" y="565.66666666666663" width="392" height="120.66666666666663"/>
+                                        <rect key="frame" x="24" y="544.66666666666663" width="392" height="120.66666666666663"/>
                                         <subviews>
                                             <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="lHQ-HK-nu7">
                                                 <rect key="frame" x="0.0" y="0.0" width="392" height="34"/>
@@ -3264,6 +3264,7 @@ been inactive or relaxed for several minutes.</string>
                                     <constraint firstItem="EAb-cQ-qlK" firstAttribute="centerX" secondItem="k9t-wQ-Aah" secondAttribute="centerX" id="rad-Qt-fSZ"/>
                                     <constraint firstAttribute="trailing" secondItem="e2V-09-suF" secondAttribute="trailing" constant="24" id="vCB-zF-xHi"/>
                                     <constraint firstItem="dKQ-v3-RaZ" firstAttribute="top" secondItem="TzO-z8-4hb" secondAttribute="bottom" constant="19" id="x6D-t3-Nsy"/>
+                                    <constraint firstAttribute="bottom" secondItem="R31-2z-5pt" secondAttribute="bottom" constant="417" id="xaF-QC-Z6c"/>
                                     <constraint firstItem="k9t-wQ-Aah" firstAttribute="trailing" secondItem="dKQ-v3-RaZ" secondAttribute="trailing" constant="-11" id="zj7-Yx-bZk"/>
                                 </constraints>
                             </view>

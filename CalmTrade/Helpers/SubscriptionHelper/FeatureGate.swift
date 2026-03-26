@@ -60,8 +60,6 @@ enum SubscriptionPlanCase {
     }
 }
 
-
-
 final class FeatureGate {
 
     static let shared = FeatureGate()

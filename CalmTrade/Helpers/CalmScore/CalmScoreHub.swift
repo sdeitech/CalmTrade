@@ -96,7 +96,7 @@ final class CalmScoreHub {
             }
         }
 
-        observeTokens.append(contentsOf: [/*tok1,*/ tok2])
+        observeTokens.append(contentsOf: [tok2])
     }
 
     private var lastActiveTime: Date = Date()
