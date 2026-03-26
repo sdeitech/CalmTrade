@@ -35,7 +35,7 @@ final class TimelineCell: UITableViewCell {
         // Time handling (authoritative)
         switch item.type {
 
-        case .Trades:
+        case .trade:
             // Prefer timestamps over backend strings
             lblTime.text = TimelineDateFormatter.timeRange(
                 entry: item.entryTime,
@@ -51,7 +51,7 @@ final class TimelineCell: UITableViewCell {
         // Entry type + title
         switch item.type {
 
-        case .Trades:
+        case .trade:
             lblEntryType.text = "Trade"
             lblSymbol.text = item.symbol
             if let p = item.result {
@@ -64,13 +64,13 @@ final class TimelineCell: UITableViewCell {
             let isLoss = item.result?.contains("-") == true
             entryTypeView.backgroundColor = isLoss ? .systemRed : .systemGreen
 
-        case .Emotion:
+        case .emotion:
             lblEntryType.text = "Emotion"
             lblSymbol.text = item.emotion
             lblTitle.isHidden = true
             entryTypeView.backgroundColor = UIColor.init(hex: item.colorCode ?? "245E2B")
 
-        case .NoTrade:
+        case .noTrade:
             lblEntryType.text = "No Trade"
             lblTitle.isHidden = true
             if let entryPrice = item.entryPrice {
@@ -79,6 +79,7 @@ final class TimelineCell: UITableViewCell {
                 lblSymbol.text = item.symbol
             }
             entryTypeView.backgroundColor = .systemBlue
+        case .unknown(_): break
         }
 
         // Note / Reason
@@ -112,7 +113,7 @@ final class TimelineCell: UITableViewCell {
         }
 
         // Emotion tag (only for Trade / NoTrade)
-        if item.type != .Emotion, let emotion = item.emotion {
+        if item.type != .emotion, let emotion = item.emotion {
             lblEmotion.text = emotion
             lblEmotion.isHidden = false
         } else {

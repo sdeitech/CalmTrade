@@ -100,6 +100,11 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
         _ application: UIApplication,
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
     ) -> Bool {
+
+        // EARLIEST INITIALIZATION - Firebase must be configured before any other Firebase services are accessed
+        // Only configure Firebase if it hasn't been configured elsewhere (e.g., SceneDelegate for iOS 13+)
+        setenv("SQLITE_ENABLE_WAL_CHECKPOINT_LOG", "0", 1)
+        
         // Firebase may already be configured from AppDelegate.init().
         if FirebaseApp.app() == nil {
             FirebaseApp.configure()

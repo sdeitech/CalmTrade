@@ -25,7 +25,7 @@ final class DeepLinkRouter {
         }
         
         if url.scheme?.lowercased() == "https",
-           (url.host?.lowercased() == "www.calmtrade.com" || url.host?.lowercased() == "calmtrade.com"),
+           (url.host?.lowercased() == "api.getcalmtrade.com" || url.host?.lowercased() == "getcalmtrade.com"),
            url.path.lowercased().hasPrefix("/verify-email") {
             
             let token = url.queryItem("token") ?? (url.lastPathComponent.lowercased() == "verify-email" ? nil : url.lastPathComponent)

@@ -78,7 +78,7 @@ final class CalmScoreHub {
 
     private func attachObservers(for phase: CalmScorePhase) {
 
-//        // Mirror (bulk update)
+        // Mirror (bulk update)
 //        let tok1 = NotificationCenter.default.addObserver(
 //            forName: .ctMetricsDidMirror, object: nil, queue: .main
 //        ) { [weak self] _ in self?.publish(phase: phase) }
@@ -97,7 +97,6 @@ final class CalmScoreHub {
         }
 
         observeTokens.append(contentsOf: [tok2])
-//        observeTokens.append(contentsOf: [tok1, tok2])
     }
 
     private var lastActiveTime: Date = Date()
