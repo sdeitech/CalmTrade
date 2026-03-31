@@ -62,74 +62,43 @@ final class HeartRateDetailViewModel: ObservableObject {
     func fetchInitialData(for range: ChartTimeRange) {
         selectedRange = range
         centerDate = Date()
-        let domain = xDomain
-        loadData(for: range, startDate: domain.lowerBound, endDate: domain.upperBound)
+        loadData(for: range)
     }
 
     /// Page to the previous period (keeps window size, shifts center left).
-    func loadPreviousPeriod() {
-        guard !isLoadingData else { return }
+    @discardableResult
+    func loadPreviousPeriod() -> Bool {
+        guard !isLoadingData else { return false }
         centerDate = shift(center: centerDate, for: selectedRange, direction: -1)
-        let domain = xDomain
-        loadData(for: selectedRange, startDate: domain.lowerBound, endDate: domain.upperBound)
+        loadData(for: selectedRange)
+        return true
     }
 
     /// Page to the next period (capped at now).
-    func loadNextPeriod() {
-        guard !isLoadingData else { return }
+    @discardableResult
+    func loadNextPeriod() -> Bool {
+        guard !isLoadingData else { return false }
         let shifted = shift(center: centerDate, for: selectedRange, direction: +1)
-        centerDate = min(shifted, Date())
-        let domain = xDomain
-        loadData(for: selectedRange, startDate: domain.lowerBound, endDate: domain.upperBound)
+        let nextCenterDate = min(shifted, Date())
+        let currentAnchor = periodAnchor(for: selectedRange, date: centerDate)
+        let nextAnchor = periodAnchor(for: selectedRange, date: nextCenterDate)
+        guard nextAnchor > currentAnchor else { return false }
+        centerDate = nextCenterDate
+        loadData(for: selectedRange)
+        return true
     }
 
     // MARK: - Core loading (repo-only)
 
-    private func loadData(for range: ChartTimeRange, startDate: Date, endDate: Date) {
+    private func loadData(for range: ChartTimeRange) {
         isLoadingData = true
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             guard let self else { return }
-            let cal = Calendar.current
-            
-            // 1) Fetch samples for the requested window (safe, detached structs)
-            var samples = self.repo.series(kind: .heartRate,
-                                           from: startDate,
-                                           to: endDate,
-                                           source: nil)
-            
-            // 2) Snap center to a natural anchor inside the *actual data* if present
-            if let lastDate = samples.last?.date {
-                switch range {
-                case .hourly:
-                    if let hourStart = cal.dateInterval(of: .hour, for: lastDate)?.start {
-                        self.centerDate = hourStart
-                    }
-                case .daily:
-                    // keep the centered 7-day window; no snap required
-                    break
-                case .weekly:
-                    if let weekStart = cal.dateInterval(of: .weekOfYear, for: lastDate)?.start {
-                        self.centerDate = weekStart
-                    }
-                case .monthly:
-                    if let monthStart = cal.dateInterval(of: .month, for: lastDate)?.start {
-                        self.centerDate = monthStart
-                    }
-                case .yearly:
-                    if let yearStart = cal.dateInterval(of: .year, for: lastDate)?.start {
-                        self.centerDate = yearStart
-                    }
-                }
-            }
-            
-            // 3) Recompute domain after any snap AND RE-FETCH for that domain
             let domain = self.makeXDomain(for: range, center: self.centerDate)
-            samples = self.repo.series(kind: .heartRate,
-                                       from: domain.lowerBound,
-                                       to: domain.upperBound,
-                                       source: nil)
-            
-            // 4) Bucket → sort → publish
+            let samples = self.repo.series(kind: .heartRate,
+                                           from: domain.lowerBound,
+                                           to: domain.upperBound,
+                                           source: nil)
             let bucketed = self.bucket(samples: samples, for: range)
             let sorted = bucketed.sorted(by: { $0.time < $1.time })
             
@@ -172,7 +141,7 @@ final class HeartRateDetailViewModel: ObservableObject {
             return cal.date(byAdding: .minute, value: index * 3, to: hourStart) ?? hourStart
 
         case .daily:
-            return cal.startOfDay(for: date)
+            return cal.dateInterval(of: .hour, for: date)?.start ?? date
 
         case .weekly:
             // Daily buckets for Weekly view (7 columns like CalmScore)
@@ -239,13 +208,11 @@ final class HeartRateDetailViewModel: ObservableObject {
             return startOfHour...min(endOfHour, Date())
 
         case .daily:
-            // 7-day window centered on center's day
-            let s = cal.startOfDay(for: cal.date(byAdding: .day, value: -3, to: center)!)
-            let e = cal.startOfDay(for: cal.date(byAdding: .day, value: +4, to: center)!)
-            return s...min(e, Date())
+            let startOfDay = cal.startOfDay(for: center)
+            let endOfDay = cal.date(byAdding: .day, value: 1, to: startOfDay)!
+            return startOfDay...min(endOfDay, Date())
 
         case .weekly:
-            // 1-week window (Sun–Sat) containing center
             let week = cal.dateInterval(of: .weekOfYear, for: center)!
             let s = week.start
             let e = cal.date(byAdding: .day, value: 7, to: s)!
@@ -295,13 +262,29 @@ final class HeartRateDetailViewModel: ObservableObject {
         case .hourly:
             return cal.date(byAdding: .hour, value: direction, to: center)!
         case .daily:
-            return cal.date(byAdding: .weekOfYear, value: direction, to: center)!
+            return cal.date(byAdding: .day, value: direction, to: center)!
         case .weekly:
             return cal.date(byAdding: .weekOfYear, value: direction, to: center)!
         case .monthly:
             return cal.date(byAdding: .month, value: direction, to: center)!
         case .yearly:
             return cal.date(byAdding: .year, value: direction, to: center)!
+        }
+    }
+
+    private func periodAnchor(for range: ChartTimeRange, date: Date) -> Date {
+        let cal = Calendar.current
+        switch range {
+        case .hourly:
+            return cal.dateInterval(of: .hour, for: date)?.start ?? date
+        case .daily:
+            return cal.startOfDay(for: date)
+        case .weekly:
+            return cal.dateInterval(of: .weekOfYear, for: date)?.start ?? cal.startOfDay(for: date)
+        case .monthly:
+            return cal.dateInterval(of: .month, for: date)?.start ?? cal.startOfDay(for: date)
+        case .yearly:
+            return cal.dateInterval(of: .year, for: date)?.start ?? cal.startOfDay(for: date)
         }
     }
 
@@ -316,19 +299,18 @@ final class HeartRateDetailViewModel: ObservableObject {
             fmt.dateFormat = "MMMM d, yyyy"
             return fmt.string(from: centerDate)
         case .daily:
-            fmt.dateFormat = "MMM d"
-            return "\(fmt.string(from: s)) - \(fmt.string(from: e))"
+            fmt.dateFormat = "MMMM d, yyyy"
+            return fmt.string(from: centerDate)
         case .weekly:
-            fmt.dateFormat = "MMMM yyyy"
-            return fmt.string(from: centerDate)
+            fmt.dateFormat = "MMM d"
+            let end = Calendar.current.date(byAdding: .day, value: -1, to: e) ?? e
+            return "\(fmt.string(from: s)) - \(fmt.string(from: end))"
         case .monthly:
-            fmt.dateFormat = "yyyy"
-            return fmt.string(from: centerDate)
+            fmt.dateFormat = "MMMM yyyy"
+            return fmt.string(from: s)
         case .yearly:
-            let y = Calendar.current
-            let yStart = y.component(.year, from: s)
-            let yEnd = y.component(.year, from: e)
-            return yStart == yEnd ? "\(yStart)" : "\(yStart) - \(yEnd)"
+            fmt.dateFormat = "yyyy"
+            return fmt.string(from: s)
         }
     }
 
@@ -345,7 +327,7 @@ extension HeartRateDetailViewModel.ChartTimeRange {
     var xLabelFormat: Date.FormatStyle {
         switch self {
         case .hourly:  return .dateTime.hour()
-        case .daily:   return .dateTime.day()
+        case .daily:   return .dateTime.hour()
         case .weekly:  return .dateTime.weekday(.abbreviated)
         case .monthly: return .dateTime.month(.abbreviated)
         case .yearly:  return .dateTime.year()

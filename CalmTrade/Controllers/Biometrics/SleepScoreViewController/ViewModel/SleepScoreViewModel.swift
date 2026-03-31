@@ -151,10 +151,11 @@ private final class SleepScoreRingContainerView: UIView {
             let segmentSet = SegmentLayerSet()
             
             segmentSet.trackLayer.fillColor = UIColor.clear.cgColor
-            segmentSet.trackLayer.strokeColor = UIColor(white: 1.0, alpha: 0.08).cgColor
+            segmentSet.trackLayer.strokeColor = UIColor(white: 1.0, alpha: 0.14).cgColor
             segmentSet.trackLayer.lineCap = .butt
             
             segmentSet.progressLayer.fillColor = UIColor.clear.cgColor
+            segmentSet.progressLayer.strokeColor = UIColor.white.cgColor
             segmentSet.progressLayer.lineCap = .butt
             segmentSet.progressLayer.strokeStart = 0
             
@@ -187,24 +188,19 @@ private final class SleepScoreRingContainerView: UIView {
         let lineWidth = max(18, size * 0.14)
         let radius = (size - lineWidth) / 2
         let center = CGPoint(x: bounds.midX, y: bounds.midY)
-        let segmentArc = CGFloat.pi * 0.60
-        let gap = CGFloat.pi * 0.065
-        let startAngles = [
-            CGFloat.pi * 0.96,
-            -CGFloat.pi / 2,
-            CGFloat.pi * 0.27
-        ]
+        let segmentArc = (2 * CGFloat.pi) / 3
+        let baseStartAngle = -CGFloat.pi / 2
         let progresses = segmentProgresses(for: score)
         
         for (index, segmentSet) in segmentSets.enumerated() {
-            let startAngle = startAngles[index]
+            let startAngle = baseStartAngle + (CGFloat(index) * segmentArc)
             let endAngle = startAngle + segmentArc
             
             let path = UIBezierPath(
                 arcCenter: center,
                 radius: radius,
-                startAngle: startAngle + gap,
-                endAngle: endAngle - gap,
+                startAngle: startAngle,
+                endAngle: endAngle,
                 clockwise: true
             )
             
@@ -220,8 +216,8 @@ private final class SleepScoreRingContainerView: UIView {
             segmentSet.gradientLayer.frame = bounds
             segmentSet.gradientLayer.colors = segmentColors[index].map(\.cgColor)
             segmentSet.progressLayer.shadowColor = segmentColors[index].first?.cgColor
-            segmentSet.progressLayer.shadowOpacity = 0.28
-            segmentSet.progressLayer.shadowRadius = 10
+            segmentSet.progressLayer.shadowOpacity = 0.45
+            segmentSet.progressLayer.shadowRadius = 12
             segmentSet.progressLayer.shadowOffset = .zero
         }
     }

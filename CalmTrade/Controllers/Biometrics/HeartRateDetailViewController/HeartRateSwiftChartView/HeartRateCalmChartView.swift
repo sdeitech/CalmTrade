@@ -272,8 +272,9 @@ struct HeartRateCalmChartView: View {
                 let minute = cal.component(.minute, from: date)
                 let idx = minute / 3
                 return cal.date(byAdding: .minute, value: idx * 3, to: hourStart)!
-            case .daily, .weekly, .monthly:
-                // day buckets
+            case .daily:
+                return cal.dateInterval(of: .hour, for: date)!.start
+            case .weekly, .monthly:
                 return cal.startOfDay(for: date)
             case .yearly:
                 // month buckets
@@ -324,12 +325,12 @@ struct HeartRateCalmChartView: View {
             }
 
         case .daily:
-            // 7 days covering the VM domain (centered week); labels as dates
-            let start = cal.startOfDay(for: domain.lowerBound)
-            return (0..<7).map { i in
-                let d = cal.date(byAdding: .day, value: i, to: start)!
-                let lbl = DateFormatter.cached("MMM d").string(from: d)
-                return (cal.startOfDay(for: d), lbl)
+            // 24 hourly buckets for the selected day
+            let startOfDay = cal.startOfDay(for: domain.lowerBound)
+            return (0..<24).map { i in
+                let d = cal.date(byAdding: .hour, value: i, to: startOfDay)!
+                let lbl = (i % 6 == 0) ? DateFormatter.cached("ha").string(from: d) : ""
+                return (d, lbl)
             }
 
         case .weekly:
@@ -367,7 +368,7 @@ struct HeartRateCalmChartView: View {
     private var spacing: CGFloat {
         switch range {
         case .hourly: return 5
-        case .daily:  return 6
+        case .daily:  return 4
         case .weekly: return 14
         case .monthly:return 6
         case .yearly: return 10
