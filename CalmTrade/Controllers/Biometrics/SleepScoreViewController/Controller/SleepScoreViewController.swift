@@ -14,11 +14,7 @@ final class SleepScoreViewController: UIViewController {
     @IBOutlet weak var collectionView: UICollectionView!
 
     private let viewModel = SleepScoreViewModel()
-    private var gridColumns: CGFloat { 2 }
-    private var sectionInsets: UIEdgeInsets { UIEdgeInsets(top: 0, left: 0, bottom: 0, right: 0) } // because you already constrained the collectionView with 16 margins
-    private var interItemSpacing: CGFloat { 16 }
-    private var lineSpacing: CGFloat { 16 }
-
+    private var lastCollectionViewSize: CGSize = .zero
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -29,14 +25,27 @@ final class SleepScoreViewController: UIViewController {
         setupSegment()
         
         viewModel.loadData { [weak self] in
-            self?.collectionView.reloadData()
+            self?.refreshCollectionLayout(animated: false)
         }
+    }
+    
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        
+        let currentSize = collectionView.bounds.size
+        guard currentSize != .zero, currentSize != lastCollectionViewSize else { return }
+        lastCollectionViewSize = currentSize
+        refreshCollectionLayout(animated: false)
     }
     
     private func setupCollection() {
         collectionView.backgroundColor = .clear
         collectionView.dataSource = self
         collectionView.delegate = self
+        
+        if let flowLayout = collectionView.collectionViewLayout as? UICollectionViewFlowLayout {
+            flowLayout.estimatedItemSize = .zero
+        }
         
         collectionView.register(
             SleepScoreCollectionCell.self,
@@ -53,15 +62,42 @@ final class SleepScoreViewController: UIViewController {
         segmentedControl.insertSegment(withTitle: "Daily", at: 0, animated: false)
         segmentedControl.insertSegment(withTitle: "Weekly", at: 1, animated: false)
         segmentedControl.selectedSegmentIndex = 0
+        segmentedControl.backgroundColor = UIColor("1C1C1F")
+        segmentedControl.selectedSegmentTintColor = UIColor("2494FF")
+        segmentedControl.setTitleTextAttributes([
+            .foregroundColor: UIColor.white,
+            .font: UIFont.systemFont(ofSize: 15, weight: .semibold)
+        ], for: .normal)
+        segmentedControl.setTitleTextAttributes([
+            .foregroundColor: UIColor.white,
+            .font: UIFont.systemFont(ofSize: 15, weight: .bold)
+        ], for: .selected)
+        segmentedControl.layer.cornerRadius = 12
+        segmentedControl.clipsToBounds = true
     }
 
     @IBAction func segmentedChanged(_ sender: UISegmentedControl) {
         viewModel.mode = sender.selectedSegmentIndex == 0 ? .daily : .weekly
-        collectionView.reloadData()
+        refreshCollectionLayout(animated: false)
     }
     
     @IBAction func btnBackTapped(_ sender: Any) {
         navigationController?.popViewController()
+    }
+    
+    private func refreshCollectionLayout(animated: Bool) {
+        collectionView.collectionViewLayout.invalidateLayout()
+        collectionView.reloadData()
+        
+        let updates = {
+            self.collectionView.layoutIfNeeded()
+        }
+        
+        if animated {
+            UIView.animate(withDuration: 0.2, animations: updates)
+        } else {
+            updates()
+        }
     }
 }
 
@@ -77,29 +113,14 @@ extension SleepScoreViewController: UICollectionViewDataSource {
         switch viewModel.mode {
             
         case .daily:
-            
-            if indexPath.item == 0 {
-                let cell = collectionView.dequeueReusableCell(
-                    withReuseIdentifier: SleepScoreCollectionCell.identifier,
-                    for: indexPath
-                ) as! SleepScoreCollectionCell
-                
-                if let model = viewModel.model(at: 0) {
-                    cell.configure(model: model)
-                }
-                return cell
+            let cell = collectionView.dequeueReusableCell(
+                withReuseIdentifier: SleepScoreBreakdownCell.identifier,
+                for: indexPath
+            ) as! SleepScoreBreakdownCell
+            if let model = viewModel.model(at: 0) {
+                cell.configure(model: model)
             }
-            
-            else {
-                let cell = collectionView.dequeueReusableCell(
-                    withReuseIdentifier: SleepScoreBreakdownCell.identifier,
-                    for: indexPath
-                ) as! SleepScoreBreakdownCell
-                if let model = viewModel.model(at: 0) {
-                    cell.configure(model: model)
-                }
-                return cell
-            }
+            return cell
             
         case .weekly:
             
@@ -127,12 +148,7 @@ extension SleepScoreViewController: UICollectionViewDelegateFlowLayout {
         switch viewModel.mode {
             
         case .daily:
-            let cellWidth = (width - 12) / 2
-            if indexPath.item == 0 {
-                return CGSize(width: cellWidth, height: 220)
-            } else {
-                return CGSize(width: cellWidth, height: 200)
-            }
+            return CGSize(width: width, height: 704)
             
         case .weekly:
             

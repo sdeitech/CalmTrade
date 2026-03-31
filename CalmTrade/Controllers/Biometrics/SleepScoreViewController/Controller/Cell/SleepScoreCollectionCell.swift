@@ -56,6 +56,7 @@ final class SleepScoreCollectionCell: UICollectionViewCell {
         SleepScoreViewModel.makeSleepScoreRing(
             in: scoreContainerView,
             score: model.score,
+            segmentProgresses: [model.amount, model.solidity, model.regeneration],
             centerFontSize: 24
         )
         

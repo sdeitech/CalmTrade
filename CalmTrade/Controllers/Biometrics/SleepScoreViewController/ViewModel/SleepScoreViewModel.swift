@@ -18,6 +18,8 @@ final class SleepScoreViewModel {
     
     var mode: Mode = .daily
     
+    private static let sleepScoreRingViewTag = 98_421
+    
     private(set) var dailyModel: SleepScoreDayModel?
     private(set) var weeklyModels: [SleepScoreDayModel] = []
     
@@ -52,108 +54,88 @@ final class SleepScoreViewModel {
                 self.weeklyModels = weekly
                 completion?()
             }
-            
-            private static let sleepScoreRingViewTag = 98_421
-            
-            // MARK: - Mock Loader (Replace with real data later)
-            
-            func loadData() {
-                let today = Date()
-                
-                dailyModel = SleepScoreDayModel(
-                    date: today,
-                    score: 88,
-                    amount: 0.8,
-                    solidity: 0.7,
-                    regeneration: 0.9,
-                    rem: 0.6,
-                    deep: 0.75
-                )
-                
-                weeklyModels = (0..<6).map {
-                    SleepScoreDayModel(
-                        date: Calendar.current.date(byAdding: .day, value: -$0, to: today)!,
-                        score: Int.random(in: 60...95),
-                        amount: CGFloat.random(in: 0.4...1),
-                        solidity: CGFloat.random(in: 0.4...1),
-                        regeneration: CGFloat.random(in: 0.4...1),
-                        rem: CGFloat.random(in: 0.4...1),
-                        deep: CGFloat.random(in: 0.4...1)
-                    )
-                }
-            }
-            
-            func numberOfItems() -> Int {
-                switch mode {
-                case .daily: return dailyModel == nil ? 0 : 2
-                case .weekly: return weeklyModels.count
-                }
-            }
-            
-            func model(at index: Int) -> SleepScoreDayModel? {
-                switch mode {
-                case .daily:
-                    return dailyModel
-                case .weekly:
-                    return weeklyModels[index]
-                }
-            }
-            
-            private func makeModel(from session: SleepSessionSummary) -> SleepScoreDayModel? {
-                guard let computed = SleepScoreCalculator.calculate(segments: session.segments, sleepGoalMinutes: 480) else {
-                    return nil
-                }
-                
-                return SleepScoreDayModel(
-                    date: session.sessionEnd,
-                    score: computed.totalScore,
-                    sleepTimeMinutes: computed.sleepTimeMinutes,
-                    amountScore: computed.sleepAmount.score,
-                    solidityScore: computed.sleepSolidity.score,
-                    regenerationScore: computed.sleepRegeneration.score,
-                    interruptionsScore: computed.interruptionsScore,
-                    continuityScore: computed.continuityScore,
-                    sleepEfficiencyScore: computed.sleepEfficiencyScore,
-                    remScore: computed.remScore,
-                    deepScore: computed.deepScore,
-                    coreScore: computed.coreScore,
-                    amount: CGFloat(Double(computed.sleepAmount.score) / Double(computed.sleepAmount.maxScore)),
-                    solidity: CGFloat(Double(computed.sleepSolidity.score) / Double(computed.sleepSolidity.maxScore)),
-                    regeneration: CGFloat(Double(computed.sleepRegeneration.score) / Double(computed.sleepRegeneration.maxScore)),
-                    rem: CGFloat(Double(computed.remScore) / 12.0),
-                    deep: CGFloat(Double(computed.deepScore) / 12.0),
-                    core: CGFloat(Double(computed.coreScore) / 6.0)
-                )
-                
-                @discardableResult
-                static func makeSleepScoreRing(
-                    in containerView: UIView,
-                    score: Int,
-                    centerFontSize: CGFloat
-                ) -> UIView {
-                    if let ringView = containerView.viewWithTag(sleepScoreRingViewTag) as? SleepScoreRingContainerView {
-                        ringView.configure(score: score, centerFontSize: centerFontSize)
-                        return ringView
-                    }
-                    
-                    let ringView = SleepScoreRingContainerView()
-                    ringView.tag = sleepScoreRingViewTag
-                    ringView.translatesAutoresizingMaskIntoConstraints = false
-                    
-                    containerView.addSubview(ringView)
-                    
-                    NSLayoutConstraint.activate([
-                        ringView.topAnchor.constraint(equalTo: containerView.topAnchor),
-                        ringView.leadingAnchor.constraint(equalTo: containerView.leadingAnchor),
-                        ringView.trailingAnchor.constraint(equalTo: containerView.trailingAnchor),
-                        ringView.bottomAnchor.constraint(equalTo: containerView.bottomAnchor)
-                    ])
-                    
-                    ringView.configure(score: score, centerFontSize: centerFontSize)
-                    return ringView
-                }
-            }
         }
+    }
+    
+    func numberOfItems() -> Int {
+        switch mode {
+        case .daily: return dailyModel == nil ? 0 : 1
+        case .weekly: return weeklyModels.count
+        }
+    }
+    
+    func model(at index: Int) -> SleepScoreDayModel? {
+        switch mode {
+        case .daily:
+            return dailyModel
+        case .weekly:
+            guard weeklyModels.indices.contains(index) else { return nil }
+            return weeklyModels[index]
+        }
+    }
+    
+    private func makeModel(from session: SleepSessionSummary) -> SleepScoreDayModel? {
+        guard let computed = SleepScoreCalculator.calculate(segments: session.segments, sleepGoalMinutes: 480) else {
+            return nil
+        }
+        
+        return SleepScoreDayModel(
+            date: session.sessionEnd,
+            score: computed.totalScore,
+            sleepTimeMinutes: computed.sleepTimeMinutes,
+            amountScore: computed.sleepAmount.score,
+            solidityScore: computed.sleepSolidity.score,
+            regenerationScore: computed.sleepRegeneration.score,
+            interruptionsScore: computed.interruptionsScore,
+            continuityScore: computed.continuityScore,
+            sleepEfficiencyScore: computed.sleepEfficiencyScore,
+            remScore: computed.remScore,
+            deepScore: computed.deepScore,
+            coreScore: computed.coreScore,
+            amount: CGFloat(Double(computed.sleepAmount.score) / Double(computed.sleepAmount.maxScore)),
+            solidity: CGFloat(Double(computed.sleepSolidity.score) / Double(computed.sleepSolidity.maxScore)),
+            regeneration: CGFloat(Double(computed.sleepRegeneration.score) / Double(computed.sleepRegeneration.maxScore)),
+            rem: CGFloat(Double(computed.remScore) / 12.0),
+            deep: CGFloat(Double(computed.deepScore) / 12.0),
+            core: CGFloat(Double(computed.coreScore) / 6.0)
+        )
+    }
+    
+    @discardableResult
+    static func makeSleepScoreRing(
+        in containerView: UIView,
+        score: Int,
+        segmentProgresses: [CGFloat],
+        centerFontSize: CGFloat
+    ) -> UIView {
+        if let ringView = containerView.viewWithTag(sleepScoreRingViewTag) as? SleepScoreRingContainerView {
+            ringView.configure(
+                score: score,
+                segmentProgresses: segmentProgresses,
+                centerFontSize: centerFontSize
+            )
+            return ringView
+        }
+        
+        let ringView = SleepScoreRingContainerView()
+        ringView.tag = sleepScoreRingViewTag
+        ringView.translatesAutoresizingMaskIntoConstraints = false
+        
+        containerView.addSubview(ringView)
+        
+        NSLayoutConstraint.activate([
+            ringView.topAnchor.constraint(equalTo: containerView.topAnchor),
+            ringView.leadingAnchor.constraint(equalTo: containerView.leadingAnchor),
+            ringView.trailingAnchor.constraint(equalTo: containerView.trailingAnchor),
+            ringView.bottomAnchor.constraint(equalTo: containerView.bottomAnchor)
+        ])
+        
+        ringView.configure(
+            score: score,
+            segmentProgresses: segmentProgresses,
+            centerFontSize: centerFontSize
+        )
+        return ringView
     }
             
     private final class SleepScoreRingContainerView: UIView {
@@ -182,6 +164,7 @@ final class SleepScoreViewModel {
         
         private var segmentSets: [SegmentLayerSet] = []
         private var score: Int = 0
+        private var segmentProgressValues: [CGFloat] = [0.18, 0.16, 0.14]
         
         override init(frame: CGRect) {
             super.init(frame: frame)
@@ -200,6 +183,10 @@ final class SleepScoreViewModel {
             scoreLabel.translatesAutoresizingMaskIntoConstraints = false
             scoreLabel.textColor = .white
             scoreLabel.textAlignment = .center
+            scoreLabel.layer.shadowColor = UIColor.black.cgColor
+            scoreLabel.layer.shadowOpacity = 0.28
+            scoreLabel.layer.shadowRadius = 8
+            scoreLabel.layer.shadowOffset = .zero
             
             addSubview(scoreLabel)
             
@@ -212,16 +199,15 @@ final class SleepScoreViewModel {
                 let segmentSet = SegmentLayerSet()
                 
                 segmentSet.trackLayer.fillColor = UIColor.clear.cgColor
-                segmentSet.trackLayer.strokeColor = UIColor(white: 1.0, alpha: 0.08).cgColor
-                segmentSet.trackLayer.lineCap = .butt
+                segmentSet.trackLayer.strokeColor = UIColor(white: 1.0, alpha: 0.07).cgColor
+                segmentSet.trackLayer.lineCap = .round
                 
                 segmentSet.progressLayer.fillColor = UIColor.clear.cgColor
-                segmentSet.progressLayer.lineCap = .butt
+                segmentSet.progressLayer.lineCap = .round
                 segmentSet.progressLayer.strokeStart = 0
                 
                 segmentSet.gradientLayer.mask = segmentSet.progressLayer
-                segmentSet.gradientLayer.startPoint = CGPoint(x: 0, y: 0.5)
-                segmentSet.gradientLayer.endPoint = CGPoint(x: 1, y: 0.5)
+                segmentSet.gradientLayer.locations = [0.0, 0.38, 1.0]
                 
                 layer.addSublayer(segmentSet.trackLayer)
                 layer.addSublayer(segmentSet.gradientLayer)
@@ -229,10 +215,11 @@ final class SleepScoreViewModel {
             }
         }
         
-        func configure(score: Int, centerFontSize: CGFloat) {
+        func configure(score: Int, segmentProgresses: [CGFloat], centerFontSize: CGFloat) {
             self.score = max(0, min(score, 100))
+            self.segmentProgressValues = normalizedSegmentProgresses(from: segmentProgresses)
             scoreLabel.text = "\(self.score)"
-            scoreLabel.font = .systemFont(ofSize: centerFontSize, weight: .bold)
+            scoreLabel.font = .systemFont(ofSize: centerFontSize * 0.92, weight: .heavy)
             setNeedsLayout()
         }
         
@@ -245,17 +232,17 @@ final class SleepScoreViewModel {
             guard bounds.width > 0, bounds.height > 0 else { return }
             
             let size = min(bounds.width, bounds.height)
-            let lineWidth = max(18, size * 0.14)
-            let radius = (size - lineWidth) / 2
+            let lineWidth = max(16, size * 0.135)
+            let radius = (size - lineWidth) / 2.12
             let center = CGPoint(x: bounds.midX, y: bounds.midY)
-            let segmentArc = CGFloat.pi * 0.60
-            let gap = CGFloat.pi * 0.065
+            let segmentArc = CGFloat.pi * 0.50
+            let gap = CGFloat.pi * 0.085
             let startAngles = [
-                CGFloat.pi * 0.96,
-                -CGFloat.pi / 2,
-                CGFloat.pi * 0.27
+                CGFloat.pi * 1.07,
+                -CGFloat.pi * 0.47,
+                CGFloat.pi * 0.47
             ]
-            let progresses = segmentProgresses(for: score)
+            let progresses = segmentProgressValues
             
             for (index, segmentSet) in segmentSets.enumerated() {
                 let startAngle = startAngles[index]
@@ -277,13 +264,40 @@ final class SleepScoreViewModel {
                 segmentSet.progressLayer.path = path.cgPath
                 segmentSet.progressLayer.lineWidth = lineWidth
                 segmentSet.progressLayer.strokeEnd = progresses[index]
+                segmentSet.progressLayer.strokeColor = UIColor.white.cgColor
                 
                 segmentSet.gradientLayer.frame = bounds
-                segmentSet.gradientLayer.colors = segmentColors[index].map(\.cgColor)
+                segmentSet.gradientLayer.colors = gradientColors(for: index)
+                applyGradientDirection(for: index, to: segmentSet.gradientLayer)
                 segmentSet.progressLayer.shadowColor = segmentColors[index].first?.cgColor
-                segmentSet.progressLayer.shadowOpacity = 0.28
-                segmentSet.progressLayer.shadowRadius = 10
+                segmentSet.progressLayer.shadowOpacity = 0.34
+                segmentSet.progressLayer.shadowRadius = 12
                 segmentSet.progressLayer.shadowOffset = .zero
+            }
+        }
+
+        private func gradientColors(for index: Int) -> [CGColor] {
+            let bright = segmentColors[index].first ?? .white
+            let deep = segmentColors[index].last ?? bright.withAlphaComponent(0.25)
+            
+            return [
+                deep.withAlphaComponent(0.0).cgColor,
+                deep.withAlphaComponent(0.95).cgColor,
+                bright.cgColor
+            ]
+        }
+        
+        private func applyGradientDirection(for index: Int, to layer: CAGradientLayer) {
+            switch index {
+            case 0:
+                layer.startPoint = CGPoint(x: 0.15, y: 0.85)
+                layer.endPoint = CGPoint(x: 0.82, y: 0.18)
+            case 1:
+                layer.startPoint = CGPoint(x: 0.22, y: 0.16)
+                layer.endPoint = CGPoint(x: 0.86, y: 0.78)
+            default:
+                layer.startPoint = CGPoint(x: 0.14, y: 0.22)
+                layer.endPoint = CGPoint(x: 0.88, y: 0.82)
             }
         }
         
@@ -291,9 +305,18 @@ final class SleepScoreViewModel {
             let normalized = CGFloat(score) / 100.0
             
             return [
-                max(0.18, min(1.0, normalized * 1.10)),
-                max(0.16, min(1.0, normalized * 0.88 + 0.12)),
-                max(0.14, min(1.0, normalized * 0.95))
+                max(0.0, min(1.0, normalized * 1.10)),
+                max(0.0, min(1.0, normalized * 0.88 + 0.12)),
+                max(0.0, min(1.0, normalized * 0.95))
             ]
         }
+        
+        private func normalizedSegmentProgresses(from values: [CGFloat]) -> [CGFloat] {
+            let fallback = segmentProgresses(for: score)
+            let clamped = values.prefix(3).map { max(0.0, min(1.0, $0)) }
+            
+            guard clamped.count == 3 else { return fallback }
+            return clamped
+        }
     }
+}
