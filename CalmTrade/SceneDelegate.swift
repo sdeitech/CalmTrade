@@ -29,6 +29,14 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
             name: .authDidExpire,
             object: nil
         )
+        
+        if let urlContext = connectionOptions.urlContexts.first {
+            DeepLinkRouter.shared.handle(url: urlContext.url)
+        } else if let activity = connectionOptions.userActivities.first,
+                  activity.activityType == NSUserActivityTypeBrowsingWeb,
+                  let url = activity.webpageURL {
+            DeepLinkRouter.shared.handle(url: url)
+        }
     }
     
     func sceneDidDisconnect(_ scene: UIScene) {

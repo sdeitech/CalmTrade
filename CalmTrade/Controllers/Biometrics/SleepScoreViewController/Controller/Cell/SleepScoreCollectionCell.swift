@@ -12,8 +12,7 @@ final class SleepScoreCollectionCell: UICollectionViewCell {
     
     static let identifier = "SleepScoreCollectionCell"
     
-    let radialView = SleepScoreRadialView()
-    let scoreLabel = UILabel()
+    let scoreContainerView = UIView()
     let dateLabel = UILabel()
     
     override init(frame: CGRect) {
@@ -30,40 +29,35 @@ final class SleepScoreCollectionCell: UICollectionViewCell {
         contentView.backgroundColor = UIColor(white: 0.1, alpha: 1)
         contentView.layer.cornerRadius = 16
         
-        radialView.translatesAutoresizingMaskIntoConstraints = false
-        scoreLabel.translatesAutoresizingMaskIntoConstraints = false
+        scoreContainerView.translatesAutoresizingMaskIntoConstraints = false
         dateLabel.translatesAutoresizingMaskIntoConstraints = false
-        
-        scoreLabel.font = .boldSystemFont(ofSize: 24)
-        scoreLabel.textColor = .white
-        scoreLabel.textAlignment = .center
+        scoreContainerView.backgroundColor = .clear
         
         dateLabel.font = .systemFont(ofSize: 13, weight: .medium)
         dateLabel.textColor = .systemTeal
         dateLabel.textAlignment = .center
         
-        contentView.addSubview(radialView)
-        contentView.addSubview(scoreLabel)
+        contentView.addSubview(scoreContainerView)
         contentView.addSubview(dateLabel)
         
         NSLayoutConstraint.activate([
-            radialView.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 16),
-            radialView.centerXAnchor.constraint(equalTo: contentView.centerXAnchor),
-            radialView.widthAnchor.constraint(equalToConstant: 80),
-            radialView.heightAnchor.constraint(equalToConstant: 80),
+            scoreContainerView.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 16),
+            scoreContainerView.centerXAnchor.constraint(equalTo: contentView.centerXAnchor),
+            scoreContainerView.widthAnchor.constraint(equalToConstant: 110),
+            scoreContainerView.heightAnchor.constraint(equalTo: scoreContainerView.widthAnchor),
             
-            scoreLabel.topAnchor.constraint(equalTo: radialView.bottomAnchor, constant: 15),
-            scoreLabel.centerXAnchor.constraint(equalTo: contentView.centerXAnchor),
-            
-            dateLabel.topAnchor.constraint(equalTo: scoreLabel.bottomAnchor, constant: 5),
+            dateLabel.topAnchor.constraint(equalTo: scoreContainerView.bottomAnchor, constant: 14),
             dateLabel.centerXAnchor.constraint(equalTo: contentView.centerXAnchor),
 //            dateLabel.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: 14)
         ])
     }
     
     func configure(model: SleepScoreDayModel) {
-        radialView.configure(score: model.score)
-        scoreLabel.text = "\(model.score)/100"
+        SleepScoreViewModel.makeSleepScoreRing(
+            in: scoreContainerView,
+            score: model.score,
+            centerFontSize: 24
+        )
         
         let formatter = DateFormatter()
         formatter.dateFormat = "EEE d MMM yyyy"

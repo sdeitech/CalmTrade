@@ -73,11 +73,13 @@ final class TimelineViewModel {
         // Locked logic
         var result: [TimelineDisplayItem] = []
 
-        let grouped = Dictionary(grouping: items) { $0.type }
+        let grouped = Dictionary(grouping: items) { item -> TimelineItemType in
+            item.type
+        }
 
-        for type in [TimelineItemType.Trades,
-                     TimelineItemType.Emotion,
-                     TimelineItemType.NoTrade] {
+        for type in [TimelineItemType.trade,
+                     TimelineItemType.emotion,
+                     TimelineItemType.noTrade] {
 
             if let latest = grouped[type]?.sorted(by: {
                 ($0.timestamp ?? "") > ($1.timestamp ?? "")
@@ -105,12 +107,15 @@ final class TimelineViewModel {
         let typePath: String
 
         switch item.type {
-        case .Trades:
+        case .trade:
             typePath = "trade"
-        case .Emotion:
+        case .emotion:
             typePath = "emotion"
-        case .NoTrade:
+        case .noTrade:
             typePath = "notrade"
+        case .unknown:
+            completion(false)
+            return
         }
 
         let path = "session/timeline/\(typePath)/\(id)"

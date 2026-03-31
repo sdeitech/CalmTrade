@@ -156,12 +156,14 @@ extension TimelineViewController: UITableViewDataSource, UITableViewDelegate {
 
         var typeString: String = ""
         switch type {
-        case .Trades:
+        case .trade:
             typeString = "trade"
-        case .Emotion:
+        case .emotion:
             typeString = "emotion"
-        case .NoTrade:
+        case .noTrade:
             typeString = "no-trade"
+        case .unknown(_):
+                break
         }
         let vm = EmotionNoteViewModel(emotionId: emotionId, typeString: typeString)
         let sheet = EmotionBottomSheetView(
