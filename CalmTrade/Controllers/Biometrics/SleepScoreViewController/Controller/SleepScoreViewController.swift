@@ -148,12 +148,12 @@ extension SleepScoreViewController: UICollectionViewDelegateFlowLayout {
         switch viewModel.mode {
             
         case .daily:
-            return CGSize(width: width, height: 704)
+            return CGSize(width: width, height: 718)
             
         case .weekly:
             
             let cellWidth = (width - 12) / 2
-            return CGSize(width: cellWidth, height: cellWidth + 40)
+            return CGSize(width: cellWidth, height: 214)
         }
     }
 
@@ -167,5 +167,13 @@ extension SleepScoreViewController: UICollectionViewDelegateFlowLayout {
                         layout collectionViewLayout: UICollectionViewLayout,
                         minimumInteritemSpacingForSectionAt section: Int) -> CGFloat {
         return 12
+    }
+    
+    func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
+        guard viewModel.mode == .weekly,
+              let model = viewModel.model(at: indexPath.item) else { return }
+        
+        let detailViewController = SleepScoreDetailViewController(model: model)
+        navigationController?.pushViewController(detailViewController, animated: true)
     }
 }

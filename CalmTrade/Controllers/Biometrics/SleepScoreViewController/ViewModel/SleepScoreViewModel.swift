@@ -150,15 +150,15 @@ final class SleepScoreViewModel {
         private let segmentColors: [[UIColor]] = [
             [
                 UIColor(red: 0.20, green: 0.90, blue: 0.92, alpha: 1.0),
-                UIColor(red: 0.08, green: 0.47, blue: 0.48, alpha: 1.0)
+                UIColor(red: 0.06, green: 0.18, blue: 0.20, alpha: 1.0)
             ],
             [
                 UIColor(red: 0.99, green: 0.62, blue: 0.24, alpha: 1.0),
-                UIColor(red: 0.39, green: 0.22, blue: 0.07, alpha: 1.0)
+                UIColor(red: 0.26, green: 0.14, blue: 0.05, alpha: 1.0)
             ],
             [
                 UIColor(red: 0.56, green: 0.18, blue: 0.91, alpha: 1.0),
-                UIColor(red: 0.22, green: 0.07, blue: 0.37, alpha: 1.0)
+                UIColor(red: 0.10, green: 0.03, blue: 0.18, alpha: 1.0)
             ]
         ]
         
@@ -184,8 +184,8 @@ final class SleepScoreViewModel {
             scoreLabel.textColor = .white
             scoreLabel.textAlignment = .center
             scoreLabel.layer.shadowColor = UIColor.black.cgColor
-            scoreLabel.layer.shadowOpacity = 0.28
-            scoreLabel.layer.shadowRadius = 8
+            scoreLabel.layer.shadowOpacity = 0.22
+            scoreLabel.layer.shadowRadius = 6
             scoreLabel.layer.shadowOffset = .zero
             
             addSubview(scoreLabel)
@@ -199,7 +199,7 @@ final class SleepScoreViewModel {
                 let segmentSet = SegmentLayerSet()
                 
                 segmentSet.trackLayer.fillColor = UIColor.clear.cgColor
-                segmentSet.trackLayer.strokeColor = UIColor(white: 1.0, alpha: 0.07).cgColor
+                segmentSet.trackLayer.strokeColor = UIColor(white: 1.0, alpha: 0.06).cgColor
                 segmentSet.trackLayer.lineCap = .round
                 
                 segmentSet.progressLayer.fillColor = UIColor.clear.cgColor
@@ -207,7 +207,7 @@ final class SleepScoreViewModel {
                 segmentSet.progressLayer.strokeStart = 0
                 
                 segmentSet.gradientLayer.mask = segmentSet.progressLayer
-                segmentSet.gradientLayer.locations = [0.0, 0.38, 1.0]
+                segmentSet.gradientLayer.locations = [0.0, 0.55, 1.0]
                 
                 layer.addSublayer(segmentSet.trackLayer)
                 layer.addSublayer(segmentSet.gradientLayer)
@@ -219,7 +219,7 @@ final class SleepScoreViewModel {
             self.score = max(0, min(score, 100))
             self.segmentProgressValues = normalizedSegmentProgresses(from: segmentProgresses)
             scoreLabel.text = "\(self.score)"
-            scoreLabel.font = .systemFont(ofSize: centerFontSize * 0.92, weight: .heavy)
+            scoreLabel.font = .systemFont(ofSize: centerFontSize * 0.88, weight: .heavy)
             setNeedsLayout()
         }
         
@@ -232,15 +232,15 @@ final class SleepScoreViewModel {
             guard bounds.width > 0, bounds.height > 0 else { return }
             
             let size = min(bounds.width, bounds.height)
-            let lineWidth = max(16, size * 0.135)
-            let radius = (size - lineWidth) / 2.12
+            let lineWidth = max(17, size * 0.135)
+            let radius = (size - lineWidth) / 2.08
             let center = CGPoint(x: bounds.midX, y: bounds.midY)
-            let segmentArc = CGFloat.pi * 0.50
-            let gap = CGFloat.pi * 0.085
+            let segmentArc = CGFloat.pi * 0.60
+            let gap = CGFloat.pi * 0.032
             let startAngles = [
-                CGFloat.pi * 1.07,
-                -CGFloat.pi * 0.47,
-                CGFloat.pi * 0.47
+                CGFloat.pi * 0.88,
+                CGFloat.pi * 1.56,
+                CGFloat.pi * 0.22
             ]
             let progresses = segmentProgressValues
             
@@ -270,8 +270,8 @@ final class SleepScoreViewModel {
                 segmentSet.gradientLayer.colors = gradientColors(for: index)
                 applyGradientDirection(for: index, to: segmentSet.gradientLayer)
                 segmentSet.progressLayer.shadowColor = segmentColors[index].first?.cgColor
-                segmentSet.progressLayer.shadowOpacity = 0.34
-                segmentSet.progressLayer.shadowRadius = 12
+                segmentSet.progressLayer.shadowOpacity = 0.22
+                segmentSet.progressLayer.shadowRadius = 8
                 segmentSet.progressLayer.shadowOffset = .zero
             }
         }
@@ -281,8 +281,8 @@ final class SleepScoreViewModel {
             let deep = segmentColors[index].last ?? bright.withAlphaComponent(0.25)
             
             return [
-                deep.withAlphaComponent(0.0).cgColor,
-                deep.withAlphaComponent(0.95).cgColor,
+                deep.withAlphaComponent(0.10).cgColor,
+                deep.withAlphaComponent(1.0).cgColor,
                 bright.cgColor
             ]
         }
@@ -290,14 +290,14 @@ final class SleepScoreViewModel {
         private func applyGradientDirection(for index: Int, to layer: CAGradientLayer) {
             switch index {
             case 0:
-                layer.startPoint = CGPoint(x: 0.15, y: 0.85)
-                layer.endPoint = CGPoint(x: 0.82, y: 0.18)
+                layer.startPoint = CGPoint(x: 0.18, y: 0.88)
+                layer.endPoint = CGPoint(x: 0.78, y: 0.16)
             case 1:
-                layer.startPoint = CGPoint(x: 0.22, y: 0.16)
-                layer.endPoint = CGPoint(x: 0.86, y: 0.78)
+                layer.startPoint = CGPoint(x: 0.14, y: 0.18)
+                layer.endPoint = CGPoint(x: 0.88, y: 0.70)
             default:
-                layer.startPoint = CGPoint(x: 0.14, y: 0.22)
-                layer.endPoint = CGPoint(x: 0.88, y: 0.82)
+                layer.startPoint = CGPoint(x: 0.26, y: 0.10)
+                layer.endPoint = CGPoint(x: 0.84, y: 0.88)
             }
         }
         
