@@ -158,6 +158,7 @@ struct HRVRangeCalmChartView: View {
 
     var points: [HRVRangePoint]
     var range: TimeRange
+    var domain: ClosedRange<Date>
 
     private var slots: [HRVRangeSlot] {
         let pts = points.sorted { $0.time < $1.time }
@@ -187,8 +188,7 @@ struct HRVRangeCalmChartView: View {
         let cal = Calendar.current
         switch range {
         case .hourly:
-            let ref = points.last?.time ?? Date()
-            let start = cal.dateInterval(of: .hour, for: ref)!.start
+            let start = cal.dateInterval(of: .hour, for: domain.lowerBound)!.start
             return (0..<20).map { i in
                 let d = cal.date(byAdding: .minute, value: i * 3, to: start)!
                 let lbl: String
@@ -202,14 +202,14 @@ struct HRVRangeCalmChartView: View {
                 return (d, lbl)
             }
         case .daily:
-            let base = cal.startOfDay(for: Date())
+            let base = cal.startOfDay(for: domain.lowerBound)
             return (0..<24).map { i in
                 let d = cal.date(byAdding: .hour, value: i, to: base)!
                 let lbl = (i % 6 == 0) ? DateFormatter.cached("ha").string(from: d) : ""
                 return (d, lbl)
             }
         case .weekly:
-            let week = cal.dateInterval(of: .weekOfYear, for: Date())!
+            let week = cal.dateInterval(of: .weekOfYear, for: domain.lowerBound)!
             let syms = cal.shortWeekdaySymbols
             return (0..<7).map { i in
                 let d = cal.date(byAdding: .day, value: i, to: week.start)!
@@ -217,7 +217,7 @@ struct HRVRangeCalmChartView: View {
                 return (cal.startOfDay(for: d), lbl)
             }
         case .monthly:
-            let anchor = Date()
+            let anchor = domain.lowerBound
             let start = cal.date(from: cal.dateComponents([.year, .month], from: anchor))!
             let days = cal.range(of: .day, in: .month, for: anchor)!.count
             return (0..<days).map { i in
@@ -226,7 +226,7 @@ struct HRVRangeCalmChartView: View {
                 return (cal.startOfDay(for: d), lbl)
             }
         case .yearly:
-            let yearStart = cal.date(from: cal.dateComponents([.year], from: Date()))!
+            let yearStart = cal.date(from: cal.dateComponents([.year], from: domain.lowerBound))!
             let labels = cal.shortMonthSymbols
             return (0..<12).map { i in
                 let d = cal.date(byAdding: .month, value: i, to: yearStart)!
@@ -242,7 +242,7 @@ struct HRVRangeCalmChartView: View {
             filledCount: filledCount,
             barColor: Color(cgColor: UIColor.init("AF52DE").cgColor),//Color(red: 1.0, green: 0.31, blue: 0.49),
             trackColor: .white.opacity(0.08),
-            spacing: { switch range { case .hourly: return 5; case .daily: return 6; case .weekly: return 14; case .monthly: return 6; case .yearly: return 10 } }(),
+            spacing: { switch range { case .hourly: return 5; case .daily: return 4; case .weekly: return 14; case .monthly: return 6; case .yearly: return 10 } }(),
             labelEvery: 1,
             axisWidth: 36,
             axisGutter: 8,
@@ -337,7 +337,13 @@ struct HRVRangeCalmChartView_Previews: PreviewProvider {
         Group {
             HRVRangeCalmChartView(
                 points: _HRVPreviewFactory.hourlyPoints(),
-                range: .hourly
+                range: .hourly,
+                domain: {
+                    let cal = Calendar.current
+                    let now = Date()
+                    let h = cal.dateInterval(of: .hour, for: now)!.start
+                    return h...cal.date(byAdding: .hour, value: 1, to: h)!
+                }()
             )
             .frame(height: 260)
             .padding()
@@ -346,7 +352,12 @@ struct HRVRangeCalmChartView_Previews: PreviewProvider {
 
             HRVRangeCalmChartView(
                 points: _HRVPreviewFactory.dailyPoints(),
-                range: .daily
+                range: .daily,
+                domain: {
+                    let cal = Calendar.current
+                    let start = cal.startOfDay(for: Date())
+                    return start...cal.date(byAdding: .day, value: 1, to: start)!
+                }()
             )
             .frame(height: 260)
             .padding()
@@ -355,7 +366,12 @@ struct HRVRangeCalmChartView_Previews: PreviewProvider {
 
             HRVRangeCalmChartView(
                 points: _HRVPreviewFactory.weeklyPoints(),
-                range: .weekly
+                range: .weekly,
+                domain: {
+                    let cal = Calendar.current
+                    let week = cal.dateInterval(of: .weekOfYear, for: Date())!
+                    return week.start...cal.date(byAdding: .day, value: 7, to: week.start)!
+                }()
             )
             .frame(height: 260)
             .padding()
@@ -364,7 +380,12 @@ struct HRVRangeCalmChartView_Previews: PreviewProvider {
 
             HRVRangeCalmChartView(
                 points: _HRVPreviewFactory.monthlyPoints(),
-                range: .monthly
+                range: .monthly,
+                domain: {
+                    let cal = Calendar.current
+                    let month = cal.dateInterval(of: .month, for: Date())!
+                    return month.start...cal.date(byAdding: .month, value: 1, to: month.start)!
+                }()
             )
             .frame(height: 260)
             .padding()
@@ -373,7 +394,12 @@ struct HRVRangeCalmChartView_Previews: PreviewProvider {
 
             HRVRangeCalmChartView(
                 points: _HRVPreviewFactory.yearlyPoints(),
-                range: .yearly
+                range: .yearly,
+                domain: {
+                    let cal = Calendar.current
+                    let year = cal.dateInterval(of: .year, for: Date())!
+                    return year.start...cal.date(byAdding: .year, value: 1, to: year.start)!
+                }()
             )
             .frame(height: 260)
             .padding()

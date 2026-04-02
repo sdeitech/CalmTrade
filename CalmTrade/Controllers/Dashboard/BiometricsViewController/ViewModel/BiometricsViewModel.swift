@@ -333,6 +333,15 @@ final class BiometricsViewModel: ObservableObject {
             }
         }
 
+        if isPolarConnected, let liveSdnn = DeviceManager.shared.currentLiveSDNN() {
+            let live = "\(Int(liveSdnn.value.rounded()))"
+            data.sdnnLatest = live
+            data.sdnnAverage = live
+            data.sdnnTimestamp = formatTimeStamp(liveSdnn.timestamp)
+            data.lastSdnnUpdate = liveSdnn.timestamp
+            lastSdnnUpdate = liveSdnn.timestamp
+        }
+
         // Resting HR
         if let latest = latestMetricScoped(kind: .restingHeartRate, from: start, to: now) {
             let v = latest.value
@@ -518,6 +527,15 @@ final class BiometricsViewModel: ObservableObject {
                 self.lastRmssdUpdate = props.lastUpdate
             }
 
+            if self.isPolarConnected, let liveSdnn = DeviceManager.shared.currentLiveSDNN() {
+                let live = "\(Int(liveSdnn.value.rounded()))"
+                data.sdnnLatest = live
+                data.sdnnAverage = live
+                data.sdnnTimestamp = self.formatTimeStamp(liveSdnn.timestamp)
+                data.lastSdnnUpdate = liveSdnn.timestamp
+                self.lastSdnnUpdate = liveSdnn.timestamp
+            }
+
             self.biometricData = data
             self.onDataUpdated?(data)
         }
@@ -533,10 +551,14 @@ final class BiometricsViewModel: ObservableObject {
             trend: TrendData(hrvMs: 0, hrvIsUp: true, hrBpm: 0, hrIsDown: true, sleepHours: 0, sleepIsUp: true)
         )
 
+        let liveRmssd = isPolarConnected ? DeviceManager.shared.currentLiveRMSSD() : nil
+        let effectiveHrvMs = liveRmssd?.value ?? base.trend.hrvMs
+        let effectiveLastUpdate = max(base.lastUpdate, liveRmssd?.timestamp ?? base.lastUpdate)
+
         // Only override sleep data if we have valid sleep data from repository
         // Otherwise, preserve the original sleep data from the hub
         let updatedTrend = TrendData(
-            hrvMs: base.trend.hrvMs,
+            hrvMs: effectiveHrvMs,
             hrvIsUp: base.trend.hrvIsUp,
             hrBpm: base.trend.hrBpm,
             hrIsDown: base.trend.hrIsDown,
@@ -546,7 +568,7 @@ final class BiometricsViewModel: ObservableObject {
 
         let newProps = CalmScoreTileProps(
             score: base.score,
-            lastUpdate: Date(),
+            lastUpdate: effectiveLastUpdate,
             deviceSource: base.deviceSource,
             isStreaming: base.isStreaming,
             trend: updatedTrend

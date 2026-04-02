@@ -6,9 +6,41 @@
 //
 
 // MARK: - Polar 360 Activity: minute-steps fetch + ingest
+import PolarBleSdk
 import RxSwift
 
 extension PolarManager {
+
+    private var activityScheduler: ConcurrentDispatchQueueScheduler {
+        ConcurrentDispatchQueueScheduler(qos: .utility)
+    }
+
+    private func _minuteFloor(_ date: Date) -> Date {
+        Calendar.current.date(bySetting: .second, value: 0, of: date) ?? date
+    }
+
+    private func _extractMinutePairs(from activityDayData: PolarActivityDayData) -> [(Date, Int)] {
+        var aggregated: [Date: Int] = [:]
+
+        for dayData in activityDayData.polarActivityDataList {
+            guard let samples = dayData.samples else { continue }
+
+            let interval = max(1, samples.stepRecordingInterval)
+            let start = samples.startTime
+            let stepSamples = samples.stepSamples ?? []
+
+            for (idx, rawSteps) in stepSamples.enumerated() {
+                let steps = Int(rawSteps)
+                guard steps > 0 else { continue }
+
+                let ts = start.addingTimeInterval(TimeInterval(idx * interval))
+                let minute = _minuteFloor(ts)
+                aggregated[minute, default: 0] += steps
+            }
+        }
+
+        return aggregated.keys.sorted().map { ($0, aggregated[$0] ?? 0) }
+    }
 
     /// Strong, schema-agnostic extractor for minute samples.
     /// Supports two common shapes in Polar SDKs:
@@ -170,10 +202,12 @@ extension PolarManager {
             completion([]); return
         }
 
-        // Use the dedicated getSteps method like in the reference implementation
-        self.api.getSteps(identifier: deviceId, fromDate: start, toDate: end)
-            .observe(on: MainScheduler.instance)
-            .subscribe(onSuccess: { [weak self] days in
+        // Minute-level live-ish step updates come from activity samples, not getSteps.
+        // `getSteps` returns an accumulated total per day, which collapses to midnight in the UI.
+        self.api.getActivitySampleData(identifier: deviceId, fromDate: start, toDate: end)
+            .subscribe(on: activityScheduler)
+            .observe(on: activityScheduler)
+            .subscribe(onSuccess: { [weak self] dayDataList in
                 guard let self else {
                     debugPrint("=== PolarManager+Activity ===")
                     debugPrint("Self was nil in success callback")
@@ -183,11 +217,11 @@ extension PolarManager {
                 }
 
                 debugPrint("=== PolarManager+Activity ===")
-                debugPrint("Successfully fetched \(days.count) days of Polar steps data")
+                debugPrint("Successfully fetched \(dayDataList.count) days of Polar activity sample data")
 
                 var out: [(Date, Int)] = []
-                for dayObj in days {
-                    let extracted = self._extractMinutePairs(from: dayObj, dayStart: start)
+                for dayData in dayDataList {
+                    let extracted = self._extractMinutePairs(from: dayData as PolarActivityDayData)
                     debugPrint("Extracted \(extracted.count) step records from day object")
                     out.append(contentsOf: extracted)
                 }
@@ -202,17 +236,20 @@ extension PolarManager {
                 }
                 debugPrint("=============================")
 
-                completion(out)
+                DispatchQueue.main.async {
+                    completion(out)
+                }
             }, onFailure: { err in
                 debugPrint("=== PolarManager+Activity ===")
-                debugPrint("Failed to fetch Polar steps via getSteps: \(err.localizedDescription)")
+                debugPrint("Failed to fetch minute samples via getActivitySampleData: \(err.localizedDescription)")
                 debugPrint("=============================")
 
-                // Fallback to the older method
-                debugPrint("Falling back to getActivitySampleData method...")
+                // Fallback: at least keep a daily total if minute samples are unavailable.
+                debugPrint("Falling back to getSteps daily total method...")
 
-                self.api.getActivitySampleData(identifier: deviceId, fromDate: start, toDate: end)
-                    .observe(on: MainScheduler.instance)
+                self.api.getSteps(identifier: deviceId, fromDate: start, toDate: end)
+                    .subscribe(on: self.activityScheduler)
+                    .observe(on: self.activityScheduler)
                     .subscribe(onSuccess: { [weak self] days in
                         guard let self else {
                             debugPrint("=== PolarManager+Activity Fallback ===")
@@ -223,7 +260,7 @@ extension PolarManager {
                         }
 
                         debugPrint("=== PolarManager+Activity Fallback ===")
-                        debugPrint("Successfully fetched \(days.count) days of Polar activity data via fallback")
+                        debugPrint("Successfully fetched \(days.count) days of Polar steps totals via fallback")
 
                         var out: [(Date, Int)] = []
                         for dayObj in days {
@@ -235,18 +272,155 @@ extension PolarManager {
 
                         debugPrint("Total extracted steps records from fallback: \(out.count)")
 
-                        completion(out)
+                        DispatchQueue.main.async {
+                            completion(out)
+                        }
                     }, onFailure: { err in
                         debugPrint("=== PolarManager+Activity Fallback ===")
-                        debugPrint("Also failed to fetch via getActivitySampleData: \(err.localizedDescription)")
+                        debugPrint("Also failed to fetch via getSteps: \(err.localizedDescription)")
                         debugPrint("=============================")
 
-                        NSLog("[PM][ACT] fallback getActivitySampleData error: %@", err.localizedDescription)
-                        completion([])
+                        NSLog("[PM][ACT] fallback getSteps error: %@", err.localizedDescription)
+                        DispatchQueue.main.async {
+                            completion([])
+                        }
                     })
                     .disposed(by: self.disposeBag)
             })
             .disposed(by: disposeBag)
+    }
+
+    /// Public: fetch Polar 360 current daily total, which updates faster than minute samples.
+    func fetchPolarLiveStepsTotal(deviceId: String,
+                                  date: Date = Date(),
+                                  completion: @escaping (Int?) -> Void)
+    {
+        let cal = Calendar.current
+        let start = cal.startOfDay(for: date)
+        let end = start
+
+        guard self.api.isFeatureReady(deviceId, feature: .feature_polar_activity_data) else {
+            NSLog("[PM][ACT] feature not ready; skipping live total fetch")
+            completion(nil)
+            return
+        }
+
+        self.api.getSteps(identifier: deviceId, fromDate: start, toDate: end)
+            .subscribe(on: activityScheduler)
+            .observe(on: activityScheduler)
+            .subscribe(onSuccess: { days in
+                let total = days
+                    .filter { Calendar.current.isDate($0.date, inSameDayAs: start) }
+                    .map(\.steps)
+                    .max()
+
+                if let total {
+                    debugPrint("[PM][ACT] live total fetched: \(total) steps")
+                } else {
+                    debugPrint("[PM][ACT] live total fetch returned no steps")
+                }
+                DispatchQueue.main.async {
+                    completion(total)
+                }
+            }, onFailure: { err in
+                NSLog("[PM][ACT] live total fetch error: %@", err.localizedDescription)
+                DispatchQueue.main.async {
+                    completion(nil)
+                }
+            })
+            .disposed(by: disposeBag)
+    }
+
+    /// Ask the device to flush the latest activity data, then read today's total + minute samples.
+    func refreshPolarTodayActivity(deviceId: String,
+                                   completion: @escaping (_ totalSteps: Int?, _ minutes: [(Date, Int)]) -> Void)
+    {
+        func finish(_ total: Int?, _ minutes: [(Date, Int)]) {
+            self.api.sendTerminateAndStopSyncNotifications(identifier: deviceId)
+                .subscribe(on: self.activityScheduler)
+                .observe(on: self.activityScheduler)
+                .subscribe(onCompleted: {
+                    DispatchQueue.main.async {
+                        completion(total, minutes)
+                    }
+                }, onError: { err in
+                    NSLog("[PM][ACT] stop sync error: %@", err.localizedDescription)
+                    DispatchQueue.main.async {
+                        completion(total, minutes)
+                    }
+                })
+                .disposed(by: self.disposeBag)
+        }
+
+        self.api.sendInitializationAndStartSyncNotifications(identifier: deviceId)
+            .subscribe(on: activityScheduler)
+            .observe(on: activityScheduler)
+            .subscribe(onCompleted: { [weak self] in
+                guard let self else {
+                    DispatchQueue.main.async {
+                        completion(nil, [])
+                    }
+                    return
+                }
+
+                self.fetchPolarLiveStepsTotal(deviceId: deviceId) { total in
+                    self.fetchPolarActivity(deviceId: deviceId, date: Date()) { minutes in
+                        finish(total, minutes)
+                    }
+                }
+            }, onError: { [weak self] err in
+                NSLog("[PM][ACT] start sync error: %@", err.localizedDescription)
+                self?.fetchPolarLiveStepsTotal(deviceId: deviceId) { total in
+                    self?.fetchPolarActivity(deviceId: deviceId, date: Date()) { minutes in
+                        completion(total, minutes)
+                    }
+                } ?? completion(nil, [])
+            })
+            .disposed(by: disposeBag)
+    }
+
+    /// Apply today's cumulative Polar total as a near-live update for the current minute.
+    /// This fills the UI gap until exact minute samples are written by getActivitySampleData.
+    func submitPolar360LiveStepsTotal(_ totalSteps: Int, asOf now: Date = Date()) {
+        guard totalSteps > 0 else { return }
+
+        let cal = Calendar.current
+        let startOfDay = cal.startOfDay(for: now)
+        let minuteStart = _minuteFloor(now)
+        let minuteEnd = cal.date(byAdding: .minute, value: 1, to: minuteStart) ?? now.addingTimeInterval(60)
+        let repo = CTMetricsRepository.shared
+
+        let todayTotalInRepo = repo.series(kind: .steps, from: startOfDay, to: now, source: .polar360)
+            .reduce(0) { $0 + Int($1.value.rounded()) }
+
+        let missing = totalSteps - todayTotalInRepo
+        guard missing > 0 else {
+            debugPrint("[PM][ACT] live total has no missing delta (sdk=\(totalSteps), repo=\(todayTotalInRepo))")
+            return
+        }
+
+        let currentMinuteValue = repo.series(kind: .steps, from: minuteStart, to: minuteEnd, source: .polar360)
+            .reduce(0) { $0 + Int($1.value.rounded()) }
+
+        let newMinuteValue = currentMinuteValue + missing
+
+        debugPrint("[PM][ACT] applying live delta missing=\(missing) minuteStart=\(minuteStart) newMinuteValue=\(newMinuteValue)")
+
+        repo.upsert(
+            kind: .steps,
+            value: Double(newMinuteValue),
+            unit: "steps",
+            source: .polar360,
+            date: minuteStart,
+            notifyMirror: false
+        )
+
+        NotificationCenter.default.post(
+            name: .ctMetricUpdated,
+            object: nil,
+            userInfo: ["kind": "steps", "date": minuteStart]
+        )
+        NotificationCenter.default.post(name: .ctMetricsDidMirror, object: nil)
     }
 
     /// Repo ingest (Polar 360 → .steps)
@@ -270,9 +444,17 @@ extension PolarManager {
 
         let repo = CTMetricsRepository.shared
         for (ts, steps) in minutes {
-            repo.upsert(kind: .steps, value: Double(steps), unit: "steps", source: .polar360, date: ts)
+            repo.upsert(
+                kind: .steps,
+                value: Double(steps),
+                unit: "steps",
+                source: .polar360,
+                date: ts,
+                notifyMirror: false
+            )
         }
         NotificationCenter.default.post(name: .ctMetricUpdated, object: nil,
                                         userInfo: ["kind": "steps", "date": Date()])
+        NotificationCenter.default.post(name: .ctMetricsDidMirror, object: nil)
     }
 }

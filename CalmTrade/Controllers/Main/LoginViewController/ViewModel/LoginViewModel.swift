@@ -45,10 +45,7 @@ final class LoginViewModel: BaseViewModel {
             guard let self else { return }
 
             if let dto = dto {
-//                let user = User(from: dto)
-//                self.user = dto
-
-                SessionManager.shared.setCurrentUser(user, token: token)
+                self.user = dto
                 // Connect socket after session is established
                 SocketClient.shared.connect(with: token)
                 completion(true, nil)

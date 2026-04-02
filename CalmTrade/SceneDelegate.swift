@@ -182,9 +182,6 @@ private extension SceneDelegate {
             tab.navigationController?.navigationBar.isHidden = true
             let nav = UINavigationController(rootViewController: tab)
             nav.navigationBar.isHidden = true
-            if let token = UserDefaults.standard.string(forKey: "accessToken"), !token.isEmpty {
-                SocketClient.shared.connect(with: token)
-            }
             return nav
         } else {
             // Show splash/login flow

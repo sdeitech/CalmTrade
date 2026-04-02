@@ -22,16 +22,9 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
     var window: UIWindow?
     
     private var bgTask: UIBackgroundTaskIdentifier = .invalid
+    private var backgroundTasksRegistered = false
     
     private var polarSyncService: Polar360SyncService!
-
-    override init() {
-        super.init()
-        // Some startup paths touch Firebase-backed modules before launch finishes.
-        if FirebaseApp.app() == nil {
-            FirebaseApp.configure()
-        }
-    }
     
 //    func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
 //        
@@ -101,11 +94,9 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
     ) -> Bool {
 
-        // EARLIEST INITIALIZATION - Firebase must be configured before any other Firebase services are accessed
-        // Only configure Firebase if it hasn't been configured elsewhere (e.g., SceneDelegate for iOS 13+)
         setenv("SQLITE_ENABLE_WAL_CHECKPOINT_LOG", "0", 1)
-        
-        // Firebase may already be configured from AppDelegate.init().
+
+        // Firebase needs to be configured synchronously at launch before any Firebase-backed service is touched.
         if FirebaseApp.app() == nil {
             FirebaseApp.configure()
         }
@@ -135,6 +126,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
             self.window = win
         }
 
+        registerBackgroundTasksIfNeeded()
+
         // Defer non-UI startup work until after launch returns.
         DispatchQueue.global(qos: .userInitiated).async {
             self.initializeBackgroundSystems(application, launchOptions: launchOptions)
@@ -157,6 +150,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
         DispatchQueue.global(qos: .background).async {
             let polarSleepSource = PolarBleSleepSource()
             Polar360SleepIngestor.shared.configure(source: polarSleepSource)
+            self.polarSyncService = Polar360SyncService(fetcher: PolarCloudFetcher())
 
             PolarManager.shared.on360OfflinePpg = { ppg, start in
                 guard let devId = PolarManager.shared.connectedDevice?.id else { return }
@@ -177,24 +171,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
             )
         }
 
-        // Register background tasks
-        DispatchQueue.global(qos: .background).async {
-            BGTaskScheduler.shared.register(
-                forTaskWithIdentifier: "com.calmtrade.calmScore.refresh",
-                using: nil
-            ) { task in
-                self.handleCalmScoreRefresh(task: task as! BGAppRefreshTask)
-            }
-
-            BGTaskScheduler.shared.register(
-                forTaskWithIdentifier: "com.calmtrade.calmScore.processing",
-                using: nil
-            ) { task in
-                self.handleCalmScoreProcessing(task: task as! BGProcessingTask)
-            }
-
-            self.scheduleCalmScoreRefresh()
-        }
+        self.scheduleCalmScoreRefresh()
     }
     
     func applicationWillResignActive(_ application: UIApplication) {
@@ -221,7 +198,9 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
         HealthKitService.shared.startBackgroundMirroring()  // Resume HealthKit monitoring
 
         PolarManager.shared.resumeAutoReconnectOnForeground()
-        if let token = UserDefaults.standard.string(forKey: "accessToken"), !token.isEmpty {
+        if #unavailable(iOS 13.0),
+           let token = UserDefaults.standard.string(forKey: "accessToken"),
+           !token.isEmpty {
             SocketClient.shared.connect(with: token)
         }
 
@@ -321,6 +300,25 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
         let req = BGAppRefreshTaskRequest(identifier: "com.calmtrade.calmScore.refresh")
         req.earliestBeginDate = Date(timeIntervalSinceNow: 15 * 60) // ask iOS: ~15+ min
         try? BGTaskScheduler.shared.submit(req)
+    }
+
+    private func registerBackgroundTasksIfNeeded() {
+        guard !backgroundTasksRegistered else { return }
+        backgroundTasksRegistered = true
+
+        BGTaskScheduler.shared.register(
+            forTaskWithIdentifier: "com.calmtrade.calmScore.refresh",
+            using: nil
+        ) { task in
+            self.handleCalmScoreRefresh(task: task as! BGAppRefreshTask)
+        }
+
+        BGTaskScheduler.shared.register(
+            forTaskWithIdentifier: "com.calmtrade.calmScore.processing",
+            using: nil
+        ) { task in
+            self.handleCalmScoreProcessing(task: task as! BGProcessingTask)
+        }
     }
     
     func scheduleCalmScoreProcessing() {
@@ -437,9 +435,6 @@ private extension AppDelegate {
             tab.navigationController?.navigationBar.isHidden = true
             let nav = UINavigationController(rootViewController: tab)
             nav.navigationBar.isHidden = true
-            if let token = UserDefaults.standard.string(forKey: "accessToken"), !token.isEmpty {
-                SocketClient.shared.connect(with: token)
-            }
             return nav
         } else {
             // Show splash/login flow

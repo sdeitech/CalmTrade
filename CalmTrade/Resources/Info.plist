@@ -52,6 +52,8 @@
 	<string>893bcbdd5f41249f62748adba97e1687</string>
 	<key>FacebookDisplayName</key>
 	<string>CalmTrade</string>
+	<key>FirebaseAppDelegateProxyEnabled</key>
+	<false/>
 	<key>GIDClientID</key>
 	<string>206278247451-k3bfkkfp4q2spec80napovapbno0tlih.apps.googleusercontent.com</string>
 	<key>LSApplicationQueriesSchemes</key>
