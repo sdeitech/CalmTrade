@@ -1,93 +1,147 @@
 //
-//  SleepScoreBreakdownCell.swift
+//  SleepScoreDetailViewController.swift
 //  CalmTrade
 //
-//  Created by Anas Parekh on 04/03/26.
+//  Created by Lokesh Pantola on 02/04/26.
 //
-
 
 import UIKit
 
-final class SleepScoreBreakdownCell: UICollectionViewCell {
+final class SleepScoreDetailViewController: UIViewController {
     
-    static let identifier = "SleepScoreBreakdownCell"
+    private let model: SleepScoreDayModel
     
-    private let contentStack = UIStackView()
-    private let scoreCard = UIView()
-    private let scoreContainerView = UIView()
+    private let scrollView = UIScrollView()
+    private let contentView = UIView()
+    private let stackView = UIStackView()
+    private let heroImageView = UIImageView()
+    private let headerTitleLabel = UILabel()
+    private let backButton = UIButton(type: .system)
+    private let ringContainerView = UIView()
     
-    private let amountCard = SleepScoreMetricCardView()
-    private let solidityCard = SleepScoreMetricCardView()
-    private let regenerationCard = SleepScoreMetricCardView()
-    private let insightCard = SleepScoreInsightCardView()
-    
-    override init(frame: CGRect) {
-        super.init(frame: frame)
-        setup()
+    init(model: SleepScoreDayModel) {
+        self.model = model
+        super.init(nibName: nil, bundle: nil)
     }
     
     required init?(coder: NSCoder) {
-        super.init(coder: coder)
-        setup()
+        fatalError("init(coder:) has not been implemented")
     }
     
-    override func prepareForReuse() {
-        super.prepareForReuse()
-        insightCard.configure(text: nil)
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        setupView()
+        setupHierarchy()
+        setupConstraints()
+        configureContent()
     }
     
-    private func setup() {
-        backgroundColor = .clear
-        contentView.backgroundColor = .clear
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        navigationController?.setNavigationBarHidden(true, animated: animated)
+    }
+    
+    private func setupView() {
+        view.backgroundColor = .black
         
-        contentStack.axis = .vertical
-        contentStack.spacing = 16
-        contentStack.translatesAutoresizingMaskIntoConstraints = false
+        heroImageView.translatesAutoresizingMaskIntoConstraints = false
+        heroImageView.image = UIImage(named: "Background")
+        heroImageView.contentMode = .scaleAspectFill
+        heroImageView.clipsToBounds = true
         
-        scoreCard.translatesAutoresizingMaskIntoConstraints = false
-        scoreCard.backgroundColor = .clear
+        scrollView.translatesAutoresizingMaskIntoConstraints = false
+        scrollView.showsVerticalScrollIndicator = false
         
-        scoreContainerView.translatesAutoresizingMaskIntoConstraints = false
-        scoreContainerView.backgroundColor = .clear
+        contentView.translatesAutoresizingMaskIntoConstraints = false
         
-        contentView.addSubview(contentStack)
-        contentStack.addArrangedSubview(scoreCard)
-        contentStack.addArrangedSubview(amountCard)
-        contentStack.addArrangedSubview(solidityCard)
-        contentStack.addArrangedSubview(regenerationCard)
-        contentStack.addArrangedSubview(insightCard)
+        stackView.translatesAutoresizingMaskIntoConstraints = false
+        stackView.axis = .vertical
+        stackView.spacing = 16
         
-        scoreCard.addSubview(scoreContainerView)
+        headerTitleLabel.translatesAutoresizingMaskIntoConstraints = false
+        headerTitleLabel.text = "Sleep Score"
+        headerTitleLabel.textColor = .white
+        headerTitleLabel.font = .systemFont(ofSize: 18, weight: .bold)
+        headerTitleLabel.textAlignment = .center
         
+        backButton.translatesAutoresizingMaskIntoConstraints = false
+        backButton.setImage(UIImage(named: "back"), for: .normal)
+        backButton.tintColor = .white
+        backButton.backgroundColor = UIColor.white.withAlphaComponent(0.72)
+        backButton.layer.cornerRadius = 10
+        backButton.addTarget(self, action: #selector(backTapped), for: .touchUpInside)
+        
+        ringContainerView.translatesAutoresizingMaskIntoConstraints = false
+        ringContainerView.backgroundColor = .clear
+    }
+    
+    private func setupHierarchy() {
+        view.addSubview(heroImageView)
+        view.addSubview(scrollView)
+        scrollView.addSubview(contentView)
+        
+        contentView.addSubview(headerTitleLabel)
+        contentView.addSubview(backButton)
+        contentView.addSubview(stackView)
+        
+        stackView.addArrangedSubview(ringContainerView)
+        stackView.addArrangedSubview(makeAmountCard())
+        stackView.addArrangedSubview(makeSolidityCard())
+        stackView.addArrangedSubview(makeRegenerationCard())
+        stackView.addArrangedSubview(makeInsightCard())
+    }
+    
+    private func setupConstraints() {
         NSLayoutConstraint.activate([
-            contentStack.topAnchor.constraint(equalTo: contentView.topAnchor),
-            contentStack.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
-            contentStack.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
-            contentStack.bottomAnchor.constraint(equalTo: contentView.bottomAnchor),
+            heroImageView.topAnchor.constraint(equalTo: view.topAnchor),
+            heroImageView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            heroImageView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            heroImageView.heightAnchor.constraint(equalToConstant: 154),
             
-            scoreCard.heightAnchor.constraint(equalToConstant: 204),
+            scrollView.topAnchor.constraint(equalTo: view.topAnchor),
+            scrollView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            scrollView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            scrollView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
             
-            scoreContainerView.centerXAnchor.constraint(equalTo: scoreCard.centerXAnchor),
-            scoreContainerView.centerYAnchor.constraint(equalTo: scoreCard.centerYAnchor),
-            scoreContainerView.widthAnchor.constraint(equalToConstant: 174),
-            scoreContainerView.heightAnchor.constraint(equalTo: scoreContainerView.widthAnchor),
+            contentView.topAnchor.constraint(equalTo: scrollView.contentLayoutGuide.topAnchor),
+            contentView.leadingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.leadingAnchor),
+            contentView.trailingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.trailingAnchor),
+            contentView.bottomAnchor.constraint(equalTo: scrollView.contentLayoutGuide.bottomAnchor),
+            contentView.widthAnchor.constraint(equalTo: scrollView.frameLayoutGuide.widthAnchor),
             
-            amountCard.heightAnchor.constraint(equalToConstant: 102),
-            solidityCard.heightAnchor.constraint(equalToConstant: 138),
-            regenerationCard.heightAnchor.constraint(equalToConstant: 110),
-            insightCard.heightAnchor.constraint(equalToConstant: 96)
+            backButton.topAnchor.constraint(equalTo: contentView.safeAreaLayoutGuide.topAnchor, constant: 8),
+            backButton.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 18),
+            backButton.widthAnchor.constraint(equalToConstant: 32),
+            backButton.heightAnchor.constraint(equalToConstant: 32),
+            
+            headerTitleLabel.centerYAnchor.constraint(equalTo: backButton.centerYAnchor),
+            headerTitleLabel.centerXAnchor.constraint(equalTo: contentView.centerXAnchor),
+            
+            stackView.topAnchor.constraint(equalTo: backButton.bottomAnchor, constant: 28),
+            stackView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
+            stackView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
+            stackView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -24),
+            
+            ringContainerView.heightAnchor.constraint(equalToConstant: 190)
         ])
     }
     
-    func configure(model: SleepScoreDayModel) {
+    private func configureContent() {
         SleepScoreViewModel.makeSleepScoreRing(
-            in: scoreContainerView,
+            in: ringContainerView,
             score: model.score,
             segmentProgresses: [model.amount, model.solidity, model.regeneration],
             centerFontSize: 30
         )
-        
-        amountCard.configure(
+    }
+    
+    private func makeAmountCard() -> UIView {
+        let card = SleepScoreDetailMetricCardView()
+        card.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([
+            card.heightAnchor.constraint(equalToConstant: 102)
+        ])
+        card.configure(
             icon: UIImage(systemName: "bed.double.fill"),
             iconTintColor: UIColor("39D2DB"),
             iconBackgroundColor: UIColor("39D2DB").withAlphaComponent(0.16),
@@ -105,8 +159,16 @@ final class SleepScoreBreakdownCell: UICollectionViewCell {
                 )
             ]
         )
-        
-        solidityCard.configure(
+        return card
+    }
+    
+    private func makeSolidityCard() -> UIView {
+        let card = SleepScoreDetailMetricCardView()
+        card.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([
+            card.heightAnchor.constraint(equalToConstant: 138)
+        ])
+        card.configure(
             icon: UIImage(systemName: "line.3.horizontal.decrease.circle.fill"),
             iconTintColor: UIColor("F29A3B"),
             iconBackgroundColor: UIColor("F29A3B").withAlphaComponent(0.16),
@@ -118,7 +180,7 @@ final class SleepScoreBreakdownCell: UICollectionViewCell {
                     title: "Long interruptions",
                     detail: nil,
                     valueText: "\(model.interruptionsScore)",
-                    progress: progress(for: model.interruptionsScore, max: 10),
+                    progress: progress(model.interruptionsScore, max: 10),
                     gradientColors: [UIColor("2A2421").withAlphaComponent(0.12), UIColor("F29A3B")],
                     barStyle: .compactTrailing
                 ),
@@ -126,7 +188,7 @@ final class SleepScoreBreakdownCell: UICollectionViewCell {
                     title: "Continuity",
                     detail: nil,
                     valueText: "\(model.continuityScore)",
-                    progress: progress(for: model.continuityScore, max: 10),
+                    progress: progress(model.continuityScore, max: 10),
                     gradientColors: [UIColor("2A2421").withAlphaComponent(0.12), UIColor("F29A3B")],
                     barStyle: .compactTrailing
                 ),
@@ -134,14 +196,22 @@ final class SleepScoreBreakdownCell: UICollectionViewCell {
                     title: "Actual sleep",
                     detail: nil,
                     valueText: "\(model.sleepEfficiencyScore)",
-                    progress: progress(for: model.sleepEfficiencyScore, max: 10),
+                    progress: progress(model.sleepEfficiencyScore, max: 10),
                     gradientColors: [UIColor("2A2421").withAlphaComponent(0.12), UIColor("F29A3B")],
                     barStyle: .compactTrailing
                 )
             ]
         )
-        
-        regenerationCard.configure(
+        return card
+    }
+    
+    private func makeRegenerationCard() -> UIView {
+        let card = SleepScoreDetailMetricCardView()
+        card.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([
+            card.heightAnchor.constraint(equalToConstant: 110)
+        ])
+        card.configure(
             icon: UIImage(systemName: "arrow.triangle.2.circlepath.circle.fill"),
             iconTintColor: UIColor("8B39F7"),
             iconBackgroundColor: UIColor("8B39F7").withAlphaComponent(0.16),
@@ -167,8 +237,17 @@ final class SleepScoreBreakdownCell: UICollectionViewCell {
                 )
             ]
         )
-        
-        insightCard.configure(text: makeInsightText(from: model))
+        return card
+    }
+    
+    private func makeInsightCard() -> UIView {
+        let card = SleepScoreDetailInsightCardView()
+        card.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([
+            card.heightAnchor.constraint(equalToConstant: 96)
+        ])
+        card.configure(text: makeInsightText())
+        return card
     }
     
     private func formatMinutes(_ minutes: Int) -> String {
@@ -177,41 +256,39 @@ final class SleepScoreBreakdownCell: UICollectionViewCell {
         return "\(hours)h \(remainder)m"
     }
     
-    private func progress(for score: Int, max: Int) -> CGFloat {
+    private func progress(_ score: Int, max: Int) -> CGFloat {
         guard max > 0 else { return 0 }
         return CGFloat(score) / CGFloat(max)
     }
     
-    private func makeInsightText(from model: SleepScoreDayModel) -> String {
+    private func makeInsightText() -> String {
         if model.regenerationScore >= 22 && model.remScore >= 10 && model.deepScore >= 10 {
             return "Your REM and deep sleep were in an optimal range, supporting good recovery."
         }
-        
         if model.amountScore < 28 {
             return "Your sleep duration was below the target range, so adding more time asleep may improve tomorrow's score."
         }
-        
         if model.interruptionsScore <= 6 || model.continuityScore <= 6 {
             return "Sleep fragmentation reduced solidity tonight, so fewer wake periods would likely lift recovery."
         }
-        
         if model.remScore < 8 {
             return "REM sleep came in a bit low, which may hold back mental recovery and next-day sharpness."
         }
-        
         if model.deepScore < 8 {
             return "Deep sleep was lighter than ideal, which can limit physical recovery even when total sleep looks solid."
         }
-        
         return "Your sleep profile was well balanced overall, with solid duration and recovery support across the night."
+    }
+    
+    @objc private func backTapped() {
+        navigationController?.popViewController(animated: true)
     }
 }
 
-private final class SleepScoreMetricCardView: UIView {
+private final class SleepScoreDetailMetricCardView: UIView {
     
     struct Row {
         enum BarStyle {
-            case track
             case compactTrailing
             case compactTrailingWide
         }
@@ -222,26 +299,10 @@ private final class SleepScoreMetricCardView: UIView {
         let progress: CGFloat
         let gradientColors: [UIColor]
         let barStyle: BarStyle
-        
-        init(
-            title: String,
-            detail: String?,
-            valueText: String,
-            progress: CGFloat,
-            gradientColors: [UIColor],
-            barStyle: BarStyle = .track
-        ) {
-            self.title = title
-            self.detail = detail
-            self.valueText = valueText
-            self.progress = progress
-            self.gradientColors = gradientColors
-            self.barStyle = barStyle
-        }
     }
     
-    private let headerIconBackground = UIView()
-    private let headerIconView = UIImageView()
+    private let iconBackground = UIView()
+    private let iconView = UIImageView()
     private let titleLabel = UILabel()
     private let subtitleLabel = UILabel()
     private let scoreLabel = UILabel()
@@ -275,11 +336,11 @@ private final class SleepScoreMetricCardView: UIView {
         titleStack.alignment = .leading
         titleStack.translatesAutoresizingMaskIntoConstraints = false
         
-        headerIconBackground.translatesAutoresizingMaskIntoConstraints = false
-        headerIconBackground.layer.cornerRadius = 11
+        iconBackground.translatesAutoresizingMaskIntoConstraints = false
+        iconBackground.layer.cornerRadius = 11
         
-        headerIconView.translatesAutoresizingMaskIntoConstraints = false
-        headerIconView.contentMode = .scaleAspectFit
+        iconView.translatesAutoresizingMaskIntoConstraints = false
+        iconView.contentMode = .scaleAspectFit
         
         titleLabel.font = .systemFont(ofSize: 16, weight: .semibold)
         titleLabel.textColor = .white
@@ -297,8 +358,8 @@ private final class SleepScoreMetricCardView: UIView {
         
         addSubview(headerStack)
         addSubview(rowsStack)
-        headerStack.addArrangedSubview(headerIconBackground)
-        headerIconBackground.addSubview(headerIconView)
+        headerStack.addArrangedSubview(iconBackground)
+        iconBackground.addSubview(iconView)
         headerStack.addArrangedSubview(titleStack)
         headerStack.addArrangedSubview(UIView())
         headerStack.addArrangedSubview(scoreLabel)
@@ -310,13 +371,13 @@ private final class SleepScoreMetricCardView: UIView {
             headerStack.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 14),
             headerStack.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -14),
             
-            headerIconBackground.widthAnchor.constraint(equalToConstant: 22),
-            headerIconBackground.heightAnchor.constraint(equalToConstant: 22),
+            iconBackground.widthAnchor.constraint(equalToConstant: 22),
+            iconBackground.heightAnchor.constraint(equalToConstant: 22),
             
-            headerIconView.centerXAnchor.constraint(equalTo: headerIconBackground.centerXAnchor),
-            headerIconView.centerYAnchor.constraint(equalTo: headerIconBackground.centerYAnchor),
-            headerIconView.widthAnchor.constraint(equalToConstant: 13),
-            headerIconView.heightAnchor.constraint(equalToConstant: 13),
+            iconView.centerXAnchor.constraint(equalTo: iconBackground.centerXAnchor),
+            iconView.centerYAnchor.constraint(equalTo: iconBackground.centerYAnchor),
+            iconView.widthAnchor.constraint(equalToConstant: 13),
+            iconView.heightAnchor.constraint(equalToConstant: 13),
             
             rowsStack.topAnchor.constraint(equalTo: headerStack.bottomAnchor, constant: 12),
             rowsStack.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 14),
@@ -334,9 +395,9 @@ private final class SleepScoreMetricCardView: UIView {
         subtitle: String?,
         rows: [Row]
     ) {
-        headerIconView.image = icon
-        headerIconView.tintColor = iconTintColor
-        headerIconBackground.backgroundColor = iconBackgroundColor
+        iconView.image = icon
+        iconView.tintColor = iconTintColor
+        iconBackground.backgroundColor = iconBackgroundColor
         titleLabel.text = title
         subtitleLabel.text = subtitle
         subtitleLabel.isHidden = subtitle == nil
@@ -348,8 +409,8 @@ private final class SleepScoreMetricCardView: UIView {
         }
         
         rows.forEach { row in
-            let rowView = SleepScoreMetricRowView()
-            rowView.configure(
+            let view = SleepScoreDetailMetricRowView()
+            view.configure(
                 title: row.title,
                 detail: row.detail,
                 valueText: row.valueText,
@@ -357,19 +418,19 @@ private final class SleepScoreMetricCardView: UIView {
                 gradientColors: row.gradientColors,
                 barStyle: row.barStyle
             )
-            rowsStack.addArrangedSubview(rowView)
+            rowsStack.addArrangedSubview(view)
         }
     }
 }
 
-private final class SleepScoreMetricRowView: UIView {
+private final class SleepScoreDetailMetricRowView: UIView {
     
     private let titleLabel = UILabel()
     private let detailLabel = UILabel()
     private let barTrack = UIView()
-    private let barFill = GradientProgressView()
+    private let barFill = SleepScoreDetailGradientBarView()
     private let valueLabel = UILabel()
-    private var barTrackWidthConstraint: NSLayoutConstraint?
+    private var barWidthConstraint: NSLayoutConstraint?
     private var fillWidthConstraint: NSLayoutConstraint?
     
     override init(frame: CGRect) {
@@ -399,7 +460,6 @@ private final class SleepScoreMetricRowView: UIView {
         labelStack.axis = .horizontal
         labelStack.alignment = .center
         labelStack.spacing = 8
-        labelStack.translatesAutoresizingMaskIntoConstraints = false
         
         titleLabel.font = .systemFont(ofSize: 12, weight: .medium)
         titleLabel.textColor = UIColor.white.withAlphaComponent(0.8)
@@ -408,7 +468,7 @@ private final class SleepScoreMetricRowView: UIView {
         detailLabel.textColor = UIColor.white.withAlphaComponent(0.72)
         
         barTrack.translatesAutoresizingMaskIntoConstraints = false
-        barTrack.backgroundColor = UIColor.white.withAlphaComponent(0.08)
+        barTrack.backgroundColor = .clear
         
         barFill.translatesAutoresizingMaskIntoConstraints = false
         
@@ -424,7 +484,7 @@ private final class SleepScoreMetricRowView: UIView {
         labelStack.addArrangedSubview(detailLabel)
         barTrack.addSubview(barFill)
         
-        barTrackWidthConstraint = barTrack.widthAnchor.constraint(equalToConstant: 140)
+        barWidthConstraint = barTrack.widthAnchor.constraint(equalToConstant: 118)
         fillWidthConstraint = barFill.widthAnchor.constraint(equalToConstant: 0)
         
         NSLayoutConstraint.activate([
@@ -434,7 +494,7 @@ private final class SleepScoreMetricRowView: UIView {
             stack.bottomAnchor.constraint(equalTo: bottomAnchor),
             
             labelStack.widthAnchor.constraint(greaterThanOrEqualToConstant: 104),
-            barTrackWidthConstraint!,
+            barWidthConstraint!,
             barTrack.heightAnchor.constraint(equalToConstant: 20),
             
             barFill.topAnchor.constraint(equalTo: barTrack.topAnchor),
@@ -450,7 +510,7 @@ private final class SleepScoreMetricRowView: UIView {
         valueText: String,
         progress: CGFloat,
         gradientColors: [UIColor],
-        barStyle: SleepScoreMetricCardView.Row.BarStyle
+        barStyle: SleepScoreDetailMetricCardView.Row.BarStyle
     ) {
         titleLabel.text = title
         detailLabel.text = detail
@@ -458,40 +518,25 @@ private final class SleepScoreMetricRowView: UIView {
         valueLabel.text = valueText
         barFill.colors = gradientColors
         
-        let clampedProgress = max(0.08, min(1.0, progress))
-        let trackWidth: CGFloat
-        let widthMultiplier: CGFloat
-        
+        let clamped = max(0.08, min(1.0, progress))
         switch barStyle {
-        case .track:
-            trackWidth = 140
-            widthMultiplier = clampedProgress
-            barTrack.backgroundColor = UIColor.white.withAlphaComponent(0.08)
         case .compactTrailing:
-            trackWidth = 118
-            widthMultiplier = 0.34 + (0.66 * clampedProgress)
-            barTrack.backgroundColor = .clear
+            barWidthConstraint?.constant = 118
+            fillWidthConstraint?.isActive = false
+            fillWidthConstraint = barFill.widthAnchor.constraint(equalTo: barTrack.widthAnchor, multiplier: 0.34 + (0.66 * clamped))
         case .compactTrailingWide:
-            trackWidth = 128
-            widthMultiplier = 0.48 + (0.52 * clampedProgress)
-            barTrack.backgroundColor = .clear
+            barWidthConstraint?.constant = 128
+            fillWidthConstraint?.isActive = false
+            fillWidthConstraint = barFill.widthAnchor.constraint(equalTo: barTrack.widthAnchor, multiplier: 0.48 + (0.52 * clamped))
         }
-        
-        barTrackWidthConstraint?.constant = trackWidth
-        fillWidthConstraint?.isActive = false
-        fillWidthConstraint = barFill.widthAnchor.constraint(equalTo: barTrack.widthAnchor, multiplier: widthMultiplier)
         fillWidthConstraint?.isActive = true
-        
-        setNeedsLayout()
     }
 }
 
-private final class SleepScoreInsightCardView: UIView {
+private final class SleepScoreDetailInsightCardView: UIView {
     
     private let titleLabel = UILabel()
     private let bodyLabel = UILabel()
-    private let iconBackground = UIView()
-    private let iconView = UIImageView()
     
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -509,12 +554,13 @@ private final class SleepScoreInsightCardView: UIView {
         layer.borderWidth = 1
         layer.borderColor = UIColor.white.withAlphaComponent(0.04).cgColor
         
+        let iconBackground = UIView()
         iconBackground.translatesAutoresizingMaskIntoConstraints = false
         iconBackground.backgroundColor = UIColor("F2C94C").withAlphaComponent(0.18)
         iconBackground.layer.cornerRadius = 10
         
+        let iconView = UIImageView(image: UIImage(systemName: "lightbulb.fill"))
         iconView.translatesAutoresizingMaskIntoConstraints = false
-        iconView.image = UIImage(systemName: "lightbulb.fill")
         iconView.tintColor = UIColor("F2C94C")
         
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
@@ -554,12 +600,12 @@ private final class SleepScoreInsightCardView: UIView {
         ])
     }
     
-    func configure(text: String?) {
+    func configure(text: String) {
         bodyLabel.text = text
     }
 }
 
-private final class GradientProgressView: UIView {
+private final class SleepScoreDetailGradientBarView: UIView {
     
     var colors: [UIColor] = [] {
         didSet {

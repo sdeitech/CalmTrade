@@ -68,6 +68,7 @@ final class BiometricsViewController: UIViewController {
     // MARK: - Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
+        resetBiometricPlaceholders()
         setupSwiftUIGauge()
         setupSleepScoreTileAccessibility()
         setupSleepRecordingToggle()
@@ -96,6 +97,22 @@ final class BiometricsViewController: UIViewController {
         )
 
         viewModel.start()
+    }
+
+    private func resetBiometricPlaceholders() {
+        lblHeartRateAverage.text = "--"
+        lblHeartRateLatest.text = "--"
+
+        lblRmssdAverage.text = "--"
+        lblRmssdLatest.text = "--"
+        lblRmssdTimestamp.text = ""
+
+        lblSdnnAverage.text = "--"
+        lblSdnnLatest.text = "--"
+
+        lblRestingHrAverage.text = "--"
+        lblRestingHrLatest.text = "--"
+        lblRestingHrTimestamp.text = ""
     }
 
     override func viewWillAppear(_ animated: Bool) {
