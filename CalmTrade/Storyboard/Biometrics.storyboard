@@ -789,6 +789,7 @@ Health visualises a history of the heart rate data collected by Apple Watch or a
                                 <color key="selectedSegmentTintColor" red="0.35294117650000001" green="0.35294117650000001" blue="0.37254901959999998" alpha="1" colorSpace="custom" customColorSpace="displayP3"/>
                                 <connections>
                                     <action selector="segmentedChanged:" destination="d22-rV-5Xk" eventType="valueChanged" id="asz-D0-OoZ"/>
+                                    <action selector="segmentedControlChanged:" destination="fFE-6k-zif" eventType="valueChanged" id="dte-e5-ZcZ"/>
                                 </connections>
                             </segmentedControl>
                             <stackView opaque="NO" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="daw-cY-DHO">

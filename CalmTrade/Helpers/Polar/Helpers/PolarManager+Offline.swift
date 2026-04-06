@@ -81,10 +81,6 @@ extension PolarManager {
                     return
                 }
 
-                if msg.contains("disk full") || msg.contains("errorcode: 14") {
-                    self?.reportOfflineStorageState(deviceId, reason: "startOfflineRecording failed: \(err)")
-                }
-
                 print("[PM] 360 start offline PPG error:", err)
                 completion?(false)
             })
@@ -209,47 +205,6 @@ extension PolarManager {
                 for e in entries { NSLog("[PM] entry: \(e)") }
             }, onFailure: { err in
                 print("[PM] listOfflineRecordings error:", err)
-            })
-            .disposed(by: disposeBag)
-    }
-
-    func reportOfflineStorageState(_ deviceId: String, reason: String? = nil) {
-        if let reason {
-            NSLog("[PM] offline storage diagnostic requested for \(deviceId): \(reason)")
-        }
-
-        api.getDiskSpace(deviceId)
-            .observe(on: MainScheduler.instance)
-            .subscribe(onSuccess: { ds in
-                guard let (used, total) = PolarManager.unpackDiskSpace(ds) else {
-                    NSLog("[PM] getDiskSpace: could not extract fields for \(deviceId)")
-                    return
-                }
-
-                let free = total >= used ? (total - used) : 0
-                let pct = Double(used) / max(1.0, Double(total))
-                NSLog("[PM] disk space used=\(used) free=\(free) total=\(total) (\(Int(pct * 100))%) for \(deviceId)")
-            }, onFailure: { err in
-                print("[PM] getDiskSpace diagnostic error:", err)
-            })
-            .disposed(by: disposeBag)
-
-        api.listOfflineRecordings(deviceId)
-            .toArray()
-            .observe(on: MainScheduler.instance)
-            .subscribe(onSuccess: { entries in
-                let totalBytes = entries.reduce(UInt64(0)) { $0 + UInt64($1.size) }
-                NSLog("[PM] offline entries count=\(entries.count) totalBytes=\(totalBytes) for \(deviceId)")
-
-                if entries.isEmpty {
-                    NSLog("[PM] offline storage is empty for \(deviceId)")
-                } else {
-                    for (index, entry) in entries.enumerated() {
-                        NSLog("[PM] offline[\(index)] type=\(entry.type) size=\(entry.size) date=\(entry.date) path=\(entry.path)")
-                    }
-                }
-            }, onFailure: { err in
-                print("[PM] listOfflineRecordings diagnostic error:", err)
             })
             .disposed(by: disposeBag)
     }

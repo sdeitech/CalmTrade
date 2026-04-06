@@ -79,3 +79,8 @@ class ConnectViewController: BaseViewController {
         navigationController?.pushViewController(polarVC, transitionType: .fade, duration: 0.03)
     }
 }
+
+
+
+
+

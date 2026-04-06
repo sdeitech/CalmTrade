@@ -72,7 +72,6 @@ final class PolarManager: NSObject,
 
     var reconnectRetryWork: DispatchWorkItem?
     var isAutoReconnectInFlight = false
-    var manualDisconnectRequested = false
 
     // Track when we were last disconnected to help with reconnection logic
     var lastDisconnectTime: Date?
@@ -274,9 +273,6 @@ extension PolarManager {
     }
 
     func deviceDisconnected(_ identifier: PolarDeviceInfo, pairingError: Bool) {
-        let wasManualDisconnect = manualDisconnectRequested
-        manualDisconnectRequested = false
-
         isAutoReconnectInFlight = false
         connectedDevice = nil
         connectingDevice = nil
@@ -292,18 +288,6 @@ extension PolarManager {
         isHrReady = false
         hrStartRetry = 0
         stopObservingSleepRecordingState()
-
-        lastDisconnectTime = Date()
-        NSLog("[PM] deviceDisconnected id=\(identifier.deviceId) pairingError=\(pairingError) manual=\(wasManualDisconnect)")
-
-        // Auto-reconnect only for unexpected disconnects.
-        guard !wasManualDisconnect else { return }
-        let retryDelay: TimeInterval = pairingError ? 3.0 : 1.5
-        DispatchQueue.main.asyncAfter(deadline: .now() + retryDelay) { [weak self] in
-            guard let self else { return }
-            guard case .disconnected = self.connectionState else { return }
-            self.resumeAutoReconnectOnForeground()
-        }
     }
 
     func hrValueReceived(_ identifier: String,

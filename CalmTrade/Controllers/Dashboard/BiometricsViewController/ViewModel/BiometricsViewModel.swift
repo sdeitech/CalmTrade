@@ -128,40 +128,6 @@ final class BiometricsViewModel: ObservableObject {
         return nil
     }
 
-    private func preferredRestingHeartRate(from start: Date, to end: Date) -> (value: Double, date: Date, source: CTMetricSource)? {
-        func latest(_ source: CTMetricSource) -> (value: Double, date: Date, source: CTMetricSource)? {
-            let points = repo.series(kind: .restingHeartRate, from: start, to: end, source: source)
-                .filter { $0.value > 0 }
-            guard let latest = points.max(by: { $0.date < $1.date }) else { return nil }
-            return (latest.value, latest.date, latest.source)
-        }
-
-        let polarNightly = latest(.polar360)
-        let apple = latest(.appleHealth)
-        let polarH10 = latest(.polarH10)
-        let polarAny = latest(.polar)
-
-        let now = Date()
-        let freshnessWindow: TimeInterval = 36 * 3600
-        let isFresh: (Date) -> Bool = { now.timeIntervalSince($0) <= freshnessWindow }
-
-        if isPolarConnected {
-            if let p = polarNightly, isFresh(p.date) { return p }      // Primary: sleep-derived nightly Polar RHR
-            if let a = apple { return a }                              // Fallback: Apple Health
-            if let p = polarNightly { return p }
-            if let h10 = polarH10 { return h10 }
-            if let p = polarAny { return p }
-        } else {
-            if let a = apple { return a }                              // Primary: Apple when Polar not active
-            if let p = polarNightly, isFresh(p.date) { return p }
-            if let p = polarNightly { return p }
-            if let h10 = polarH10 { return h10 }
-            if let p = polarAny { return p }
-        }
-
-        return nil
-    }
-
     // MARK: - Lifecycle
     func start() {
         _installObserversIfNeeded()
@@ -323,22 +289,9 @@ final class BiometricsViewModel: ObservableObject {
         // Heart Rate
         if let latest = latestMetricScoped(kind: .heartRate, from: start, to: now) {
             let v = latest.value
-            let d = latest.date
-
-            // Prevent backward/duplicate sample writes from causing UI churn.
-            if let lastHrUpdate, lastHrUpdate >= d {
-                // Keep last known value.
-            } else {
-                data.heartRateLatest  = "\(Int(v))"
-                data.heartRateAverage = "\(Int(v))"
-                lastHrUpdate = d
-            }
-        } else {
-            // Preserve last known heart-rate during temporary repository gaps.
-            if data.heartRateLatest == "--" {
-                data.heartRateAverage = "--"
-            }
-        }
+            data.heartRateLatest  = "\(Int(v))"
+            data.heartRateAverage = "\(Int(v))"
+        } else { data.heartRateLatest = "--"; data.heartRateAverage = "--" }
 
         // When Polar is connected, mirror live HR from CalmScore hub trend so tile updates in real time.
         if isPolarConnected,
@@ -353,24 +306,15 @@ final class BiometricsViewModel: ObservableObject {
         if let latest = latestMetricScoped(kind: .rmssd, from: start, to: now) {
             let v = latest.value
             let d = latest.date
-            let inMemoryLatest = data.lastRmssdUpdate ?? lastRmssdUpdate
-
-            // Avoid replacing fresher live values/timestamps with older repository values.
-            if let inMemoryLatest, inMemoryLatest >= d {
-                data.lastRmssdUpdate = inMemoryLatest
-                lastRmssdUpdate = inMemoryLatest
-            } else {
-                data.rmssdLatest = "\(Int(v))"
-                data.rmssdAverage = "\(Int(v))"
-                data.rmssdTimestamp = formatTimeStamp(d)
-                data.lastRmssdUpdate = d
-                lastRmssdUpdate = d
-            }
+            data.rmssdLatest = "\(Int(v))"; data.rmssdAverage = "\(Int(v))"; data.rmssdTimestamp = formatTimeStamp(d)
+            data.lastRmssdUpdate = d // Track last RMSSD update time in BiometricData
+            lastRmssdUpdate = d // Also track in ViewModel
         } else {
-            // Preserve last known RMSSD value/time to prevent label flicker during transient read gaps.
-            if data.rmssdLatest == "--" {
-                data.rmssdAverage = "--"
-                data.rmssdTimestamp = ""
+            data.rmssdLatest = "--"; data.rmssdAverage = "--"; data.rmssdTimestamp = ""
+            data.lastRmssdUpdate = Date() // Set to current time when no data
+            // Only update lastRmssdUpdate if we had a previous value and it's been stale for a while
+            if lastRmssdUpdate == nil {
+                lastRmssdUpdate = Date()
             }
         }
 
@@ -378,23 +322,14 @@ final class BiometricsViewModel: ObservableObject {
         if let latest = latestMetricScoped(kind: .sdnn, from: start, to: now) {
             let v = latest.value
             let d = latest.date
-            let inMemoryLatest = data.lastSdnnUpdate ?? lastSdnnUpdate
-
-            // Keep the freshest known sample and avoid backward time jumps.
-            if let inMemoryLatest, inMemoryLatest >= d {
-                data.lastSdnnUpdate = inMemoryLatest
-                lastSdnnUpdate = inMemoryLatest
-            } else {
-                data.sdnnLatest = "\(Int(v))"
-                data.sdnnAverage = "\(Int(v))"
-                data.sdnnTimestamp = formatTimeStamp(d)
-                data.lastSdnnUpdate = d
-                lastSdnnUpdate = d
-            }
+            data.sdnnLatest = "\(Int(v))"; data.sdnnAverage = "\(Int(v))"; data.sdnnTimestamp = formatTimeStamp(d)
+            data.lastSdnnUpdate = d // Track last SDNN update time in BiometricData
+            lastSdnnUpdate = d // Also track in ViewModel
         } else {
-            if data.sdnnLatest == "--" {
-                data.sdnnAverage = "--"
-                data.sdnnTimestamp = ""
+            data.sdnnLatest = "--"; data.sdnnAverage = "--"; data.sdnnTimestamp = ""
+            data.lastSdnnUpdate = Date() // Set to current time when no data
+            if lastSdnnUpdate == nil {
+                lastSdnnUpdate = Date()
             }
         }
 
@@ -409,25 +344,18 @@ final class BiometricsViewModel: ObservableObject {
 
         // Resting HR
         if let latest = latestMetricScoped(kind: .restingHeartRate, from: start, to: now) {
-        // Resting HR (sleep-derived Polar nightly value first, then Apple Health fallback)
-        if let latest = preferredRestingHeartRate(from: start, to: now) {
             let v = latest.value
             let d = latest.date
-            if let inMemoryLatest = data.lastRhrUpdate ?? lastRhrUpdate, inMemoryLatest >= d {
-                data.lastRhrUpdate = inMemoryLatest
-                lastRhrUpdate = inMemoryLatest
-            } else {
-                data.restingHeartRateLatest = "\(Int(v))"
-                data.restingHeartRateAverage = "\(Int(v))"
-                data.restingHeartRateTimestamp = formatTimeStamp(d)
-                data.lastRhrUpdate = d
-                lastRhrUpdate = d
-            }
+            data.restingHeartRateLatest = "\(Int(v))"
+            data.restingHeartRateAverage = "\(Int(v))"
+            data.restingHeartRateTimestamp = formatTimeStamp(d)
+            data.lastRhrUpdate = d // Track last RHR update time in BiometricData
+            lastRhrUpdate = d // Also track in ViewModel
         } else {
-            // Preserve last known RHR through transient read gaps.
-            if data.restingHeartRateLatest == "--" {
-                data.restingHeartRateAverage = "--"
-                data.restingHeartRateTimestamp = ""
+            data.restingHeartRateLatest = "--"; data.restingHeartRateAverage = "--"; data.restingHeartRateTimestamp = ""
+            data.lastRhrUpdate = Date() // Set to current time when no data
+            if lastRhrUpdate == nil {
+                lastRhrUpdate = Date()
             }
         }
 
@@ -592,13 +520,9 @@ final class BiometricsViewModel: ObservableObject {
             // CalmScoreHub's live HRV is RMSSD for Polar streaming, so mirror it here.
             if self.isPolarConnected, props.trend.hrvMs > 0 {
                 let liveRmssd = "\(Int(props.trend.hrvMs.rounded()))"
-                let didValueChange = data.rmssdLatest != liveRmssd
-
                 data.rmssdLatest = liveRmssd
                 data.rmssdAverage = liveRmssd
-                if didValueChange || data.rmssdTimestamp.isEmpty {
-                    data.rmssdTimestamp = timestamp
-                }
+                data.rmssdTimestamp = timestamp
                 data.lastRmssdUpdate = props.lastUpdate
                 self.lastRmssdUpdate = props.lastUpdate
             }
@@ -688,20 +612,6 @@ final class BiometricsViewModel: ObservableObject {
         // print("=== BiometricsViewModel _refreshSleepScore ===")
 
         let sleepMetricSource: CTMetricSource = isPolarConnected ? .polar360 : .appleHealth
-        let preferredSleepSource: SleepDataSource = isPolarConnected ? .ct360 : .appleHealth
-
-        // Unified source of truth: compute score from latest-night segments.
-        if let latestNight = SleepRepository.shared.latestNight(preferredSource: preferredSleepSource) ?? SleepRepository.shared.latestNight(),
-           let breakdown = SleepScoreCalculator.calculate(segments: latestNight.segments, sleepGoalMinutes: 480) {
-            onSleepScoreDidUpdate?(
-                SleepScoreTile(
-                    score: breakdown.totalScore,
-                    date: latestNight.date,
-                    source: sleepMetricSource
-                )
-            )
-            return
-        }
 
         // Prefer explicit numeric sleep score from the active source only.
         if let latestScore = repo.latestValue(kind: .sleepScore, source: sleepMetricSource) {
