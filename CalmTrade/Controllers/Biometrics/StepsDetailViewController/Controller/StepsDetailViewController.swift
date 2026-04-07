@@ -11,6 +11,12 @@ import SwiftUI
 import Combine
 
 final class StepsDetailViewController: BaseViewController {
+    private enum ChartTransitionStyle: Equatable {
+        case none
+        case crossDissolve
+        case slideFromLeft
+        case slideFromRight
+    }
     
     // MARK: - IBOutlets
     @IBOutlet private weak var chartContainerView: UIView!
@@ -26,14 +32,14 @@ final class StepsDetailViewController: BaseViewController {
     
     // SwiftUI host
     private var host: UIHostingController<StepsSwiftChartView>?
-    private var currentBars: [StepBar] = []
-    private let calendar = Calendar.current
+    private var pendingTransitionStyle: ChartTransitionStyle = .none
     
     override func viewDidLoad() {
         super.viewDidLoad()
         setupSegmentedControl()
         embedChartIfNeeded()
         bindViewModel()
+        installPagingGestures()
         
         viewModel.fetchInitialData(for: .weekly) // default like Health
     }
@@ -95,12 +101,26 @@ final class StepsDetailViewController: BaseViewController {
     }
     
     private func updateChart(bars: [StepBar], xDomain: ClosedRange<Date>, yMax: Double, range: StepsChartRange) {
-        host?.rootView = StepsSwiftChartView(
+        let nextView = StepsSwiftChartView(
             bars: bars,
             range: range,
             xDomain: xDomain,
             yMax: yMax
         )
+        guard let host else { return }
+        applyTransitionIfNeeded(on: host.view)
+        host.rootView = nextView
+        animateMetadataRefresh()
+    }
+
+    private func installPagingGestures() {
+        let left = UISwipeGestureRecognizer(target: self, action: #selector(didSwipeLeft))
+        left.direction = .left
+        chartContainerView.addGestureRecognizer(left)
+
+        let right = UISwipeGestureRecognizer(target: self, action: #selector(didSwipeRight))
+        right.direction = .right
+        chartContainerView.addGestureRecognizer(right)
     }
     
     // MARK: - Bindings
@@ -110,8 +130,13 @@ final class StepsDetailViewController: BaseViewController {
             .receive(on: DispatchQueue.main)
             .sink { [weak self] bars, domain, yMax in
                 guard let self = self else { return }
-                let seg = self.segmentedControl.selectedSegmentIndex
-                let range: StepsChartRange = (seg == 0) ? .daily : (seg == 1 ? .weekly : .monthly)
+                let range: StepsChartRange = {
+                    switch self.viewModel.currentRange {
+                    case .daily: return .daily
+                    case .weekly: return .weekly
+                    case .monthly: return .monthly
+                    }
+                }()
                 self.updateChart(bars: bars, xDomain: domain, yMax: yMax, range: range)
                 self.logStepsDetail(range: range, bars: bars, domain: domain)
             }
@@ -135,6 +160,14 @@ final class StepsDetailViewController: BaseViewController {
         case .locked: return false
         }
     }
+
+    @objc private func didSwipeLeft() { // newer period
+        pendingTransitionStyle = viewModel.loadNextPeriod() ? .slideFromLeft : .none
+    }
+
+    @objc private func didSwipeRight() { // older period
+        pendingTransitionStyle = viewModel.loadPreviousPeriod() ? .slideFromRight : .none
+    }
     
     // MARK: - Actions
     // Keep your existing method:
@@ -146,6 +179,7 @@ final class StepsDetailViewController: BaseViewController {
             default: return .monthly
             }
         }()
+        pendingTransitionStyle = .crossDissolve
         viewModel.load(range: range)
     }
     
@@ -160,7 +194,8 @@ final class StepsDetailViewController: BaseViewController {
     }
     
     private func logStepsDetail(range: StepsChartRange, bars: [StepBar], domain: ClosedRange<Date>) {
-        let (start, end) = window(for: range)
+        let start = domain.lowerBound
+        let end = domain.upperBound
         let repo = CTMetricsRepository.shared
         
         let periodMerged = Int(StepEngine.stepsTotal(from: start, to: end).rounded())
@@ -189,25 +224,36 @@ final class StepsDetailViewController: BaseViewController {
         }
     }
     
-    private func window(for range: StepsChartRange) -> (Date, Date) {
-        let now = Date()
-        switch range {
-        case .daily:
-            let start = calendar.startOfDay(for: now)
-            let end = calendar.date(byAdding: .day, value: 1, to: start) ?? now
-            return (start, end)
-        case .weekly:
-            let start = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: now)) ?? now
-            let end = calendar.date(byAdding: .day, value: 7, to: start) ?? now
-            return (start, end)
-        case .monthly:
-            let start = calendar.date(from: calendar.dateComponents([.year, .month], from: now)) ?? now
-            let end = calendar.date(byAdding: .month, value: 1, to: start) ?? now
-            return (start, end)
-        }
-    }
-    
     @IBAction private func btnSubscribeTapped(_ sender: Any) {
         FeatureGate.shared.presentUpgradeSheet(for: FeatureKey.chartsForBiometric, from: self)
+    }
+
+    private func applyTransitionIfNeeded(on view: UIView) {
+        defer { pendingTransitionStyle = .none }
+
+        switch pendingTransitionStyle {
+        case .none:
+            return
+        case .crossDissolve:
+            UIView.transition(with: view, duration: 0.22, options: [.transitionCrossDissolve, .allowAnimatedContent], animations: nil)
+        case .slideFromLeft, .slideFromRight:
+            let transition = CATransition()
+            transition.type = .push
+            transition.duration = 0.28
+            transition.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+            transition.subtype = pendingTransitionStyle == .slideFromLeft ? .fromRight : .fromLeft
+            view.layer.add(transition, forKey: "StepsChartPaging")
+        }
+    }
+
+    private func animateMetadataRefresh() {
+        let views = [lblAverage, lblDateRange]
+        UIView.animate(withDuration: 0.16, animations: {
+            views.forEach { $0?.alpha = 0.72 }
+        }) { _ in
+            UIView.animate(withDuration: 0.2) {
+                views.forEach { $0?.alpha = 1.0 }
+            }
+        }
     }
 }

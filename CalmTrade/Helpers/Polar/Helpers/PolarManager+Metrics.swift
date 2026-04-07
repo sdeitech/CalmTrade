@@ -8,6 +8,7 @@
 import Foundation
 import PolarBleSdk
 import os.log
+import RxSwift
 
 // MARK: - Metrics (RHR / Sleep / Daily Activity)
 
@@ -364,6 +365,180 @@ extension PolarManager {
             return (sorted[mid - 1] + sorted[mid]) / 2.0
         }
         return sorted[mid]
+    }
+
+    @discardableResult
+    func persistNightlyRechargeRestingHeartRate(
+        from entries: [PolarNightlyRechargeData],
+        deviceId: String? = nil
+    ) -> Int {
+        var storedCount = 0
+
+        for entry in entries {
+            guard let meanRriMs = entry.meanNightlyRecoveryRRI,
+                  meanRriMs >= 300, meanRriMs <= 2000 else {
+                continue
+            }
+
+            let rhr = 60000.0 / Double(meanRriMs)
+            guard rhr.isFinite, rhr >= 30.0, rhr <= 120.0 else { continue }
+
+            let metricDate = Calendar.current.date(from: entry.sleepResultDate ?? DateComponents())
+                ?? entry.createdTimestamp
+
+            _ = CTMetricsRepository.shared.upsert(
+                kind: .restingHeartRate,
+                value: rhr,
+                unit: "bpm",
+                source: .polar360,
+                date: metricDate
+            )
+
+            storedCount += 1
+            onRHRComputed?(rhr, .polar360, deviceId ?? connectedDevice?.id ?? "Polar360")
+            NSLog(
+                "[PM][NR][RHR] stored Polar360 nightly recharge RHR %.1f bpm from meanRRI=%d at %@",
+                rhr,
+                meanRriMs,
+                metricDate as NSDate
+            )
+        }
+
+        return storedCount
+    }
+
+    func syncPolar247HeartRateSamples(
+        deviceId: String,
+        from start: Date,
+        to end: Date,
+        completion: ((Int) -> Void)? = nil
+    ) {
+        api.get247HrSamples(identifier: deviceId, fromDate: start, toDate: end)
+            .observe(on: MainScheduler.instance)
+            .subscribe(
+                onSuccess: { days in
+                    let calendar = Calendar.current
+                    let sleepSegments = SleepRepository.shared
+                        .unifiedSegments(from: start, to: end)
+                        .filter { $0.source == .ct360 && $0.stage != .awake }
+                    var storedCount = 0
+                    struct Candidate {
+                        let timestamp: Date
+                        let dayStart: Date
+                        let value: Double
+                        let trigger: Polar247HrSamplesData.AutomaticSampleTriggerType?
+                    }
+                    var candidatesByDay: [Date: [Candidate]] = [:]
+
+                    for day in days {
+                        guard let dayDate = calendar.date(from: day.date) else { continue }
+                        let dayStart = calendar.startOfDay(for: dayDate)
+
+                        for sample in day.samples {
+                            guard let sampleTime = calendar.date(from: sample.time) else { continue }
+                            let secondsFromMidnight = calendar.dateComponents([.hour, .minute, .second], from: sampleTime)
+                            let timestamp = calendar.date(
+                                byAdding: DateComponents(
+                                    hour: secondsFromMidnight.hour,
+                                    minute: secondsFromMidnight.minute,
+                                    second: secondsFromMidnight.second
+                                ),
+                                to: dayStart
+                            ) ?? dayStart
+
+                            let hrValues = sample.hrSamples.map(Double.init).filter { $0.isFinite && $0 > 0 }
+                            guard !hrValues.isEmpty else { continue }
+                            let meanHr = hrValues.reduce(0, +) / Double(hrValues.count)
+
+                            _ = CTMetricsRepository.shared.upsert(
+                                kind: .heartRate,
+                                value: meanHr,
+                                unit: "bpm",
+                                source: .polar360,
+                                date: timestamp,
+                                notifyMirror: false
+                            )
+                            storedCount += 1
+
+                            let isSleeping = sleepSegments.contains { segment in
+                                timestamp >= segment.start && timestamp < segment.end
+                            }
+                            guard !isSleeping else { continue }
+
+                            candidatesByDay[dayStart, default: []].append(
+                                Candidate(
+                                    timestamp: timestamp,
+                                    dayStart: dayStart,
+                                    value: meanHr,
+                                    trigger: sample.triggerType
+                                )
+                            )
+                        }
+                    }
+
+                    for (dayStart, candidates) in candidatesByDay {
+                        let lowActivity = candidates.filter { $0.trigger == .lowActivity }
+                        let timed = candidates.filter { $0.trigger == .timed }
+                        let chosen = lowActivity.count >= 3 ? lowActivity : (lowActivity + timed)
+                        guard !chosen.isEmpty else { continue }
+
+                        for point in chosen {
+                            _ = CTMetricsRepository.shared.upsert(
+                                kind: .restingHeartRate,
+                                value: point.value,
+                                unit: "bpm",
+                                source: .polar360,
+                                date: point.timestamp,
+                                notifyMirror: false
+                            )
+                        }
+
+                        let sortedValues = chosen.map(\.value).sorted()
+                        let lowerBandCount = max(1, Int(ceil(Double(sortedValues.count) * 0.35)))
+                        let lowerBand = Array(sortedValues.prefix(lowerBandCount))
+                        let summaryValue = lowerBand.reduce(0, +) / Double(lowerBand.count)
+                        let summaryTimestamp = calendar.date(byAdding: DateComponents(day: 1, second: -1), to: dayStart) ?? dayStart
+
+                        _ = CTMetricsRepository.shared.upsert(
+                            kind: .restingHeartRate,
+                            value: summaryValue,
+                            unit: "bpm",
+                            source: .polar360,
+                            date: summaryTimestamp,
+                            notifyMirror: false
+                        )
+
+                        NSLog(
+                            "[PM][247HR][RHR] stored %ld awake resting samples and summary %.1f bpm for %@",
+                            chosen.count,
+                            summaryValue,
+                            dayStart as NSDate
+                        )
+                    }
+
+                    if !candidatesByDay.isEmpty {
+                        NotificationCenter.default.post(name: .ctMetricUpdated,
+                                                        object: nil,
+                                                        userInfo: ["kind": "restingHeartRate", "date": Date()])
+                    }
+
+                    if storedCount > 0 || !candidatesByDay.isEmpty {
+                        NotificationCenter.default.post(name: .ctMetricsDidMirror, object: nil)
+                    }
+
+                    NSLog(
+                        "[PM][247HR] stored %ld Polar360 heart-rate samples and derived resting heart rate for %ld day(s)",
+                        storedCount,
+                        candidatesByDay.count
+                    )
+                    completion?(storedCount)
+                },
+                onFailure: { error in
+                    NSLog("[PM][247HR] fetch failed: %@", error.localizedDescription)
+                    completion?(0)
+                }
+            )
+            .disposed(by: disposeBag)
     }
 
     // MARK: - Sleep metrics (Polar SDK 6.7)

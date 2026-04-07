@@ -21,14 +21,16 @@ final class StepsDetailViewModel: ObservableObject {
 
     // MARK: - Private
     private let calendar = Calendar.current
-    private var currentRange: ChartTimeRange = .daily
+    private(set) var currentRange: ChartTimeRange = .daily
+    private(set) var centerDate: Date = Date()
     private var observersInstalled = false
 
     // MARK: - Lifecycle / entry points
     func fetchInitialData(for range: ChartTimeRange) {
         currentRange = range
+        centerDate = Date()
         _installObserversIfNeeded()
-        load(range: range)
+        loadCurrentWindow()
     }
 
     deinit {
@@ -38,7 +40,32 @@ final class StepsDetailViewModel: ObservableObject {
     // MARK: - Load
     func load(range: ChartTimeRange) {
         currentRange = range
-        let (start, end) = window(for: range)
+        centerDate = Date()
+        loadCurrentWindow()
+    }
+
+    @discardableResult
+    func loadPreviousPeriod() -> Bool {
+        centerDate = shift(center: centerDate, for: currentRange, direction: -1)
+        loadCurrentWindow()
+        return true
+    }
+
+    @discardableResult
+    func loadNextPeriod() -> Bool {
+        let shifted = shift(center: centerDate, for: currentRange, direction: +1)
+        let nextCenterDate = min(shifted, Date())
+        let currentAnchor = periodAnchor(for: currentRange, date: centerDate)
+        let nextAnchor = periodAnchor(for: currentRange, date: nextCenterDate)
+        guard nextAnchor > currentAnchor else { return false }
+        centerDate = nextCenterDate
+        loadCurrentWindow()
+        return true
+    }
+
+    private func loadCurrentWindow() {
+        let range = currentRange
+        let (start, end) = window(for: range, center: centerDate)
         xDomain = start...end
 
         DispatchQueue.global(qos: .userInitiated).async {
@@ -98,7 +125,7 @@ final class StepsDetailViewModel: ObservableObject {
             guard let self else { return }
             if let kind = note.userInfo?["kind"] as? String, kind == "steps" {
                 StepEngine.invalidateCache()
-                self.load(range: self.currentRange)
+                self.loadCurrentWindow()
             }
         }
 
@@ -110,7 +137,7 @@ final class StepsDetailViewModel: ObservableObject {
         ) { [weak self] _ in
             guard let self else { return }
             StepEngine.invalidateCache()
-            self.load(range: self.currentRange)
+            self.loadCurrentWindow()
         }
 
         // app back to foreground → refresh window
@@ -121,24 +148,23 @@ final class StepsDetailViewModel: ObservableObject {
         ) { [weak self] _ in
             guard let self else { return }
             StepEngine.invalidateCache()
-            self.load(range: self.currentRange)
+            self.loadCurrentWindow()
         }
     }
 
     // MARK: - Windows / Bucketing
-    private func window(for range: ChartTimeRange) -> (Date, Date) {
-        let now = Date()
+    private func window(for range: ChartTimeRange, center: Date) -> (Date, Date) {
         switch range {
         case .daily:
-            let start = calendar.startOfDay(for: now)
+            let start = calendar.startOfDay(for: center)
             let end = calendar.date(byAdding: .day, value: 1, to: start)!
             return (start, end)
         case .weekly:
-            let start = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: now))!
+            let start = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: center))!
             let end = calendar.date(byAdding: .day, value: 7, to: start)!
             return (start, end)
         case .monthly:
-            let start = calendar.date(from: calendar.dateComponents([.year, .month], from: now))!
+            let start = calendar.date(from: calendar.dateComponents([.year, .month], from: center))!
             let end = calendar.date(byAdding: .month, value: 1, to: start)!
             return (start, end)
         }
@@ -151,12 +177,30 @@ final class StepsDetailViewModel: ObservableObject {
         case .weekly:
             return calendar.startOfDay(for: date)
         case .monthly:
-            let monthStart = domain.lowerBound
-            let secs = date.timeIntervalSince(monthStart)
-            let sevenDays: TimeInterval = 7 * 24 * 3600
-            let idx = floor(secs / sevenDays)
-            let start = monthStart.addingTimeInterval(idx * sevenDays)
-            return max(start, domain.lowerBound)
+            let weekStart = calendar.dateInterval(of: .weekOfYear, for: date)?.start ?? date
+            return max(weekStart, domain.lowerBound)
+        }
+    }
+
+    private func shift(center: Date, for range: ChartTimeRange, direction: Int) -> Date {
+        switch range {
+        case .daily:
+            return calendar.date(byAdding: .day, value: direction, to: center)!
+        case .weekly:
+            return calendar.date(byAdding: .weekOfYear, value: direction, to: center)!
+        case .monthly:
+            return calendar.date(byAdding: .month, value: direction, to: center)!
+        }
+    }
+
+    private func periodAnchor(for range: ChartTimeRange, date: Date) -> Date {
+        switch range {
+        case .daily:
+            return calendar.startOfDay(for: date)
+        case .weekly:
+            return calendar.dateInterval(of: .weekOfYear, for: date)?.start ?? date
+        case .monthly:
+            return calendar.dateInterval(of: .month, for: date)?.start ?? date
         }
     }
 

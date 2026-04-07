@@ -92,12 +92,25 @@ final class BiometricsViewModel: ObservableObject {
         isPolarConnected ? .ct360 : .appleHealth
     }
 
+    private var hasRecentPolar360RestingHeartRate: Bool {
+        guard let latest = repo.latestValue(kind: .restingHeartRate, source: .polar360) else { return false }
+        let age = Date().timeIntervalSince(latest.date)
+        return age <= (14 * 86400)
+    }
+
     private func preferredSources(for kind: CTMetricKind) -> [CTMetricSource] {
+        if kind == .restingHeartRate {
+            if hasRecentPolar360RestingHeartRate || DeviceManager.shared.currentSource == .polar360 {
+                return [.polar360]
+            }
+            return [.appleHealth]
+        }
+
         if isPolarConnected {
             switch kind {
-            case .heartRate, .rmssd, .sdnn, .restingHeartRate:
+            case .heartRate, .rmssd, .sdnn:
                 return [.polar360, .polarH10]
-            case .sleepScore, .sleepCore, .sleepDeep, .sleepREM, .sleepAwake, .sleepHours, .steps:
+            case .restingHeartRate, .sleepScore, .sleepCore, .sleepDeep, .sleepREM, .sleepAwake, .sleepHours, .steps:
                 return [.polar360]
             }
         }
@@ -119,6 +132,9 @@ final class BiometricsViewModel: ObservableObject {
             if let latest = points.max(by: { $0.date < $1.date }) {
                 return (latest.value, latest.date, src)
             }
+        }
+        if (isPolarConnected || hasRecentPolar360RestingHeartRate) && kind == .restingHeartRate {
+            return nil
         }
         // Safety fallback so UI doesn't go blank while preferred source is catching up.
         let any = repo.series(kind: kind, from: start, to: end, source: nil).filter { isValid($0.value) }
@@ -285,6 +301,7 @@ final class BiometricsViewModel: ObservableObject {
 
         let cal = Calendar.current
         let start = cal.date(byAdding: .day, value: -2, to: now) ?? now.addingTimeInterval(-172800)
+        let restingHrStart = cal.date(byAdding: .day, value: -7, to: now) ?? now.addingTimeInterval(-7 * 86400)
 
         // Heart Rate
         if let latest = latestMetricScoped(kind: .heartRate, from: start, to: now) {
@@ -343,7 +360,7 @@ final class BiometricsViewModel: ObservableObject {
         }
 
         // Resting HR
-        if let latest = latestMetricScoped(kind: .restingHeartRate, from: start, to: now) {
+        if let latest = latestMetricScoped(kind: .restingHeartRate, from: restingHrStart, to: now) {
             let v = latest.value
             let d = latest.date
             data.restingHeartRateLatest = "\(Int(v))"

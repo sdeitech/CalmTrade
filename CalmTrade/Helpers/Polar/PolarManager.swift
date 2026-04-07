@@ -406,6 +406,19 @@ extension PolarManager {
         case .feature_polar_activity_data:
                 NSLog("[PM][ACT] Activity feature ready — starting minute poller")
                 PolarDailySyncCoordinator.shared.startWhileConnected(deviceId: identifier)
+                let hrStart = Calendar.current.date(byAdding: .day, value: -7, to: Date()) ?? Date().addingTimeInterval(-7 * 86400)
+                syncPolar247HeartRateSamples(deviceId: identifier, from: hrStart, to: Date()) { stored in
+                    NSLog("[PM][247HR] bootstrap sync completed with %ld samples", stored)
+                }
+                let rechargeStart = Calendar.current.date(byAdding: .day, value: -7, to: Date()) ?? Date().addingTimeInterval(-7 * 86400)
+                fetchNightlyRecharge(from: rechargeStart, to: Date()) { result in
+                    switch result {
+                    case .success:
+                        NSLog("[PM][NR] nightly recharge bootstrap sync completed")
+                    case .failure(let error):
+                        NSLog("[PM][NR] nightly recharge bootstrap sync failed: %@", error.localizedDescription)
+                    }
+                }
                 
                 // Only trigger sleep sync after FTU is confirmed complete.
                 Task { [weak self] in
@@ -512,6 +525,11 @@ extension PolarManager {
             .subscribe(
                 onSuccess: { entries in
                     NSLog("[PM][NR] fetched %ld nightly recharge entries", entries.count)
+                    let storedRhrCount = self.persistNightlyRechargeRestingHeartRate(
+                        from: entries,
+                        deviceId: deviceId
+                    )
+                    NSLog("[PM][NR] persisted %ld resting heart rate entries from nightly recharge", storedRhrCount)
                     let encoder = JSONEncoder()
                     encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
                     let formatter = DateFormatter()
