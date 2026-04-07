@@ -78,6 +78,13 @@ final class SleepScoreViewModel {
         guard let computed = SleepScoreCalculator.calculate(segments: session.segments, sleepGoalMinutes: 480) else {
             return nil
         }
+
+        let amountProgress = CGFloat(Double(computed.sleepAmount.score) / Double(computed.sleepAmount.maxScore))
+        let solidityProgress = CGFloat(Double(computed.sleepSolidity.score) / Double(computed.sleepSolidity.maxScore))
+        let regenerationProgress = CGFloat(Double(computed.sleepRegeneration.score) / Double(computed.sleepRegeneration.maxScore))
+        let remProgress = CGFloat(Double(computed.remScore) / 12.0)
+        let deepProgress = CGFloat(Double(computed.deepScore) / 12.0)
+        let coreProgress = CGFloat(Double(computed.coreScore) / 6.0)
         
         return SleepScoreDayModel(
             date: session.sessionEnd,
@@ -92,12 +99,12 @@ final class SleepScoreViewModel {
             remScore: computed.remScore,
             deepScore: computed.deepScore,
             coreScore: computed.coreScore,
-            amount: CGFloat(Double(computed.sleepAmount.score) / Double(computed.sleepAmount.maxScore)),
-            solidity: CGFloat(Double(computed.sleepSolidity.score) / Double(computed.sleepSolidity.maxScore)),
-            regeneration: CGFloat(Double(computed.sleepRegeneration.score) / Double(computed.sleepRegeneration.maxScore)),
-            rem: CGFloat(Double(computed.remScore) / 12.0),
-            deep: CGFloat(Double(computed.deepScore) / 12.0),
-            core: CGFloat(Double(computed.coreScore) / 6.0)
+            amount: amountProgress,
+            solidity: solidityProgress,
+            regeneration: regenerationProgress,
+            rem: remProgress,
+            deep: deepProgress,
+            core: coreProgress
         )
     }
     
