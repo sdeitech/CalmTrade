@@ -23,6 +23,17 @@ final class RestingHeartRateDetailViewModel: ObservableObject {
     // Repo
     private let repo = CTMetricsRepository.shared
 
+    private var preferredRhrSource: CTMetricSource? {
+        switch DeviceManager.shared.currentSource {
+        case .polar360, .polarH10:
+            if repo.latestValue(kind: .restingHeartRate, source: .polar360) != nil { return .polar360 }
+            if repo.latestValue(kind: .restingHeartRate, source: .polarH10) != nil { return .polarH10 }
+            return .appleHealth
+        case .appleHealthKit:
+            return .appleHealth
+        }
+    }
+
     // MARK: - Public
 
     func fetchInitialData(for range: ChartTimeRange) {
@@ -60,7 +71,7 @@ final class RestingHeartRateDetailViewModel: ObservableObject {
             let samples = self.repo.series(kind: .restingHeartRate,
                                            from: anchor,
                                            to: end,
-                                           source: nil)
+                                           source: self.preferredRhrSource)
 
             // Bucket by range and compute average per bucket
             let bucketed = self.bucket(samples: samples, range: self.selectedRange)

@@ -11,7 +11,6 @@ import UIKit
 final class SleepScoreRadialView: UIView {
     
     private var layersArray: [CAShapeLayer] = []
-    private var currentScore: Int = 0
     
     private let segmentColors: [UIColor] = [
         UIColor.systemTeal,
@@ -44,7 +43,6 @@ final class SleepScoreRadialView: UIView {
     }
     
     func configure(score: Int) {
-        currentScore = max(0, min(100, score))
         layoutSegments(score: score)
     }
     
@@ -82,6 +80,6 @@ final class SleepScoreRadialView: UIView {
     
     override func layoutSubviews() {
         super.layoutSubviews()
-        layoutSegments(score: currentScore)
+        layoutSegments(score: 80)
     }
 }

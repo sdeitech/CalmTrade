@@ -49,13 +49,7 @@ class SplashViewController: BaseViewController {
     private func checkAuthenticationStatus() {
         // Check if user has a valid token
         if let token = UserDefaults.standard.string(forKey: "accessToken"), !token.isEmpty {
-            // Navigate to main app first, then connect to socket
             self.navigateToMainApp()
-
-            // Connect to socket after a brief delay to ensure navigation is complete
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                SocketClient.shared.connect(with: token)
-            }
         }
         // If no token, stay on splash screen for user to login/signup
     }

@@ -74,23 +74,13 @@ final class CoreDataStack {
     @objc private func onUserChanged(_ note: Notification) {
         let userId = (note.object as? User)?.id
         NSLog("[CoreDataStack] Switching CoreData store → userId=\(userId ?? "_anonymous")")
-        
-        // 🔐 Block all readers and wait for them to drain
-        UserStoreSwitchCoordinator.shared.beginSwitch()
-        defer { UserStoreSwitchCoordinator.shared.endSwitch() }
-        
-        // Drain background work on old container if needed
-        container.performBackgroundTask { ctx in
-            ctx.performAndWait {
-                // drain any work
+
+        switchQueue.async { [weak self] in
+            guard let self else { return }
+            let newContainer = CoreDataStack.makeContainer(for: userId)
+            DispatchQueue.main.async {
+                self.container = newContainer
             }
         }
-        
-        let oldContainer = container
-        let newContainer = CoreDataStack.makeContainer(for: userId)
-        container = newContainer
-        
-        // Tear down old viewContext
-        oldContainer.viewContext.reset()
     }
 }

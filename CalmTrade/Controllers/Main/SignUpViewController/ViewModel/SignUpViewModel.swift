@@ -175,10 +175,8 @@ final class SignUpViewModel: BaseViewModel {
             guard let self else { return }
 
             if let dto = dto {
-//                let user = User(from: dto)
                 self.user = dto
 
-                SessionManager.shared.setCurrentUser(user, token: token)
                 SocketClient.shared.connect(with: token)
 
                 completion(true, nil, isFirst)

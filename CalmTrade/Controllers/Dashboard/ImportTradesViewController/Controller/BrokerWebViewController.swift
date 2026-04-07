@@ -43,7 +43,7 @@ final class BrokerWebViewController: UIViewController, WKNavigationDelegate {
         print("🔗 Redirected to: \(urlString)")
 
         // Detect success callback
-        if urlString.contains("connection-complete") {
+        if urlString.contains("connection-complete") || urlString.contains("callback") {
             handleBrokerSuccess(url: url)
         }
 

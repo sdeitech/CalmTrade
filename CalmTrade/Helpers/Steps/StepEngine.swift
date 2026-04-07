@@ -70,7 +70,12 @@ enum StepEngine {
             return false
         }()
 
-        let result = isPolarConnected ? aPolar : aApple
+        let result: [(Date, Int)]
+        if isPolarConnected {
+            result = aPolar.isEmpty ? aApple : aPolar
+        } else {
+            result = aApple
+        }
 
         // Store in cache
         cacheQueue.async(flags: .barrier) { cache[key] = result }

@@ -11,6 +11,12 @@ import Charts
 import Combine
 
 final class HeartRateDetailViewController: BaseViewController {
+    private enum ChartTransitionStyle: Equatable {
+        case none
+        case crossDissolve
+        case slideFromLeft
+        case slideFromRight
+    }
     
     // MARK: - IBOutlets
     @IBOutlet private weak var chartContainerView: UIView!     // <-- connect this
@@ -29,6 +35,7 @@ final class HeartRateDetailViewController: BaseViewController {
     
     private var host: UIHostingController<HeartRateCalmChartView>?   // <-- was HeartRateSwiftChartView
     private var currentPoints: [HeartPoint] = []
+    private var pendingTransitionStyle: ChartTransitionStyle = .none
     
     // MARK: - Lifecycle
     override func viewDidLoad() {
@@ -93,11 +100,14 @@ final class HeartRateDetailViewController: BaseViewController {
     private func updateChart(points: [HeartPoint]) {
         currentPoints = points
         guard let host else { return embedChartIfNeeded() }
-        host.rootView = HeartRateCalmChartView(
+        let nextView = HeartRateCalmChartView(
             points: points,
             range: viewModel.selectedRange,
             domain: viewModel.xDomain
         )
+        applyTransitionIfNeeded(on: host.view)
+        host.rootView = nextView
+        animateMetadataRefresh()
     }
     
     private func installPagingGestures() {
@@ -156,20 +166,20 @@ final class HeartRateDetailViewController: BaseViewController {
         }
     }
     
-    @objc private func didSwipeLeft() { // older period
-        viewModel.loadPreviousPeriod()
+    @objc private func didSwipeLeft() { // newer period
+        pendingTransitionStyle = viewModel.loadNextPeriod() ? .slideFromLeft : .none
     }
 
-    @objc private func didSwipeRight() { // newer period (capped at now)
-        viewModel.loadNextPeriod()
+    @objc private func didSwipeRight() { // older period
+        pendingTransitionStyle = viewModel.loadPreviousPeriod() ? .slideFromRight : .none
     }
     
     // MARK: - Actions
     
     @IBAction private func segmentedControlChanged(_ sender: UISegmentedControl) {
         guard let range = HeartRateDetailViewModel.ChartTimeRange(rawValue: sender.selectedSegmentIndex) else { return }
+        pendingTransitionStyle = .crossDissolve
         viewModel.fetchInitialData(for: range)
-        updateChart(points: currentPoints)  // re-render with new timeframe styling
     }
     
     @IBAction private func btnBackTapped(_ sender: Any) {
@@ -178,5 +188,34 @@ final class HeartRateDetailViewController: BaseViewController {
     
     @IBAction private func btnSubscribeTapped(_ sender: Any) {
         FeatureGate.shared.presentUpgradeSheet(for: FeatureKey.chartsForBiometric, from: self)
+    }
+
+    private func applyTransitionIfNeeded(on view: UIView) {
+        defer { pendingTransitionStyle = .none }
+
+        switch pendingTransitionStyle {
+        case .none:
+            return
+        case .crossDissolve:
+            UIView.transition(with: view, duration: 0.22, options: [.transitionCrossDissolve, .allowAnimatedContent], animations: nil)
+        case .slideFromLeft, .slideFromRight:
+            let transition = CATransition()
+            transition.type = .push
+            transition.duration = 0.28
+            transition.timingFunction = CAMediaTimingFunction(name: .easeIn)
+            transition.subtype = pendingTransitionStyle == .slideFromLeft ? .fromRight : .fromLeft
+            view.layer.add(transition, forKey: "HeartRateChartPaging")
+        }
+    }
+
+    private func animateMetadataRefresh() {
+        let views = [lblRangeValue, lblDateRange, lblLatestTime, lblLatestValue]
+        UIView.animate(withDuration: 0.16, animations: {
+            views.forEach { $0?.alpha = 0.72 }
+        }) { _ in
+            UIView.animate(withDuration: 0.2) {
+                views.forEach { $0?.alpha = 1.0 }
+            }
+        }
     }
 }

@@ -46,6 +46,18 @@ final class DeviceManager {
         DebugLog.shared.log("Live RMSSD: \(Int(rmssdMs)) ms, SDNN: \(Int(sdnnMs)) ms (ttl=\(Int(liveTTL))s)")
     }
 
+    func currentLiveRMSSD() -> (value: Double, timestamp: Date)? {
+        guard let live = liveRMSSD,
+              Date().timeIntervalSince(live.timestamp) <= liveTTL else { return nil }
+        return (live.valueMs, live.timestamp)
+    }
+
+    func currentLiveSDNN() -> (value: Double, timestamp: Date)? {
+        guard let live = liveSDNN,
+              Date().timeIntervalSince(live.timestamp) <= liveTTL else { return nil }
+        return (live.valueMs, live.timestamp)
+    }
+
     // MARK: - Repositories
     /// Returns the CTMetricsRepository for the current user.
     private var metricsRepo: CTMetricsRepository {

@@ -62,12 +62,23 @@ final class StepsDetailViewModel: ObservableObject {
             let avg = items.isEmpty ? 0 : (total / Double(items.count))
             let yMax = items.map(\.value).max() ?? 0
             let header = self.headerTitle(range: range, start: start, end: end)
+            let summaryValue: Int
+            let summaryLabel: String
+
+            switch range {
+            case .daily:
+                summaryValue = Int(total.rounded())
+                summaryLabel = "Total"
+            case .weekly, .monthly:
+                summaryValue = Int(avg.rounded())
+                summaryLabel = "Average"
+            }
 
             DispatchQueue.main.async {
                 self.bars = items
                 self.headerDateText = header
-                self.averageText = self.formatSteps(Int(avg.rounded()))
-                self.rangeText = "Average"
+                self.averageText = self.formatSteps(summaryValue)
+                self.rangeText = summaryLabel
                 self.yMax = yMax
             }
         }

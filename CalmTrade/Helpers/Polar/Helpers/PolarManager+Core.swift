@@ -116,7 +116,6 @@ extension PolarManager {
 
     func disconnect() {
         guard let dev = connectedDevice else { return }
-        manualDisconnectRequested = true
         do { try api.disconnectFromDevice(dev.id) }
         catch { print("PolarManager: Failed to disconnect from \(dev.id). Error: \(error)") }
     }
@@ -186,7 +185,6 @@ extension PolarManager {
         }
         
         guard permission else { return }
-        guard central.state == .poweredOn else { return }
         
         switch connectionState {
         case .connected, .connecting: return
