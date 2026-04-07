@@ -19,6 +19,7 @@ final class CalmScoreDetailsViewModel: ObservableObject {
     @Published private(set) var latestScoreText: String = "--"
     @Published private(set) var lastUpdatedText: String = "--"
     @Published private(set) var history: [CalmHistoryItem] = []
+    @Published private(set) var windowEnd: Date = Date()
 
     // MARK: - Hour (3-minute buckets → 20 bars)
     /// Per-bucket min…max for the current hour. `nil` = no data for that bucket (future or missing).
@@ -103,10 +104,10 @@ final class CalmScoreDetailsViewModel: ObservableObject {
 
     // MARK: - Public
 
-    func setScale(_ new: CalmTimeScale) {
-        guard new != scale else { return }
+    func setScale(_ new: CalmTimeScale, end: Date = Date()) {
         scale = new
-        reloadGraph()
+        windowEnd = end
+        reloadGraph(end: end)
     }
 
     /// Change the hour bucket size (must divide 60). 3 → 20 bars; 6 → 10 bars; etc.
@@ -117,26 +118,28 @@ final class CalmScoreDetailsViewModel: ObservableObject {
     }
 
     /// Rebuild the visible graph for the current `scale`.
-    func reloadGraph(end: Date = Date()) {
+    func reloadGraph(end: Date? = nil) {
         // Snapshot on main actor
         let requestedScale = self.scale
         let bucketMinutes  = self.hourBucketMinutes
         let store = CalmScoreStore.shared
+        let requestedEnd = end ?? self.windowEnd
+        self.windowEnd = requestedEnd
 
         // Cancel any in-flight reload
         reloadTask?.cancel()
-        reloadTask = Task.detached(priority: .userInitiated) { [requestedScale, bucketMinutes, end] in
+        reloadTask = Task.detached(priority: .userInitiated) { [requestedScale, bucketMinutes, requestedEnd] in
             if Task.isCancelled { return }
 
             if requestedScale == .minute {
                 // Hour view: N-minute buckets with future buckets empty
-                let hour = store.fetchHourBucketedRanges(end: end, bucketMinutes: bucketMinutes)
+                let hour = store.fetchHourBucketedRanges(end: requestedEnd, bucketMinutes: bucketMinutes)
 
                 // ⬇️ was unbounded; now restrict to [startOfHour, end]
                 let latestAggs = store.fetchSeries(
                     scale: .minute,
                     start: hour.startOfHour,
-                    end: end
+                    end: requestedEnd
                 )
 
                 if Task.isCancelled { return }
@@ -164,20 +167,20 @@ final class CalmScoreDetailsViewModel: ObservableObject {
             let start: Date
             switch requestedScale {
             case .day:
-                start = cal.startOfDay(for: end)
+                start = cal.startOfDay(for: requestedEnd)
             case .week:
-                start = cal.dateInterval(of: .weekOfYear, for: end)!.start
+                start = cal.dateInterval(of: .weekOfYear, for: requestedEnd)!.start
             case .month:
-                start = cal.dateInterval(of: .month, for: end)!.start
+                start = cal.dateInterval(of: .month, for: requestedEnd)!.start
             case .year:
-                start = cal.dateInterval(of: .year, for: end)!.start
+                start = cal.dateInterval(of: .year, for: requestedEnd)!.start
             default:
                 // Fallback to day start (shouldn’t be hit, but keeps us safe)
-                start = cal.startOfDay(for: end)
+                start = cal.startOfDay(for: requestedEnd)
             }
 
             // Pull only aggregates inside [start, end]
-            let aggs = store.fetchSeries(scale: requestedScale, start: start, end: end)
+            let aggs = store.fetchSeries(scale: requestedScale, start: start, end: requestedEnd)
             if Task.isCancelled { return }
 
             let pts   = aggs.map { CalmPoint(date: $0.bucketStart, value: $0.avg) }

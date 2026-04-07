@@ -1667,7 +1667,7 @@ been inactive or relaxed for several minutes.</string>
                                             <visualEffectView opaque="NO" alpha="0.97000002861022949" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="gPY-5H-P5U">
                                                 <rect key="frame" x="24" y="254.00000000000003" width="392" height="351.66666666666674"/>
                                                 <view key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" insetsLayoutMarginsFromSafeArea="NO" id="XmB-Me-tDc">
-                                                    <rect key="frame" x="0.0" y="0.0" width="392" height="351.66666666666674"/>
+                                                    <rect key="frame" x="0.0" y="0.0" width="392" height="352"/>
                                                     <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                                     <subviews>
                                                         <visualEffectView opaque="NO" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="CUV-Z1-M6v">
@@ -2920,7 +2920,7 @@ been inactive or relaxed for several minutes.</string>
                                                 </constraints>
                                             </imageView>
                                             <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Heart rate" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="ydw-sS-Zi1">
-                                                <rect key="frame" x="39.000000000000007" y="50.333333333333371" width="73.666666666666686" height="19.333333333333329"/>
+                                                <rect key="frame" x="39.000000000000007" y="50.333333333333314" width="73.666666666666686" height="19.333333333333329"/>
                                                 <fontDescription key="fontDescription" name="HelveticaNeue-Medium" family="Helvetica Neue" pointSize="16"/>
                                                 <color key="textColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                                 <nil key="highlightedColor"/>
