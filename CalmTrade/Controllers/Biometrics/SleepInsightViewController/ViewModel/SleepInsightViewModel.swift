@@ -27,7 +27,7 @@ final class SleepInsightViewModel {
 
     // MARK: - Private
     private let repo = SleepRepository.shared
-    private var sleepSegments: [SleepSegment] = []
+    private var currentSleepSegments: [SleepSegment] = []
 
     private var currentlyDisplayedStartDate = Date()
     private var currentlyDisplayedEndDate   = Date()
@@ -40,7 +40,7 @@ final class SleepInsightViewModel {
 
     func fetchInitialData(for range: ChartTimeRange) {
         selectedRange = range
-        sleepSegments.removeAll()
+        currentSleepSegments.removeAll()
 
         anchorDate = Date()
         let p = period(for: range, anchoredAt: anchorDate)
@@ -51,8 +51,9 @@ final class SleepInsightViewModel {
         loadData(start: p.start, end: p.end, isPaginating: false)
     }
 
-    func loadPreviousPeriod() {
-        guard !isLoadingData else { return }
+    @discardableResult
+    func loadPreviousPeriod() -> Bool {
+        guard !isLoadingData else { return false }
 
         anchorDate = previousAnchor(from: anchorDate, for: selectedRange)
         let p = period(for: selectedRange, anchoredAt: anchorDate)
@@ -61,6 +62,25 @@ final class SleepInsightViewModel {
         currentlyDisplayedEndDate   = p.end
 
         loadData(start: p.start, end: p.end, isPaginating: true)
+        return true
+    }
+
+    @discardableResult
+    func loadNextPeriod() -> Bool {
+        guard !isLoadingData else { return false }
+
+        let shiftedAnchor = nextAnchor(from: anchorDate, for: selectedRange)
+        let nextPeriod = period(for: selectedRange, anchoredAt: shiftedAnchor)
+        let currentPeriod = period(for: selectedRange, anchoredAt: Date())
+
+        guard nextPeriod.start < currentPeriod.end else { return false }
+
+        anchorDate = shiftedAnchor
+        currentlyDisplayedStartDate = nextPeriod.start
+        currentlyDisplayedEndDate = nextPeriod.end
+
+        loadData(start: nextPeriod.start, end: nextPeriod.end, isPaginating: true)
+        return true
     }
 
     // MARK: - Unified Fetch (Repository only)
@@ -114,40 +134,25 @@ final class SleepInsightViewModel {
         print("Period Total Asleep: \(Self.formatHhMm(seconds: periodAsleepSeconds))")
         print("======================================")
 
-        // Coalesce stage segments
-        var merged = Self.coalesce(segments: segs.sorted { $0.start < $1.start }, joinThreshold: 60)
+        currentSleepSegments = Self.coalesce(
+            segments: segs.sorted { $0.start < $1.start },
+            joinThreshold: 60
+        ).sorted { $0.start < $1.start }
 
-        if isPaginating {
-            sleepSegments.insert(contentsOf: merged, at: 0)
-        } else {
-            sleepSegments = merged
-        }
+        let total = Self.totalAsleepUnionSeconds(from: currentSleepSegments)
+        let sleepDateText = currentDateText(for: currentSleepSegments, start: start, end: end)
 
-        sleepSegments.sort { $0.start < $1.start }
-
-        let total: TimeInterval
-        let sleepDateText: String
-
-        if selectedRange == .daily, let night = repo.latestNight() {
-            total = night.hours * 3600.0
-            sleepDateText = formatSingleSleepDate(night.date)
-            print("Displayed Total (latest canonical night): \(Self.formatHhMm(seconds: total))")
-            print("Displayed Night Date: \(sleepDateText)")
-        } else {
-            total = Self.totalInBedSeconds(from: sleepSegments)
-            sleepDateText = formatSleepDate(start, end)
-            print("Displayed Total (period in-bed total): \(Self.formatHhMm(seconds: total))")
-            print("Displayed Date Window: \(sleepDateText)")
-        }
-        print("Displayed Segment Count: \(sleepSegments.count)")
+        print("Displayed Total (period asleep total): \(Self.formatHhMm(seconds: total))")
+        print("Displayed Date Window: \(sleepDateText)")
+        print("Displayed Segment Count: \(currentSleepSegments.count)")
         print("======================================")
 
-        let totals = Self.stageTotals(from: sleepSegments)
+        let totals = Self.stageTotals(from: currentSleepSegments)
 
         let ui = SleepUIData(
             timeAsleepAttributedText: formatTimeAsleep(total),
             sleepDate: sleepDateText,
-            sleepSegments: sleepSegments,
+            sleepSegments: currentSleepSegments,
             chartStartDate: start,
             chartEndDate: end,
             awakeSeconds: totals.awake,
@@ -231,6 +236,15 @@ final class SleepInsightViewModel {
         return df.string(from: date)
     }
 
+    private func currentDateText(for segments: [SleepSegment], start: Date, end: Date) -> String {
+        if selectedRange == .daily,
+           let sessionEnd = segments.map(\.end).max() {
+            return formatSingleSleepDate(sessionEnd)
+        }
+
+        return formatSleepDate(start, end.addingTimeInterval(-1))
+    }
+
     private func formatTimeAsleep(_ i: TimeInterval) -> NSAttributedString {
         let hours = Int(i) / 3600
         let minutes = (Int(i) / 60) % 60
@@ -284,6 +298,15 @@ final class SleepInsightViewModel {
         case .daily:   return cal.date(byAdding: .day, value: -1, to: anchor)!
         case .weekly:  return cal.date(byAdding: .day, value: -7, to: anchor)!
         case .monthly: return cal.date(byAdding: .month, value: -1, to: anchor)!
+        }
+    }
+
+    private func nextAnchor(from anchor: Date, for range: ChartTimeRange) -> Date {
+        let cal = Calendar.current
+        switch range {
+        case .daily:   return cal.date(byAdding: .day, value: 1, to: anchor)!
+        case .weekly:  return cal.date(byAdding: .day, value: 7, to: anchor)!
+        case .monthly: return cal.date(byAdding: .month, value: 1, to: anchor)!
         }
     }
 

@@ -16,9 +16,8 @@ class TabbarController: UITabBarController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        NSLog("[Launch] TabbarController viewDidLoad")
         self.delegate = self
-        CalmScoreHub.shared.start()
-        DeviceManager.shared.configureOnLaunch()
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.2){
             self.addTabbarIndicatorView(index: 0, isFirstTime: true)
         }
@@ -34,7 +33,7 @@ class TabbarController: UITabBarController {
             bottomLineView.removeFromSuperview()
         }
         
-        bottomLineView = UIView(frame: CGRect(x: tabView.frame.minX + spacing * 1.5, y: tabView.frame.maxY - 0.1, width: tabView.frame.size.width - spacing * 2.6, height: 2))
+        bottomLineView = UIView(frame: CGRect(x: tabView.frame.minX + spacing * 3.0, y: tabView.frame.maxY - 0.1, width: tabView.frame.size.width - spacing * 2.0, height: 2))
         bottomLineView.backgroundColor = .init("#008AFF")
         tabBar.addSubview(bottomLineView)
     }

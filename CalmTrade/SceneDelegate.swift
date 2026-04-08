@@ -17,6 +17,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
     func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
         guard let windowScene = (scene as? UIWindowScene) else { return }
+        NSLog("[Launch] SceneDelegate willConnect")
 
         let window = UIWindow(windowScene: windowScene)
         window.rootViewController = initialRootViewController()
@@ -50,12 +51,12 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     }
 
     func sceneDidBecomeActive(_ scene: UIScene) {
+        NSLog("[Launch] SceneDelegate didBecomeActive")
         // Called when the scene has moved from an inactive state to an active state.
         // Use this method to restart any tasks that were paused (or not yet started) when the scene was inactive.
 
         // Resume services when becoming active
         DispatchQueue.main.async {
-            CalmScoreHub.shared.start()  // Restart calm score calculations
             HealthKitService.shared.startBackgroundMirroring()  // Resume HealthKit monitoring
 
             // Reconnect socket if needed
@@ -177,6 +178,7 @@ private extension SceneDelegate {
 
     private func initialRootViewController() -> UIViewController {
         if isLoggedIn() {
+            NSLog("[Launch] Building dashboard root controller")
             // Go straight to dashboard
             let tab = UIStoryboard(name: Constants.Storyboard.Dashboard, bundle: nil).instantiateViewController(withIdentifier: "TabbarController") as! TabbarController
             tab.navigationController?.navigationBar.isHidden = true
@@ -184,6 +186,7 @@ private extension SceneDelegate {
             nav.navigationBar.isHidden = true
             return nav
         } else {
+            NSLog("[Launch] Building splash root controller")
             // Show splash/login flow
             let splash = UIStoryboard(name: Constants.Storyboard.Main, bundle: nil).instantiateViewController(withIdentifier: "SplashViewController") as! SplashViewController
             splash.navigationController?.navigationBar.isHidden = true
