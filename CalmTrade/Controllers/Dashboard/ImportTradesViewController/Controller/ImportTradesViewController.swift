@@ -131,6 +131,7 @@ final class ImportTradesViewController: BaseViewController, UIDocumentPickerDele
         }
 
         let nav = UINavigationController(rootViewController: vc)
+        nav.interactivePopGestureRecognizer?.isEnabled = false
         present(nav, animated: true)
     }
 

@@ -62,9 +62,7 @@ class LoginViewController: BaseViewController {
             if success {
                 // Dashboard
                 UserDefaults.standard.set(LoginHandler.email.rawValue, forKey: kLoginHandler)
-                let tabBarController = UIStoryboard(name: Constants.Storyboard.Dashboard, bundle: nil)
-                    .instantiateViewController(withIdentifier: "TabbarController") as! TabbarController
-                self.navigationController?.pushViewController(tabBarController, transitionType: .reveal, duration: 0.03)
+                self.openDashboard()
             } else if needsVerification {
                 // Email verification
                 let vc = UIStoryboard(name: "Main", bundle: nil)
@@ -224,7 +222,7 @@ class LoginViewController: BaseViewController {
     private func openDashboard() {
         let dashBoard = UIStoryboard(name: Constants.Storyboard.Dashboard, bundle: nil)
             .instantiateViewController(withIdentifier: "TabbarController") as! TabbarController
-        self.navigationController?.pushViewController(dashBoard, transitionType: .reveal, duration: 0.03)
+        self.navigationController?.setViewControllers([dashBoard], animated: true)
     }
     
     func updateUI(for view: UIView, label: UILabel, isFocused: Bool) {

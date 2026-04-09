@@ -63,6 +63,7 @@ class SplashViewController: BaseViewController {
                 tab.navigationController?.navigationBar.isHidden = true
                 let nav = UINavigationController(rootViewController: tab)
                 nav.navigationBar.isHidden = true
+                nav.interactivePopGestureRecognizer?.isEnabled = false
 
                 window.rootViewController = nav
                 window.makeKeyAndVisible()

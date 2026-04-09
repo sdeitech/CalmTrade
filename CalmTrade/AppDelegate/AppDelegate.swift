@@ -435,6 +435,7 @@ private extension AppDelegate {
             tab.navigationController?.navigationBar.isHidden = true
             let nav = UINavigationController(rootViewController: tab)
             nav.navigationBar.isHidden = true
+            nav.interactivePopGestureRecognizer?.isEnabled = false
             return nav
         } else {
             // Show splash/login flow
@@ -442,6 +443,7 @@ private extension AppDelegate {
             splash.navigationController?.navigationBar.isHidden = true
             let nav = UINavigationController(rootViewController: splash)
             nav.navigationBar.isHidden = true
+            nav.interactivePopGestureRecognizer?.isEnabled = false
             return nav
         }
     }

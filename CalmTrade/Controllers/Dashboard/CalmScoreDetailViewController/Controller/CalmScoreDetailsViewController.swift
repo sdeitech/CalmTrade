@@ -86,6 +86,11 @@ final class CalmScoreDetailsViewController: UIViewController, UICollectionViewDe
         super.viewDidLayoutSubviews()
         updateCollectionHeightForTwoRows()
     }
+    
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        navigationController?.interactivePopGestureRecognizer?.isEnabled = false
+    }
 
     override func motionEnded(_ motion: UIEvent.EventSubtype, with event: UIEvent?) {
         guard motion == .motionShake else { return }

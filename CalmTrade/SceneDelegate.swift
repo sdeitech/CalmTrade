@@ -182,6 +182,7 @@ private extension SceneDelegate {
             tab.navigationController?.navigationBar.isHidden = true
             let nav = UINavigationController(rootViewController: tab)
             nav.navigationBar.isHidden = true
+            nav.interactivePopGestureRecognizer?.isEnabled = false
             return nav
         } else {
             // Show splash/login flow
@@ -189,6 +190,7 @@ private extension SceneDelegate {
             splash.navigationController?.navigationBar.isHidden = true
             let nav = UINavigationController(rootViewController: splash)
             nav.navigationBar.isHidden = true
+            nav.interactivePopGestureRecognizer?.isEnabled = false
             return nav
         }
     }

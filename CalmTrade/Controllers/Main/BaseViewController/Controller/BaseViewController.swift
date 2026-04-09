@@ -22,6 +22,11 @@ class BaseViewController: UIViewController {
         // Do any additional setup after loading the view.
         
     }
+    
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        navigationController?.interactivePopGestureRecognizer?.isEnabled = false
+    }
 
     override func didReceiveMemoryWarning() {
         super.didReceiveMemoryWarning()
@@ -61,4 +66,3 @@ class BaseViewController: UIViewController {
     }
     
 }
-

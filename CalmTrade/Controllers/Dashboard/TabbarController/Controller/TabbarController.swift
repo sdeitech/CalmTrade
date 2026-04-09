@@ -17,6 +17,11 @@ class TabbarController: UITabBarController {
     override func viewDidLoad() {
         super.viewDidLoad()
         self.delegate = self
+        viewControllers?.forEach { vc in
+            (vc as? UINavigationController)?
+                .interactivePopGestureRecognizer?
+                .isEnabled = false
+        }
         CalmScoreHub.shared.start()
         DeviceManager.shared.configureOnLaunch()
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.2){

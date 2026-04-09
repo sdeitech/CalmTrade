@@ -82,6 +82,7 @@ final class SessionLogoutManager {
 
         let nav = UINavigationController(rootViewController: splash)
         nav.navigationBar.isHidden = true
+        nav.interactivePopGestureRecognizer?.isEnabled = false
 
         UIApplication.shared.setRootViewController(nav)
 
@@ -139,6 +140,10 @@ extension UIApplication {
         } else {
             window.rootViewController = viewController
         }
+        
+        (window.rootViewController as? UINavigationController)?
+            .interactivePopGestureRecognizer?
+            .isEnabled = false
         
         window.makeKeyAndVisible()
     }
