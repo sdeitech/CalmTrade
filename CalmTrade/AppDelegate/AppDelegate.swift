@@ -169,6 +169,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
                 application,
                 didFinishLaunchingWithOptions: launchOptions
             )
+            DeviceManager.shared.configureOnLaunch()
         }
 
         self.scheduleCalmScoreRefresh()

@@ -16,6 +16,7 @@ class TabbarController: UITabBarController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        NSLog("[Launch] TabbarController viewDidLoad")
         self.delegate = self
         viewControllers?.forEach { vc in
             (vc as? UINavigationController)?
@@ -39,7 +40,7 @@ class TabbarController: UITabBarController {
             bottomLineView.removeFromSuperview()
         }
         
-        bottomLineView = UIView(frame: CGRect(x: tabView.frame.minX + spacing * 1.5, y: tabView.frame.maxY - 0.1, width: tabView.frame.size.width - spacing * 2.6, height: 2))
+        bottomLineView = UIView(frame: CGRect(x: tabView.frame.minX + spacing * 3.0, y: tabView.frame.maxY - 0.1, width: tabView.frame.size.width - spacing * 2.0, height: 2))
         bottomLineView.backgroundColor = .init("#008AFF")
         tabBar.addSubview(bottomLineView)
     }

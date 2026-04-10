@@ -67,6 +67,7 @@ class HomeViewController: BaseViewController, UICollectionViewDataSource, UIColl
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        NSLog("[Launch] HomeViewController viewDidLoad")
 
         setupSwiftUIGauge()
         setupViewModelBindings()
@@ -79,6 +80,7 @@ class HomeViewController: BaseViewController, UICollectionViewDataSource, UIColl
     
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
+        NSLog("[Launch] HomeViewController viewDidAppear")
         viewModel.fetchEmotionTags()
         refreshUserProfileIfNeeded()
     }
