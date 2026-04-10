@@ -47,7 +47,7 @@ final class GrossCumulativePLViewController: UIViewController {
 
         vm.$loading
             .sink { loading in
-                loading ? KRProgressHUD.show() : KRProgressHUD.dismiss()
+                loading ? LoaderManager.shared.show() : LoaderManager.shared.hide()
             }
             .store(in: &cancellables)
 
@@ -90,5 +90,9 @@ final class GrossCumulativePLViewController: UIViewController {
         let selected = sender.titleForSegment(at: sender.selectedSegmentIndex) ?? "Daily"
         let ranged = selected.lowercased()
         vm.fetchPL(range: ranged)
+    }
+    
+    @IBAction func btnBackTapped(_ sender: Any) {
+        navigationController?.popViewController()
     }
 }

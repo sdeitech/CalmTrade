@@ -39,7 +39,7 @@ final class CalendarViewController: UIViewController {
     private func bindViewModel() {
 
         vm.onLoading = { loading in
-            loading ? KRProgressHUD.show() : KRProgressHUD.dismiss()
+            loading ? LoaderManager.shared.show() : LoaderManager.shared.hide()
         }
 
         vm.onData = { [weak self] data in

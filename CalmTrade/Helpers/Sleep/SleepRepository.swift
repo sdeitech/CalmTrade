@@ -7,6 +7,18 @@ import Foundation
 import CoreData
 import HealthKit
 
+struct SleepSessionSummary {
+    let sessionStart: Date
+    let sessionEnd: Date
+    let totalInBedSeconds: TimeInterval
+    let remSeconds: TimeInterval
+    let coreSeconds: TimeInterval
+    let deepSeconds: TimeInterval
+    let awakeSeconds: TimeInterval
+    let source: SleepDataSource
+    let segments: [SleepSegment]
+}
+
 final class SleepRepository {
 
     static let shared = SleepRepository()
@@ -14,6 +26,7 @@ final class SleepRepository {
     private let calendar = Calendar.current
     private let healthStore = HKHealthStore()
     private let switcher = UserStoreSwitchCoordinator.shared
+    private let sessionGapSeconds: TimeInterval = 90 * 60
 
     private var viewContext: NSManagedObjectContext {
         CTMetricsStack.shared.container.viewContext
@@ -27,6 +40,40 @@ final class SleepRepository {
     }
 
     private init() {}
+
+    // MARK: - Debug logging
+    /// Prints latest-night segments with per-segment duration and aggregate totals.
+    /// Use this to compare what the app is calculating vs. what should be displayed.
+    func debugLogLatestNightSegments(context: String = "SleepRepository") {
+        guard let night = latestNight() else {
+            debugPrint("[\(context)] No latest night found")
+            return
+        }
+
+        let dateFmt = DateFormatter()
+        dateFmt.dateFormat = "yyyy-MM-dd HH:mm:ss Z"
+
+        let ordered = night.segments.sorted { $0.start < $1.start }
+        let totalInBedSeconds = ordered.reduce(0.0) { acc, seg in
+            acc + max(0.0, seg.end.timeIntervalSince(seg.start))
+        }
+        let totalAsleepSeconds = SleepRepository.totalAsleepUnionSeconds(from: ordered)
+
+        debugPrint("========== [\(context)] Sleep Segments ==========")
+        debugPrint("Night bucket: \(dateFmt.string(from: night.date))")
+        debugPrint("Segment count: \(ordered.count)")
+        for (idx, seg) in ordered.enumerated() {
+            let durationSec = max(0.0, seg.end.timeIntervalSince(seg.start))
+            let durationMin = Int((durationSec / 60.0).rounded())
+            debugPrint(
+                "[\(idx)] stage=\(seg.stage) source=\(seg.source) start=\(dateFmt.string(from: seg.start)) end=\(dateFmt.string(from: seg.end)) duration=\(durationMin)m"
+            )
+        }
+        debugPrint("Total asleep (union): \(String(format: "%.2f", totalAsleepSeconds / 3600.0)) h")
+        debugPrint("Total in bed (sum): \(String(format: "%.2f", totalInBedSeconds / 3600.0)) h")
+        debugPrint("Canonical latestNight.hours: \(String(format: "%.2f", night.hours)) h")
+        debugPrint("===============================================")
+    }
 
     // MARK: - PUBLIC API
     // ------------------------------------------------------------
@@ -96,6 +143,57 @@ final class SleepRepository {
         let hk = hkSegmentsSync(from: start, to: end)
         if hk.isEmpty { return [] }
         return unifyBySleepDay(hk)
+    }
+
+    /// Canonical sessionized sleep summaries derived from unified segments.
+    func unifiedSessions(from start: Date, to end: Date) -> [SleepSessionSummary] {
+        let segs = unifiedSegments(from: start, to: end).sorted { $0.start < $1.start }
+        guard !segs.isEmpty else { return [] }
+
+        let sessions = SleepRepository.groupIntoSessions(segs, sessionGap: sessionGapSeconds)
+        var out: [SleepSessionSummary] = []
+        out.reserveCapacity(sessions.count)
+
+        for group in sessions {
+            guard let first = group.first, let last = group.last else { continue }
+
+            var rem: TimeInterval = 0
+            var core: TimeInterval = 0
+            var deep: TimeInterval = 0
+            var awake: TimeInterval = 0
+
+            for seg in group {
+                let dur = max(0, seg.end.timeIntervalSince(seg.start))
+                switch seg.stage {
+                case .rem: rem += dur
+                case .core: core += dur
+                case .deep: deep += dur
+                case .awake: awake += dur
+                }
+            }
+
+            let source: SleepDataSource = {
+                if group.contains(where: { $0.source == .ct360 }) { return .ct360 }
+                if group.contains(where: { $0.source == .appleHealth }) { return .appleHealth }
+                return group.first?.source ?? .appleHealth
+            }()
+
+            out.append(
+                SleepSessionSummary(
+                    sessionStart: first.start,
+                    sessionEnd: last.end,
+                    totalInBedSeconds: SleepRepository.totalInBedSeconds(from: group),
+                    remSeconds: rem,
+                    coreSeconds: core,
+                    deepSeconds: deep,
+                    awakeSeconds: awake,
+                    source: source,
+                    segments: group
+                )
+            )
+        }
+
+        return out
     }
 
     // MARK: - Load Local Segments (Core Data → DTO)
@@ -236,35 +334,105 @@ final class SleepRepository {
         let all = unifiedSegments(from: start, to: now)
         guard !all.isEmpty else { return nil }
 
-        // Group by sleep-day bucket
-        let grouped = Dictionary(grouping: all) { seg in
-            sleepDayStart(for: seg.start)
-        }
+        // Use latest continuous sleep session (supports cross-midnight nights).
+        let sessions = SleepRepository.groupIntoSessions(
+            all.sorted { $0.start < $1.start },
+            sessionGap: sessionGapSeconds
+        )
+        guard let latestSession = sessions.last,
+              let sessionEnd = latestSession.map(\.end).max() else { return nil }
 
-        // Pick latest day
-        guard let latestDay = grouped.keys.sorted().last,
-              let daySegments = grouped[latestDay] else {
-            return nil
-        }
+        let secs = SleepRepository.totalInBedSeconds(from: latestSession)
+        let day = calendar.startOfDay(for: sessionEnd)
+        return (date: day, segments: latestSession, hours: secs / 3600.0)
+    }
 
-        let secs = SleepRepository.totalAsleepUnionSeconds(from: daySegments)
-        return (date: latestDay, segments: daySegments, hours: secs / 3600.0)
+    /// Source-scoped latest night.
+    /// If provided, only that source is considered for session building.
+    func latestNight(preferredSource: SleepDataSource) -> (date: Date, segments: [SleepSegment], hours: Double)? {
+        let now = Date()
+        let start = now.addingTimeInterval(-72 * 3600)
+
+        var all = loadLocalSegments(from: start, to: now).filter { $0.source == preferredSource }
+        if all.isEmpty, preferredSource == .appleHealth {
+            all = hkSegmentsSync(from: start, to: now)
+        }
+        guard !all.isEmpty else { return nil }
+
+        let sessions = SleepRepository.groupIntoSessions(
+            all.sorted { $0.start < $1.start },
+            sessionGap: sessionGapSeconds
+        )
+        guard let latestSession = sessions.last,
+              let sessionEnd = latestSession.map(\.end).max() else { return nil }
+
+        let secs = SleepRepository.totalInBedSeconds(from: latestSession)
+        let day = calendar.startOfDay(for: sessionEnd)
+        return (date: day, segments: latestSession, hours: secs / 3600.0)
     }
 
     // Used by HomeViewModel.latestNightBefore and BiometricsViewModel.latestNightBefore
     func latestNightBefore(date: Date) -> (date: Date, hours: Double)? {
-        // Look 48h back from anchor for any segments
-        let start = date.addingTimeInterval(-48 * 3600)
+        // Look back far enough to include cross-midnight sessions.
+        let start = date.addingTimeInterval(-72 * 3600)
         let segs = unifiedSegments(from: start, to: date)
-        guard let last = segs.last else { return nil }
+        guard !segs.isEmpty else { return nil }
 
-        let bucket = sleepDayStart(for: last.start)
-        let nextBucket = bucket.addingTimeInterval(24 * 3600)
-        let nightSegs = unifiedSegments(from: bucket, to: nextBucket)
-        let secs = nightSegs.reduce(0.0) {
-            $0 + max(0.0, $1.end.timeIntervalSince($1.start))
+        let sessions = SleepRepository.groupIntoSessions(
+            segs.sorted { $0.start < $1.start },
+            sessionGap: sessionGapSeconds
+        )
+        guard let latestSession = sessions.last,
+              let sessionEnd = latestSession.map(\.end).max() else { return nil }
+
+        let secs = SleepRepository.totalInBedSeconds(from: latestSession)
+        let day = calendar.startOfDay(for: sessionEnd)
+        return (day, secs / 3600.0)
+    }
+
+    /// Source-scoped latest night before a given date.
+    func latestNightBefore(date: Date, preferredSource: SleepDataSource) -> (date: Date, hours: Double)? {
+        let start = date.addingTimeInterval(-72 * 3600)
+
+        var segs = loadLocalSegments(from: start, to: date).filter { $0.source == preferredSource }
+        if segs.isEmpty, preferredSource == .appleHealth {
+            segs = hkSegmentsSync(from: start, to: date)
         }
-        return (bucket, secs / 3600.0)
+        guard !segs.isEmpty else { return nil }
+
+        let sessions = SleepRepository.groupIntoSessions(
+            segs.sorted { $0.start < $1.start },
+            sessionGap: sessionGapSeconds
+        )
+        guard let latestSession = sessions.last,
+              let sessionEnd = latestSession.map(\.end).max() else { return nil }
+
+        let secs = SleepRepository.totalInBedSeconds(from: latestSession)
+        let day = calendar.startOfDay(for: sessionEnd)
+        return (day, secs / 3600.0)
+    }
+
+    private static func groupIntoSessions(_ segments: [SleepSegment], sessionGap: TimeInterval) -> [[SleepSegment]] {
+        guard !segments.isEmpty else { return [] }
+
+        var sessions: [[SleepSegment]] = []
+        for seg in segments {
+            if var lastSession = sessions.last,
+               let tail = lastSession.last,
+               seg.start.timeIntervalSince(tail.end) <= sessionGap {
+                lastSession.append(seg)
+                sessions[sessions.count - 1] = lastSession
+            } else {
+                sessions.append([seg])
+            }
+        }
+        return sessions
+    }
+
+    private static func totalInBedSeconds(from segments: [SleepSegment]) -> TimeInterval {
+        segments.reduce(0.0) { acc, seg in
+            acc + max(0.0, seg.end.timeIntervalSince(seg.start))
+        }
     }
 
     private static func totalAsleepUnionSeconds(from segments: [SleepSegment]) -> TimeInterval {

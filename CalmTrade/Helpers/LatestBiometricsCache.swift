@@ -81,12 +81,26 @@ final class LatestBiometricsCache {
     func snapshot() -> CalmScoreBiometricInputs {
         let repo = CTMetricsRepository.shared
 
+        let heartRate = repo.latestValue(kind: .heartRate)?.value
+        let hrvInRmssd = repo.latestValue(kind: .rmssd)?.value
+        let hrvInSdnn = repo.latestValue(kind: .sdnn)?.value
+        let restingHeartRate = repo.latestValue(kind: .restingHeartRate)?.value
+
+        // Calculate sleep duration from SleepRepository instead of relying on .sleepHours metric
+        var sleepDurationInHours: Double?
+        if let latestNight = SleepRepository.shared.latestNight() {
+            sleepDurationInHours = latestNight.hours
+        } else {
+            // Fallback to the repository's sleepHours metric if no sleep night available
+            sleepDurationInHours = repo.latestValue(kind: .sleepHours)?.value
+        }
+
         return CalmScoreBiometricInputs(
-            heartRate:            repo.latestValue(kind: .heartRate)?.value,
-            hrvInRmssd:           repo.latestValue(kind: .rmssd)?.value,
-            hrvInSdnn:            repo.latestValue(kind: .sdnn)?.value,
-            restingHeartRate:     repo.latestValue(kind: .restingHeartRate)?.value,
-            sleepDurationInHours: repo.latestValue(kind: .sleepHours)?.value
+            heartRate:            heartRate,
+            hrvInRmssd:           hrvInRmssd,
+            hrvInSdnn:            hrvInSdnn,
+            restingHeartRate:     restingHeartRate,
+            sleepDurationInHours: sleepDurationInHours
         )
     }
 
@@ -98,7 +112,9 @@ final class LatestBiometricsCache {
         if let v = bundle.heartRate        { set(.hr,    value: v, date: now) }
         if let v = bundle.hrvInRmssd       { set(.rmssd, value: v, date: now) }
         if let v = bundle.hrvInSdnn        { set(.sdnn,  value: v, date: now) }
-        if let v = bundle.restingHeartRate { set(.rhr,   value: v, date: now) }
+        if let v = bundle.restingHeartRate {
+            set(.rhr,   value: v, date: now)
+        }
 
         // Sleep is not taken from the bundle anymore.
         // Always recompute + write unified full-night sleep.
@@ -108,20 +124,32 @@ final class LatestBiometricsCache {
     func refreshLatestSleepAsync() {
         DispatchQueue.global(qos: .utility).async {
             guard let night = SleepRepository.shared.latestNight() else { return }
+
+            let sleepHours = night.hours
+
             self.io.async(flags: .barrier) {
-                self.store[Key.sleep.rawValue] = Record(value: night.hours, date: night.date)
+                self.store[Key.sleep.rawValue] = Record(value: sleepHours, date: night.date)
                 self.persist()
             }
         }
     }
 
     func composeInputsFromCache() -> CalmScoreBiometricInputs {
-        CalmScoreBiometricInputs(
+        // For sleep, always use the canonical latest-night hours.
+        var cachedSleepHours: Double?
+        if let latestNight = SleepRepository.shared.latestNight() {
+            cachedSleepHours = latestNight.hours
+        } else {
+            // Fallback to the cached value if no sleep night available
+            cachedSleepHours = get(.sleep)
+        }
+
+        return CalmScoreBiometricInputs(
             heartRate:            get(.hr),
             hrvInRmssd:           get(.rmssd),
             hrvInSdnn:            get(.sdnn),
             restingHeartRate:     get(.rhr),
-            sleepDurationInHours: get(.sleep)
+            sleepDurationInHours: cachedSleepHours
         )
     }
 
@@ -144,10 +172,11 @@ extension LatestBiometricsCache {
     func refreshLatestSleep() {
         DispatchQueue.global(qos: .utility).async {
             guard let night = SleepRepository.shared.latestNight() else { return }
-            let hours = night.hours
+
+            let sleepHours = night.hours
 
             self.io.async(flags: .barrier) {
-                self.store[Key.sleep.rawValue] = Record(value: hours, date: night.date)
+                self.store[Key.sleep.rawValue] = Record(value: sleepHours, date: night.date)
                 self.persist()
             }
         }

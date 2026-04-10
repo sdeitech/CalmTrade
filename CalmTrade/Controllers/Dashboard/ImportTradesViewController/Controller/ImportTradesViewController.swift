@@ -44,7 +44,7 @@ final class ImportTradesViewController: BaseViewController, UIDocumentPickerDele
     private func setupBindings() {
         viewModel.onLoading = { [weak self] loading in
             self?.view.isUserInteractionEnabled = !loading
-            loading ? KRProgressHUD.show() : KRProgressHUD.dismiss()
+            loading ? LoaderManager.shared.show() : LoaderManager.shared.hide()
         }
 
         viewModel.onError = { [weak self] msg in
@@ -56,7 +56,7 @@ final class ImportTradesViewController: BaseViewController, UIDocumentPickerDele
         }
 
         viewModel.onImportSuccess = { [weak self] in
-            self?.navigationController?.popViewController(animated: true)
+            self?.navigationController?.popViewController()
         }
 
         viewModel.onBrokerConnect = { [weak self] redirectURL in
@@ -82,24 +82,32 @@ final class ImportTradesViewController: BaseViewController, UIDocumentPickerDele
             }
         }
     }
+    
+    private func checkAccessToBrokerSync() -> Bool {
+        switch FeatureGate.shared.access(for: FeatureKey.brokerSync) {
+        case .allowed:
+            return true
+        case .locked:
+            return false
+        }
+    }
 
     // MARK: - Actions
     @IBAction func brokerButtonTapped(_ sender: UIButton) {
-
         if viewModel.connectedAccounts.isEmpty {
-            showAlert(message: "No broker accounts connected yet.")
+            showBrokerList()
             return
         }
-
+        
         let alert = UIAlertController(title: "Select Account", message: nil, preferredStyle: .actionSheet)
-
+        
         for acc in viewModel.connectedAccounts {
             alert.addAction(UIAlertAction(title: acc.accountName, style: .default) { _ in
                 self.brokerField.text = acc.accountName
                 self.viewModel.selectedBroker = acc.accountName
             })
         }
-
+        
         alert.addAction(UIAlertAction(title: "Cancel", style: .cancel))
         present(alert, animated: true)
     }
@@ -123,6 +131,7 @@ final class ImportTradesViewController: BaseViewController, UIDocumentPickerDele
         }
 
         let nav = UINavigationController(rootViewController: vc)
+        nav.interactivePopGestureRecognizer?.isEnabled = false
         present(nav, animated: true)
     }
 
@@ -154,14 +163,19 @@ final class ImportTradesViewController: BaseViewController, UIDocumentPickerDele
 
     @IBAction func segmentChanged(_ sender: UISegmentedControl) {
         if sender.selectedSegmentIndex == 0 {
-            // Broker Sync Mode
-            importButton.setTitle("Connect Broker", for: .normal)
-            viewTimezone.isHidden = true
-            viewAccountName.isHidden = true
-            uploadButton.isHidden = true
-
-            // Fetch broker accounts immediately
-            viewModel.fetchConnectedAccounts()
+            if checkAccessToBrokerSync() {
+                // Broker Sync Mode
+                importButton.setTitle("Connect Broker", for: .normal)
+                viewTimezone.isHidden = true
+                viewAccountName.isHidden = true
+                uploadButton.isHidden = true
+                
+                // Fetch broker accounts immediately
+                viewModel.fetchConnectedAccounts()
+            } else {
+                sender.selectedSegmentIndex = 1
+                FeatureGate.shared.presentUpgradeSheet(for: FeatureKey.brokerSync, from: self)
+            }
 
         } else {
             // File Import Mode
@@ -171,6 +185,10 @@ final class ImportTradesViewController: BaseViewController, UIDocumentPickerDele
             viewAccountName.isHidden = false
             uploadButton.isHidden = false
         }
+    }
+    
+    @IBAction func backButtonTapped(_ sender: UIButton) {
+        self.navigationController?.popViewController()
     }
 
     // MARK: - Document Picker

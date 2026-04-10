@@ -21,12 +21,12 @@ final class BrokerSyncManager {
         fullSync: Bool = false,
         completion: (() -> Void)? = nil
     ) {
-        guard
-            let accountId = SessionManager.shared.current?.accountId
-        else {
-            completion?()
-            return
-        }
+//        guard
+//            let accountId = SessionManager.shared.current?.accountId
+//        else {
+//            completion?()
+//            return
+//        }
 
         // Throttle background syncs
         if let last = lastSyncAt,
@@ -38,7 +38,7 @@ final class BrokerSyncManager {
         lastSyncAt = Date()
 
         let params: [String: Any] = [
-            "accountId": accountId,
+//            "accountId": accountId,
             "fullSync": fullSync
         ]
 

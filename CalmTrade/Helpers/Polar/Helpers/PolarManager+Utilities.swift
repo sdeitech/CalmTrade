@@ -23,11 +23,20 @@ extension PolarManager: CBCentralManagerDelegate {
             if isShowingBluetoothAlert {
                 dismissBluetoothOffAlert()
             }
-            resumeAutoReconnectOnForeground()
+            if shouldResumeSearchAfterBluetoothOn {
+                startDeviceSearch()
+            } else {
+                resumeAutoReconnectOnForeground()
+            }
         case .poweredOff:
             NSLog("[PM][BT] powered OFF")
             presentBluetoothOffAlertIfNeeded()
+            _ = cancelPendingConnectIfPossible()
             stopDeviceSearch()
+            connectedDevice = nil
+            connectingDevice = nil
+            ftuEvalPendingDeviceId = nil
+            ftuEvalRetryCount = 0
             connectionState = .disconnected
         case .resetting:
             NSLog("[PM][BT] resetting")

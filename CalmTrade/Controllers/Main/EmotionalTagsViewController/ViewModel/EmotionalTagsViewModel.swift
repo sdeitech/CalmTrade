@@ -8,66 +8,87 @@
 import UIKit
 
 class EmotionalTagsViewModel {
-    
-    // MARK: - Properties
-    
-    var positiveEmotions: [EmotionTag] = [
-        EmotionTag(title: "Calm", isSelected: false),
-        EmotionTag(title: "Clarity", isSelected: false),
-        EmotionTag(title: "Focused", isSelected: false),
-        EmotionTag(title: "Confidence", isSelected: false),
-        EmotionTag(title: "Gratitude", isSelected: false)
-    ]
-    
-    var negativeEmotions: [EmotionTag] = [
-        EmotionTag(title: "Fear", isSelected: false),
-        EmotionTag(title: "Greed", isSelected: false),
-        EmotionTag(title: "Frustration", isSelected: false),
-        EmotionTag(title: "FOMO", isSelected: false),
-        EmotionTag(title: "Revenge", isSelected: false)
-    ]
-    
-    var neutralEmotions: [EmotionTag] = [
-        EmotionTag(title: "Boredom", isSelected: false),
-        EmotionTag(title: "Distraction", isSelected: false),
-        EmotionTag(title: "Revenge", isSelected: false),
-        EmotionTag(title: "Uncertainty", isSelected: false),
-        EmotionTag(title: "Curiosity", isSelected: false)
-    ]
-    
-    var cognitiveEmotions: [EmotionTag] = [
-        EmotionTag(title: "Anticipatory High", isSelected: false),
-        EmotionTag(title: "Indecision", isSelected: false),
-        EmotionTag(title: "Execution Freeze", isSelected: false),
-        EmotionTag(title: "System Override", isSelected: false),
-        EmotionTag(title: "Spike Stress", isSelected: false)
-    ]
-    
-    
-    
-    // MARK: - Public Methods
-    
-    func toggleSelection(for emotion: EmotionTag, in collectionView: UICollectionView) {
-        
-        if let index = positiveEmotions.firstIndex(where: { $0.title == emotion.title }) {
+
+    // MARK: - Data
+    var positiveEmotions: [EmotionTag] = []
+    var negativeEmotions: [EmotionTag] = []
+    var neutralEmotions: [EmotionTag] = []
+    var cognitiveEmotions: [EmotionTag] = []
+
+    // MARK: - Outputs
+    var onDataLoaded: (() -> Void)?
+
+    // MARK: - Fetch
+    func fetchEmotionTags() {
+        APIService().startService(
+            with: .GET,
+            path: "emotionalTags/tags",
+            parameters: nil,
+            files: nil,
+            modelType: EmotionTagsResponse.self
+        ) { [weak self] result in
+            DispatchQueue.main.async {
+                guard let self else { return }
+
+                switch result {
+                case .Success(let response):
+                    guard let categories = response?.categories else { return }
+                    self.map(categories)
+                    self.onDataLoaded?()
+
+                case .Error(let message):
+                    print("❌ EmotionalTags fetch failed:", message)
+                }
+            }
+        }
+    }
+
+    // MARK: - Mapping
+    private func map(_ categories: [EmotionCategoryDTO]) {
+        for cat in categories {
+
+            let tags = cat.tags.map {
+                EmotionTag(
+                    title: $0.name,
+                    valence: $0.valence,
+                    arousal: $0.arousal,
+                    isSelected: false
+                )
+            }
+
+            switch cat.name.lowercased() {
+            case "positive": positiveEmotions = tags
+            case "negative": negativeEmotions = tags
+            case "neutral":  neutralEmotions = tags
+            case "cognitive":cognitiveEmotions = tags
+            default: break
+            }
+        }
+    }
+
+    // MARK: - Selection
+    func toggleSelection(category: Category, index: Int) {
+        switch category {
+        case .positive:
             positiveEmotions[index].isSelected.toggle()
-        }
-        
-        if let index = negativeEmotions.firstIndex(where: { $0.title == emotion.title }) {
+        case .negative:
             negativeEmotions[index].isSelected.toggle()
-        }
-        
-        if let index = neutralEmotions.firstIndex(where: { $0.title == emotion.title }) {
+        case .neutral:
             neutralEmotions[index].isSelected.toggle()
-        }
-        
-        if let index = cognitiveEmotions.firstIndex(where: { $0.title == emotion.title }) {
+        case .cognitive:
             cognitiveEmotions[index].isSelected.toggle()
         }
     }
+
+    enum Category {
+        case positive, negative, neutral, cognitive
+    }
 }
+
 
 struct EmotionTag {
     let title: String
-    var isSelected: Bool
+    let valence: Double
+    let arousal: Double
+    var isSelected: Bool = false
 }

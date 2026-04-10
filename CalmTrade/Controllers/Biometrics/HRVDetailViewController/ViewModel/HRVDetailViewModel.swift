@@ -51,6 +51,8 @@ final class HRVDetailViewModel: ObservableObject {
     private(set) var centerDate: Date = Date()
     private var isLoading = false { didSet { onIsLoading?(isLoading) } }
 
+    var xDomain: ClosedRange<Date> { makeXDomain(for: selectedRange, center: centerDate) }
+
     // MARK: - Configure
     func set(metric: HRVMetricType) { self.metric = metric }
 
@@ -63,18 +65,26 @@ final class HRVDetailViewModel: ObservableObject {
         load(start: domain.lowerBound, end: domain.upperBound, range: range)
     }
 
-    func loadPreviousPeriod() {
-        guard !isLoading else { return }
+    @discardableResult
+    func loadPreviousPeriod() -> Bool {
+        guard !isLoading else { return false }
         centerDate = shift(center: centerDate, for: selectedRange, direction: -1)
         let d = makeXDomain(for: selectedRange, center: centerDate)
         load(start: d.lowerBound, end: d.upperBound, range: selectedRange)
+        return true
     }
 
-    func loadNextPeriod() {
-        guard !isLoading else { return }
-        centerDate = min(shift(center: centerDate, for: selectedRange, direction: +1), Date())
+    @discardableResult
+    func loadNextPeriod() -> Bool {
+        guard !isLoading else { return false }
+        let shifted = min(shift(center: centerDate, for: selectedRange, direction: +1), Date())
+        let currentAnchor = periodAnchor(for: selectedRange, date: centerDate)
+        let nextAnchor = periodAnchor(for: selectedRange, date: shifted)
+        guard nextAnchor > currentAnchor else { return false }
+        centerDate = shifted
         let d = makeXDomain(for: selectedRange, center: centerDate)
         load(start: d.lowerBound, end: d.upperBound, range: selectedRange)
+        return true
     }
 
     // MARK: - Core load
@@ -157,35 +167,32 @@ final class HRVDetailViewModel: ObservableObject {
         return out
     }
 
-    // MARK: - Domains/paging (copied from HR VM)
+    // MARK: - Domains/paging (same behavior as HeartRateDetailViewModel)
     private func makeXDomain(for range: ChartTimeRange, center: Date) -> ClosedRange<Date> {
         let cal = Calendar.current
         switch range {
         case .hourly:
-            let day = cal.startOfDay(for: center)
-            let endOfDay = cal.date(byAdding: DateComponents(day: 1, second: -1), to: day)!
-            let mid = cal.dateInterval(of: .hour, for: center)?.start ?? center
-            let from = max(day, cal.date(byAdding: .hour, value: -12, to: mid)!)
-            let to   = min(endOfDay, cal.date(byAdding: .hour, value:  12, to: mid)!)
-            return from...min(to, Date())
+            let startOfHour = cal.dateInterval(of: .hour, for: center)?.start ?? center
+            let endOfHour = cal.date(byAdding: .minute, value: 60, to: startOfHour)!
+            return startOfHour...min(endOfHour, Date())
         case .daily:
-            let s = cal.startOfDay(for: cal.date(byAdding: .day, value: -3, to: center)!)
-            let e = cal.startOfDay(for: cal.date(byAdding: .day, value: +4, to: center)!)
-            return s...min(e, Date())
+            let startOfDay = cal.startOfDay(for: center)
+            let endOfDay = cal.date(byAdding: .day, value: 1, to: startOfDay)!
+            return startOfDay...min(endOfDay, Date())
         case .weekly:
             let week = cal.dateInterval(of: .weekOfYear, for: center)!
-            let s = cal.date(byAdding: .weekOfYear, value: -2, to: week.start)!
-            let e = cal.date(byAdding: .weekOfYear, value: +3, to: week.start)!
+            let s = week.start
+            let e = cal.date(byAdding: .day, value: 7, to: s)!
             return s...min(e, Date())
         case .monthly:
             let month = cal.dateInterval(of: .month, for: center)!
-            let s = cal.date(byAdding: .month, value: -6, to: month.start)!
-            let e = cal.date(byAdding: .month, value: +7, to: month.start)!
+            let s = month.start
+            let e = cal.date(byAdding: .month, value: 1, to: s)!
             return s...min(e, Date())
         case .yearly:
             let year = cal.dateInterval(of: .year, for: center)!
-            let s = cal.date(byAdding: .year, value: -2, to: year.start)!
-            let e = cal.date(byAdding: .year, value: +3, to: year.start)!
+            let s = year.start
+            let e = cal.date(byAdding: .year, value: 1, to: s)!
             return s...min(e, Date())
         }
     }
@@ -193,11 +200,27 @@ final class HRVDetailViewModel: ObservableObject {
     private func shift(center: Date, for range: ChartTimeRange, direction: Int) -> Date {
         let cal = Calendar.current
         switch range {
-        case .hourly:  return cal.date(byAdding: .day, value: direction, to: center)!
-        case .daily:   return cal.date(byAdding: .weekOfYear, value: direction, to: center)!
-        case .weekly:  return cal.date(byAdding: .month, value: direction, to: center)!
-        case .monthly: return cal.date(byAdding: .year, value: direction, to: center)!
-        case .yearly:  return cal.date(byAdding: .year, value: 5 * direction, to: center)!
+        case .hourly:  return cal.date(byAdding: .hour, value: direction, to: center)!
+        case .daily:   return cal.date(byAdding: .day, value: direction, to: center)!
+        case .weekly:  return cal.date(byAdding: .weekOfYear, value: direction, to: center)!
+        case .monthly: return cal.date(byAdding: .month, value: direction, to: center)!
+        case .yearly:  return cal.date(byAdding: .year, value: direction, to: center)!
+        }
+    }
+
+    private func periodAnchor(for range: ChartTimeRange, date: Date) -> Date {
+        let cal = Calendar.current
+        switch range {
+        case .hourly:
+            return cal.dateInterval(of: .hour, for: date)?.start ?? date
+        case .daily:
+            return cal.startOfDay(for: date)
+        case .weekly:
+            return cal.dateInterval(of: .weekOfYear, for: date)?.start ?? cal.startOfDay(for: date)
+        case .monthly:
+            return cal.dateInterval(of: .month, for: date)?.start ?? cal.startOfDay(for: date)
+        case .yearly:
+            return cal.dateInterval(of: .year, for: date)?.start ?? cal.startOfDay(for: date)
         }
     }
 
@@ -207,18 +230,21 @@ final class HRVDetailViewModel: ObservableObject {
         let e = domain.upperBound
         switch range {
         case .hourly:
-            fmt.dateFormat = "MMMM d, yyyy"; return fmt.string(from: centerDate)
+            fmt.dateFormat = "MMMM d, yyyy"
+            return fmt.string(from: centerDate)
         case .daily:
-            fmt.dateFormat = "MMM d"; return "\(fmt.string(from: s)) - \(fmt.string(from: e))"
+            fmt.dateFormat = "MMMM d, yyyy"
+            return fmt.string(from: centerDate)
         case .weekly:
-            fmt.dateFormat = "MMMM yyyy"; return fmt.string(from: centerDate)
+            fmt.dateFormat = "MMM d"
+            let end = Calendar.current.date(byAdding: .day, value: -1, to: e) ?? e
+            return "\(fmt.string(from: s)) - \(fmt.string(from: end))"
         case .monthly:
-            fmt.dateFormat = "yyyy"; return fmt.string(from: centerDate)
+            fmt.dateFormat = "MMMM yyyy"
+            return fmt.string(from: s)
         case .yearly:
-            let cal = Calendar.current
-            let ys = cal.component(.year, from: s)
-            let ye = cal.component(.year, from: e)
-            return ys == ye ? "\(ys)" : "\(ys) - \(ye)"
+            fmt.dateFormat = "yyyy"
+            return fmt.string(from: s)
         }
     }
 

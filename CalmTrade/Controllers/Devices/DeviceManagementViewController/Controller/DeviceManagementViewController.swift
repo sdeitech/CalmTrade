@@ -75,6 +75,13 @@ final class DeviceManagementViewController: UIViewController {
             NSLog("[DMVC] skip refreshSnapshot(): update is running")
         }
     }
+    
+    override func viewDidDisappear(_ animated: Bool) {
+        super.viewDidDisappear(animated)
+        vm.delegate = nil
+        swipeLeft.isEnabled = false
+        swipeRight.isEnabled = false
+    }
 
     // MARK: - UI Binding
     private func bindUI() {
@@ -208,11 +215,14 @@ final class DeviceManagementViewController: UIViewController {
     }
 
     // MARK: - Gestures
-    @objc private func didSwipe(_ g: UISwipeGestureRecognizer) async {
-        switch g.direction {
-        case .left:  await vm.goNext()
-        case .right: await vm.goPrev()
-        default: break
+    @objc private func didSwipe(_ g: UISwipeGestureRecognizer) {
+        Task { [weak self] in
+            guard let self else { return }
+            switch g.direction {
+            case .left:  await self.vm.goNext()
+            case .right: await self.vm.goPrev()
+            default: break
+            }
         }
     }
 

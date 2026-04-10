@@ -13,13 +13,16 @@ import IQKeyboardManagerSwift
 import FBSDKCoreKit
 import BackgroundTasks
 import FirebaseCrashlytics
+import FirebaseMessaging
 
 @main
-class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterDelegate {
+class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterDelegate,
+                   MessagingDelegate {
     
     var window: UIWindow?
     
     private var bgTask: UIBackgroundTaskIdentifier = .invalid
+    private var backgroundTasksRegistered = false
     
     private var polarSyncService: Polar360SyncService!
     
@@ -90,29 +93,42 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
         _ application: UIApplication,
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
     ) -> Bool {
-        
-        // 1. FASTEST POSSIBLE UI SETUP
-        let win = UIWindow(frame: UIScreen.main.bounds)
-        win.rootViewController = initialRootViewController()
-        win.makeKeyAndVisible()
-        self.window = win
-        
-        let center = UNUserNotificationCenter.current()
-                center.delegate = self    // REQUIRED
-                center.requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
-                    print("Notification permission granted: \(granted)")
-                }
-        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
-            print("Notification permission granted: \(granted)")
+
+        setenv("SQLITE_ENABLE_WAL_CHECKPOINT_LOG", "0", 1)
+
+        // Firebase needs to be configured synchronously at launch before any Firebase-backed service is touched.
+        if FirebaseApp.app() == nil {
+            FirebaseApp.configure()
         }
-        
-        // 2. LIGHTWEIGHT CRITICAL INITIALIZATION
-        FirebaseApp.configure()
         Crashlytics.crashlytics().setCrashlyticsCollectionEnabled(true)
+
+        // Initialize other lightweight services
         IQKeyboardManager.shared.enableAutoToolbar = true
         IQKeyboardManager.shared.isEnabled = true
 
-        // 3. DEFER ALL HEAVY WORK (runs after UI is visible)
+        // Request notification permissions
+        let center = UNUserNotificationCenter.current()
+        center.delegate = self    // REQUIRED
+        center.requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
+            print("Notification permission granted: \(granted)")
+            DispatchQueue.main.async {
+                UIApplication.shared.registerForRemoteNotifications()
+            }
+        }
+        Messaging.messaging().delegate = self
+
+        if #available(iOS 13.0, *) {
+            // UI is provided by SceneDelegate.
+        } else {
+            let win = UIWindow(frame: UIScreen.main.bounds)
+            win.rootViewController = initialRootViewController()
+            win.makeKeyAndVisible()
+            self.window = win
+        }
+
+        registerBackgroundTasksIfNeeded()
+
+        // Defer non-UI startup work until after launch returns.
         DispatchQueue.global(qos: .userInitiated).async {
             self.initializeBackgroundSystems(application, launchOptions: launchOptions)
         }
@@ -125,65 +141,70 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
         _ application: UIApplication,
         launchOptions: [UIApplication.LaunchOptionsKey: Any]?
     ) {
-        // Polar ingestion setup
-        let polarSleepSource = PolarBleSleepSource()
-        Polar360SleepIngestor.shared.configure(source: polarSleepSource)
+        // Initialize Core Data in background to prevent blocking main thread
+        DispatchQueue.global(qos: .utility).async {
+            _ = self.persistentContainer.viewContext
+        }
 
-        PolarManager.shared.on360OfflinePpg = { ppg, start in
-            guard let devId = PolarManager.shared.connectedDevice?.id else { return }
-            _ = OfflinePPGIngestor.shared.ingest(
-                deviceId: devId,
-                start: start,
-                ppg: ppg,
-                sampleRateHz: 40
+        // Initialize Polar ingestion services
+        DispatchQueue.global(qos: .background).async {
+            let polarSleepSource = PolarBleSleepSource()
+            Polar360SleepIngestor.shared.configure(source: polarSleepSource)
+            self.polarSyncService = Polar360SyncService(fetcher: PolarCloudFetcher())
+
+            PolarManager.shared.on360OfflinePpg = { ppg, start in
+                guard let devId = PolarManager.shared.connectedDevice?.id else { return }
+                _ = OfflinePPGIngestor.shared.ingest(
+                    deviceId: devId,
+                    start: start,
+                    ppg: ppg,
+                    sampleRateHz: 40
+                )
+            }
+        }
+
+        // Facebook expects launch wiring from the app delegate path.
+        DispatchQueue.main.async {
+            ApplicationDelegate.shared.application(
+                application,
+                didFinishLaunchingWithOptions: launchOptions
             )
-        }
-
-        // Facebook SDK (non-essential)
-        ApplicationDelegate.shared.application(
-            application,
-            didFinishLaunchingWithOptions: launchOptions
-        )
-
-        // Background task registration
-        BGTaskScheduler.shared.register(
-            forTaskWithIdentifier: "com.calmtrade.calmScore.refresh",
-            using: nil
-        ) { task in
-            self.handleCalmScoreRefresh(task: task as! BGAppRefreshTask)
-        }
-        
-        BGTaskScheduler.shared.register(
-            forTaskWithIdentifier: "com.calmtrade.calmScore.processing",
-            using: nil
-        ) { task in
-            self.handleCalmScoreProcessing(task: task as! BGProcessingTask)
+            DeviceManager.shared.configureOnLaunch()
         }
 
         self.scheduleCalmScoreRefresh()
-
-        // Pre-warm Core Data in background
-        _ = self.persistentContainer.viewContext
     }
     
     func applicationWillResignActive(_ application: UIApplication) {
         // Sent when the application is about to move from active to inactive state. This can occur for certain types of temporary interruptions (such as an incoming phone call or SMS message) or when the user quits the application and it begins the transition to the background state.
         // Use this method to pause ongoing tasks, disable timers, and invalidate graphics rendering callbacks. Games should use this method to pause the game.
     }
-    
+
     func applicationDidEnterBackground(_ application: UIApplication) {
         // Use this method to release shared resources, save user data, invalidate timers, and store enough application state information to restore your application to its current state in case it is terminated later.
         // If your application supports background execution, this method is called instead of applicationWillTerminate: when the user quits.
+
+        // Stop unnecessary background activity to preserve battery and avoid hanging
+        CalmScoreHub.shared.stop()  // Stop the continuous heartbeat in background
+        // NOTE: HealthKitService keeps running in background for background delivery
+
         scheduleCalmScoreRefresh()
     }
     
     func applicationWillEnterForeground(_ application: UIApplication) {
         // Called as part of the transition from the background to the active state; here you can undo many of the changes made on entering the background.
+
+        // Restart services when entering foreground
+        CalmScoreHub.shared.start()  // Restart calm score calculations
+        HealthKitService.shared.startBackgroundMirroring()  // Resume HealthKit monitoring
+
         PolarManager.shared.resumeAutoReconnectOnForeground()
-        if let token = UserDefaults.standard.string(forKey: "accessToken"), !token.isEmpty {
+        if #unavailable(iOS 13.0),
+           let token = UserDefaults.standard.string(forKey: "accessToken"),
+           !token.isEmpty {
             SocketClient.shared.connect(with: token)
         }
-        
+
         // Ask PolarManager to keep the BLE session warm during transition
                 bgTask = application.beginBackgroundTask(withName: "BLEStreamStabilize") { [weak self] in
                     // Expiration handler: end task if the system is done with us
@@ -213,14 +234,21 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
     
     
     func application(_ app: UIApplication, open url: URL, options: [UIApplication.OpenURLOptionsKey : Any] = [:]) -> Bool {
-        // Handle Facebook URL
-        ApplicationDelegate.shared.application(app, open: url, options: options)
-        
+        #if !targetEnvironment(macCatalyst)
+        // Handle Facebook URL (only on iOS, not Mac Catalyst)
+        if ApplicationDelegate.shared.application(app, open: url, options: options) {
+            return true
+        }
+        #endif
+
         // Handle Google URL
-        GIDSignIn.sharedInstance.handle(url)
-        
+        if GIDSignIn.sharedInstance.handle(url) {
+            return true
+        }
+
+        // Handle deep links
         DeepLinkRouter.shared.handle(url: url)
-        
+
         return true
     }
     
@@ -273,6 +301,25 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
         let req = BGAppRefreshTaskRequest(identifier: "com.calmtrade.calmScore.refresh")
         req.earliestBeginDate = Date(timeIntervalSinceNow: 15 * 60) // ask iOS: ~15+ min
         try? BGTaskScheduler.shared.submit(req)
+    }
+
+    private func registerBackgroundTasksIfNeeded() {
+        guard !backgroundTasksRegistered else { return }
+        backgroundTasksRegistered = true
+
+        BGTaskScheduler.shared.register(
+            forTaskWithIdentifier: "com.calmtrade.calmScore.refresh",
+            using: nil
+        ) { task in
+            self.handleCalmScoreRefresh(task: task as! BGAppRefreshTask)
+        }
+
+        BGTaskScheduler.shared.register(
+            forTaskWithIdentifier: "com.calmtrade.calmScore.processing",
+            using: nil
+        ) { task in
+            self.handleCalmScoreProcessing(task: task as! BGProcessingTask)
+        }
     }
     
     func scheduleCalmScoreProcessing() {
@@ -335,6 +382,42 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
     ) {
         completionHandler([.banner, .sound])     // <-- CRITICAL
     }
+    
+    //MARK: - Push Notifications
+    func application(
+        _ application: UIApplication,
+        didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data
+    ) {
+        Messaging.messaging().apnsToken = deviceToken
+    }
+
+    func application(
+        _ application: UIApplication,
+        didFailToRegisterForRemoteNotificationsWithError error: Error
+    ) {
+        print("❌ APNs registration failed:", error)
+    }
+
+    func messaging(
+        _ messaging: Messaging,
+        didReceiveRegistrationToken fcmToken: String?
+    ) {
+        guard let token = fcmToken else { return }
+
+        print("🔥 FCM TOKEN:", token)
+
+        // Persist locally
+        UserDefaults.standard.set(token, forKey: "fcmToken")
+    }
+
+    func clearFCMToken() {
+        Messaging.messaging().deleteToken { error in
+            if let error = error {
+                print("Failed to delete FCM token:", error)
+            }
+        }
+        UserDefaults.standard.removeObject(forKey: "fcmToken")
+    }
 }
 
 private extension AppDelegate {
@@ -347,24 +430,23 @@ private extension AppDelegate {
     
     private func initialRootViewController() -> UIViewController {
         
-//        if isLoggedIn() {
+        if isLoggedIn() {
             // Go straight to dashboard
             let tab = UIStoryboard(name: Constants.Storyboard.Dashboard, bundle: nil).instantiateViewController(withIdentifier: "TabbarController") as! TabbarController
             tab.navigationController?.navigationBar.isHidden = true
             let nav = UINavigationController(rootViewController: tab)
             nav.navigationBar.isHidden = true
-            if let token = UserDefaults.standard.string(forKey: "accessToken"), !token.isEmpty {
-                SocketClient.shared.connect(with: token)
-            }
+            nav.interactivePopGestureRecognizer?.isEnabled = false
             return nav
-//        } else {
-//            // Show splash/login flow
-//            let splash = UIStoryboard(name: Constants.Storyboard.Main, bundle: nil).instantiateViewController(withIdentifier: "SplashViewController") as! SplashViewController
-//            splash.navigationController?.navigationBar.isHidden = true
-//            let nav = UINavigationController(rootViewController: splash)
-//            nav.navigationBar.isHidden = true
-//            return nav
-//        }
+        } else {
+            // Show splash/login flow
+            let splash = UIStoryboard(name: Constants.Storyboard.Main, bundle: nil).instantiateViewController(withIdentifier: "SplashViewController") as! SplashViewController
+            splash.navigationController?.navigationBar.isHidden = true
+            let nav = UINavigationController(rootViewController: splash)
+            nav.navigationBar.isHidden = true
+            nav.interactivePopGestureRecognizer?.isEnabled = false
+            return nav
+        }
     }
     
 }

@@ -17,6 +17,8 @@ final class VerificationCodeViewModel: BaseViewModel {
     private struct VerifyOtpResponse: Decodable {
         let success: Bool
         let message: String?
+        let accessToken: String?
+        let refreshToken: String?
     }
 
     private struct ResendResponse: Decodable {
@@ -58,6 +60,9 @@ final class VerificationCodeViewModel: BaseViewModel {
                 switch result {
                 case .Success(let resp):
                     if resp?.success == true {
+                        if let token = resp?.accessToken,let refreshToken = resp?.refreshToken {
+                            self.updateUserToken(token, refreshToken: refreshToken)
+                        }
                         self.onValidationResult?(true, nil)
                     } else {
                         self.onValidationResult?(false, resp?.message ?? "Verification failed. Please try again.")

@@ -9,17 +9,31 @@ import UIKit
 import SwiftUI
 
 class SleepInsightViewController: BaseViewController {
+    private enum ChartTransitionStyle: Equatable {
+        case none
+        case crossDissolve
+        case slideFromLeft
+        case slideFromRight
+    }
 
     // MARK: - Outlets
     @IBOutlet weak var segmentedControl: UISegmentedControl!
     @IBOutlet weak var lblTimeAsleep: UILabel!
     @IBOutlet weak var lblSleepDate: UILabel!
     @IBOutlet weak var chartContainerView: UIView!
+    
+    @IBOutlet private weak var subscriptionBlurView: UIVisualEffectView!
+    
+    @IBOutlet weak var lblAwakeTime: UILabel!
+    @IBOutlet weak var lblREMTime: UILabel!
+    @IBOutlet weak var lblCoreTime: UILabel!
+    @IBOutlet weak var lblDeepTime: UILabel!
 
     // MARK: - Properties
     private let viewModel = SleepInsightViewModel()
     private var swiftUIChartVC: UIHostingController<SleepCycleChart>?
     private var currentAxisScale: AxisScale = .daily
+    private var pendingTransitionStyle: ChartTransitionStyle = .none
 
 
     // MARK: - Lifecycle
@@ -27,7 +41,12 @@ class SleepInsightViewController: BaseViewController {
         super.viewDidLoad()
         setupSegmentedControl()
         setupViewModelBindings()
+        installPagingGestures()
         viewModel.fetchInitialData(for: .daily)
+    }
+    
+    override func viewWillAppear(_ animated: Bool) {
+        subscriptionBlurView.isHidden = checkAccess()
     }
     
     override func motionEnded(_ motion: UIEvent.EventSubtype, with event: UIEvent?) {
@@ -45,11 +64,20 @@ class SleepInsightViewController: BaseViewController {
             self.lblTimeAsleep.attributedText = uiData.timeAsleepAttributedText
             self.lblSleepDate.text = uiData.sleepDate
 
-            guard let start = uiData.chartStartDate, let end = uiData.chartEndDate else { return }
-            self.setupOrUpdateSwiftUIChart(segments: uiData.sleepSegments,
-                                           startDate: start,
-                                           endDate: end,
-                                           isPaginating: isPaginating)
+            self.lblAwakeTime.attributedText = self.viewModel.formatStageTime(uiData.awakeSeconds)
+            self.lblREMTime.attributedText   = self.viewModel.formatStageTime(uiData.remSeconds)
+            self.lblCoreTime.attributedText  = self.viewModel.formatStageTime(uiData.coreSeconds)
+            self.lblDeepTime.attributedText  = self.viewModel.formatStageTime(uiData.deepSeconds)
+
+            guard let start = uiData.chartStartDate,
+                  let end = uiData.chartEndDate else { return }
+
+            self.setupOrUpdateSwiftUIChart(
+                segments: uiData.sleepSegments,
+                startDate: start,
+                endDate: end,
+                isPaginating: isPaginating
+            )
         }
     }
 
@@ -73,7 +101,6 @@ class SleepInsightViewController: BaseViewController {
                                            endDate: Date,
                                            isPaginating: Bool)
     {
-        // Build a brand-new SwiftUI view every time (this is the correct way to update)
         let chart = SleepCycleChart(
             start: startDate,
             end: endDate,
@@ -82,12 +109,12 @@ class SleepInsightViewController: BaseViewController {
         )
 
         if let host = self.swiftUIChartVC {
-            // ✅ Update in place by assigning a NEW rootView (this triggers a redraw)
+            applyTransitionIfNeeded(on: host.view)
             host.rootView = chart
+            animateMetadataRefresh()
             return
         }
 
-        // First-time setup
         let host = UIHostingController(rootView: chart)
         addChild(host)
         chartContainerView.addSubview(host.view)
@@ -107,6 +134,31 @@ class SleepInsightViewController: BaseViewController {
         self.swiftUIChartVC = host
     }
 
+    private func installPagingGestures() {
+        let left = UISwipeGestureRecognizer(target: self, action: #selector(didSwipeLeft))
+        left.direction = .left
+        chartContainerView.addGestureRecognizer(left)
+
+        let right = UISwipeGestureRecognizer(target: self, action: #selector(didSwipeRight))
+        right.direction = .right
+        chartContainerView.addGestureRecognizer(right)
+    }
+    
+    private func checkAccess() -> Bool {
+        switch FeatureGate.shared.access(for: FeatureKey.chartsForBiometric) {
+        case .allowed: return true
+        case .locked: return false
+        }
+    }
+
+    @objc private func didSwipeLeft() {
+        pendingTransitionStyle = viewModel.loadNextPeriod() ? .slideFromLeft : .none
+    }
+
+    @objc private func didSwipeRight() {
+        pendingTransitionStyle = viewModel.loadPreviousPeriod() ? .slideFromRight : .none
+    }
+
 
     // MARK: - Actions
     @IBAction func segmentedControlChanged(_ sender: UISegmentedControl) {
@@ -119,12 +171,45 @@ class SleepInsightViewController: BaseViewController {
         case .monthly: currentAxisScale = .monthly
         }
 
-        // Ask VM to reload the corresponding data window
+        pendingTransitionStyle = .crossDissolve
         viewModel.fetchInitialData(for: selectedRange)
     }
 
 
     @IBAction func btnBackTapped(_ sender: Any) {
-        navigationController?.popViewController(animated: true)
+        navigationController?.popViewController()
+    }
+    
+    @IBAction private func btnSubscribeTapped(_ sender: Any) {
+        FeatureGate.shared.presentUpgradeSheet(for: FeatureKey.chartsForBiometric, from: self)
+    }
+
+    private func applyTransitionIfNeeded(on view: UIView) {
+        defer { pendingTransitionStyle = .none }
+
+        switch pendingTransitionStyle {
+        case .none:
+            return
+        case .crossDissolve:
+            UIView.transition(with: view, duration: 0.22, options: [.transitionCrossDissolve, .allowAnimatedContent], animations: nil)
+        case .slideFromLeft, .slideFromRight:
+            let transition = CATransition()
+            transition.type = .push
+            transition.duration = 0.28
+            transition.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+            transition.subtype = pendingTransitionStyle == .slideFromLeft ? .fromRight : .fromLeft
+            view.layer.add(transition, forKey: "SleepChartPaging")
+        }
+    }
+
+    private func animateMetadataRefresh() {
+        let views = [lblTimeAsleep, lblSleepDate, lblAwakeTime, lblREMTime, lblCoreTime, lblDeepTime]
+        UIView.animate(withDuration: 0.16, animations: {
+            views.forEach { $0?.alpha = 0.72 }
+        }) { _ in
+            UIView.animate(withDuration: 0.2) {
+                views.forEach { $0?.alpha = 1.0 }
+            }
+        }
     }
 }

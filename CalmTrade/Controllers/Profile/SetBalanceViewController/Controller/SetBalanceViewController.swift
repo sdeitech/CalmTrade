@@ -70,7 +70,7 @@ final class SetBalanceViewController: BaseViewController, UITextFieldDelegate {
             self.accountNameLabel.text = ui.accountName
             self.currentBalanceLabel.text = ui.calculatedCurrentBalanceText   // "—" for now
             self.startingBalanceTextField.text = ui.startingBalanceText.isEmpty ? "" : "$" + ui.startingBalanceText
-            self.currentBalanceTextField.text = ui.calculatedCurrentBalanceText.isEmpty ? "" : "$" + ui.calculatedCurrentBalanceText
+            self.currentBalanceTextField.text = ui.brokerCurrentBalanceText.isEmpty ? "" : "$" + ui.brokerCurrentBalanceText
         }
         viewModel.onToast = { [weak self] msg in self?.toast(msg) }
         viewModel.onError = { [weak self] msg in self?.toast(msg) }
@@ -87,7 +87,7 @@ final class SetBalanceViewController: BaseViewController, UITextFieldDelegate {
     }
 
     @IBAction private func didTapBack(_ sender: UIButton) {
-        navigationController?.popViewController(animated: true)
+        navigationController?.popViewController()
     }
 
     @IBAction private func didTapInfo(_ sender: UIButton) { viewInfo.isHidden = false }

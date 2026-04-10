@@ -37,27 +37,33 @@ class BreathingViewController: UIViewController {
         
         // When the ViewModel determines we should navigate to the next screen...
         viewModel.navigateToEmotionalTags = { [weak self] in
-            // Make sure we don't push the same view controller twice
-            guard self?.navigationController?.topViewController is Self else { return }
-            
-            let emotionalTagsVC = UIStoryboard(name: "Main", bundle: nil).instantiateViewController(withIdentifier: "EmotionalTagsViewController") as! EmotionalTagsViewController
-            self?.navigationController?.pushViewController(emotionalTagsVC, transitionType: .fade, duration: 0.03)
+            DispatchQueue.main.async {
+                // Make sure we don't push the same view controller twice
+                guard self?.navigationController?.topViewController is Self else { return }
+
+                let emotionalTagsVC = UIStoryboard(name: "Main", bundle: nil).instantiateViewController(withIdentifier: "EmotionalTagsViewController") as! EmotionalTagsViewController
+                self?.navigationController?.pushViewController(emotionalTagsVC, transitionType: .fade, duration: 0.03)
+            }
         }
         
         // When the ViewModel determines we should skip to the dashboard...
         viewModel.navigateToDashboard = { [weak self] in
+            DispatchQueue.main.async {
 //            let dashboardVC = UIStoryboard(name: Constants.Storyboard.Dashboard, bundle: nil).instantiateViewController(withIdentifier: "TabbarController") as! TabbarController
 //            self?.navigationController?.pushViewController(dashboardVC, transitionType: .fade, duration: 0.03)
-            let emotionalTagsVC = UIStoryboard(name: "Main", bundle: nil).instantiateViewController(withIdentifier: "EmotionalTagsViewController") as! EmotionalTagsViewController
-            self?.navigationController?.pushViewController(emotionalTagsVC, transitionType: .fade, duration: 0.03)
+                let emotionalTagsVC = UIStoryboard(name: "Main", bundle: nil).instantiateViewController(withIdentifier: "EmotionalTagsViewController") as! EmotionalTagsViewController
+                self?.navigationController?.pushViewController(emotionalTagsVC, transitionType: .fade, duration: 0.03)
+            }
         }
         
         // When the ViewModel encounters an error...
         viewModel.showError = { [weak self] title, message in
-            // You can create a more sophisticated error alert here.
-            let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
-            alert.addAction(UIAlertAction(title: "OK", style: .default))
-            self?.present(alert, animated: true)
+            DispatchQueue.main.async {
+                // You can create a more sophisticated error alert here.
+                let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
+                alert.addAction(UIAlertAction(title: "OK", style: .default))
+                self?.present(alert, animated: true)
+            }
         }
     }
     

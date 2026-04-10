@@ -136,7 +136,7 @@ public final class CalmScoreCalculator {
         add(zHRV, Tunables.wHRV)
         add(zHR, Tunables.wHR)
         add(zRHR, Tunables.wRHR)
-        add(zSlp, Tunables.wSleep)
+//        add(zSlp, Tunables.wSleep)
 
         let scoreZ = (wSum > 0 ? zSum / wSum : 0)
 

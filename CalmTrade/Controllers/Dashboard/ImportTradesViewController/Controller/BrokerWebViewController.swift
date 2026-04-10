@@ -43,7 +43,7 @@ final class BrokerWebViewController: UIViewController, WKNavigationDelegate {
         print("🔗 Redirected to: \(urlString)")
 
         // Detect success callback
-        if urlString.contains("connection-complete") {
+        if urlString.contains("connection-complete") || urlString.contains("callback") {
             handleBrokerSuccess(url: url)
         }
 
@@ -51,13 +51,13 @@ final class BrokerWebViewController: UIViewController, WKNavigationDelegate {
     }
 
     private func handleBrokerSuccess(url: URL) {
-        KRProgressHUD.show()
+        LoaderManager.shared.show()
         viewModel?.callBrokerCallbackAndSync() { [weak self] ok in
             guard let self else { return }
-            KRProgressHUD.dismiss()
+            LoaderManager.shared.hide()
 
             if ok {
-                self.navigationController?.popViewController(animated: true)
+                self.navigationController?.popViewController()
             } else {
                 print("❌ Callback or sync failed")
             }

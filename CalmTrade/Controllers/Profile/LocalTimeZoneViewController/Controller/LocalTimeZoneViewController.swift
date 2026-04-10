@@ -71,7 +71,7 @@ final class LocalTimeZoneViewController: UIViewController {
         if presentingViewController != nil {
             dismiss(animated: true)
         } else {
-            navigationController?.popViewController(animated: true)
+            navigationController?.popViewController()
         }
     }
 }

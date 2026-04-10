@@ -14,7 +14,7 @@ import os.log
 // MARK: - HTTP
 
 public enum HttpMethod: String {
-    case POST, GET, PUT, DELETE
+    case POST, GET, PUT, DELETE, PATCH
 }
 
 private enum ResponseCode: Int {
@@ -75,6 +75,9 @@ public protocol ApiServiceProtocol {
 // MARK: - Service
 
 public class APIService: NSObject, ApiServiceProtocol {
+    
+    private var isRefreshing = false
+    private var refreshCompletions: [(Bool) -> Void] = []
 
     public func startService<T: Decodable>(
         with method: HttpMethod,
@@ -111,10 +114,110 @@ public class APIService: NSObject, ApiServiceProtocol {
                                       startedAt: startedAt)
             if let error { return completion(.Error(error.localizedDescription)) }
             guard let data = data else { return completion(.Error("Data not found.")) }
+            let status = (response as? HTTPURLResponse)?.statusCode ?? -1
+
+            // 🔥 INTERCEPT 401
+            if status == 401 {
+                self.handle401(
+                    originalMethod: method,
+                    originalPath: path,
+                    originalParameters: parameters,
+                    originalFiles: files,
+                    modelType: modelType,
+                    completion: completion
+                )
+                return
+            }
+
             self.handleResponse(data: data, response: response, modelType: modelType, completion: completion)
         }
         task.resume()
     }
+    
+    private func handle401<T: Decodable>(
+        originalMethod: HttpMethod,
+        originalPath: String,
+        originalParameters: [String: Any]?,
+        originalFiles: [File]?,
+        modelType: T.Type,
+        completion: @escaping (Result<T?>) -> Void
+    ) {
+        refreshTokenIfNeeded { success in
+            if success {
+                // 🔁 Retry original request
+                self.startService(
+                    with: originalMethod,
+                    path: originalPath,
+                    parameters: originalParameters,
+                    files: originalFiles,
+                    modelType: modelType,
+                    completion: completion
+                )
+            } else {
+                // ❌ Refresh failed → logout
+                DispatchQueue.main.async {
+                    NotificationCenter.default.post(name: .authDidExpire, object: nil)
+                }
+                completion(.Error("Session expired"))
+            }
+        }
+    }
+    
+    private func refreshTokenIfNeeded(completion: @escaping (Bool) -> Void) {
+
+        // If already refreshing, queue completion
+        if isRefreshing {
+            refreshCompletions.append(completion)
+            return
+        }
+
+        guard let refreshToken = UserDefaults.standard.string(forKey: "refreshToken"),
+              !refreshToken.isEmpty else {
+            completion(false)
+            return
+        }
+
+        isRefreshing = true
+        refreshCompletions.append(completion)
+
+        let path = "user/refresh-token"
+
+        let params: [String: Any] = [
+            "refreshToken": refreshToken,
+            "deviceType": "mobile"
+        ]
+
+        startService(
+            with: .POST,
+            path: path,
+            parameters: params,
+            files: nil,
+            modelType: RefreshTokenResponse.self
+        ) { result in
+
+            self.isRefreshing = false
+
+            switch result {
+            case .Success(let response):
+
+                if let newToken = response?.data?.accessToken {
+                    UserDefaults.standard.set(newToken, forKey: "accessToken")
+                    self.notifyRefreshSuccess(true)
+                } else {
+                    self.notifyRefreshSuccess(false)
+                }
+
+            case .Error:
+                self.notifyRefreshSuccess(false)
+            }
+        }
+    }
+
+    private func notifyRefreshSuccess(_ success: Bool) {
+        refreshCompletions.forEach { $0(success) }
+        refreshCompletions.removeAll()
+    }
+
 }
 
 // MARK: - Request building
@@ -176,6 +279,46 @@ public extension APIService {
             // Often either query params or JSON body; using JSON body here if params present
             req = URLRequest(url: url)
             if let params = parameters, !params.isEmpty {
+                req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+                req.httpBody = try? JSONSerialization.data(withJSONObject: params, options: [])
+            }
+        case .PATCH:
+            req = URLRequest(url: url)
+
+            if let images = files, !images.isEmpty {
+                // Multipart (rare for PATCH, but supported)
+                let boundary = "Boundary-\(UUID().uuidString)"
+                req.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+
+                let body = NSMutableData()
+
+                if let params = parameters, !params.isEmpty {
+                    for (key, value) in params {
+                        body.append("--\(boundary)\r\n".nsdata)
+                        body.append("Content-Disposition: form-data; name=\"\(key)\"\r\n\r\n".nsdata)
+                        body.append("\(value)\r\n".nsdata)
+                    }
+                }
+
+                for file in images {
+                    guard let name = file.name,
+                          let filename = file.filename,
+                          let data = file.data else { continue }
+
+                    let mime = file.mimeType ?? "application/octet-stream"
+
+                    body.append("--\(boundary)\r\n".nsdata)
+                    body.append("Content-Disposition: form-data; name=\"\(name)\"; filename=\"\(filename)\"\r\n".nsdata)
+                    body.append("Content-Type: \(mime)\r\n\r\n".nsdata)
+                    body.append(data)
+                    body.append("\r\n".nsdata)
+                }
+
+                body.append("--\(boundary)--\r\n".nsdata)
+                req.httpBody = body as Data
+
+            } else if let params = parameters, !params.isEmpty {
+                // JSON body (most common PATCH use)
                 req.setValue("application/json", forHTTPHeaderField: "Content-Type")
                 req.httpBody = try? JSONSerialization.data(withJSONObject: params, options: [])
             }
@@ -250,6 +393,17 @@ public extension APIService {
 
         // Extract readable error message if possible
         if let json = try? JSONSerialization.jsonObject(with: data, options: []) as? [String: Any] {
+            if let authFailure = detectAuthFailure(status: status, json: json) {
+                DispatchQueue.main.async {
+                    NotificationCenter.default.post(
+                        name: .authDidExpire,
+                        object: authFailure
+                    )
+                }
+                completion(.Error("Session expired"))
+                return
+            }
+            
             let message = (json["message"] as? String)
                 ?? (json["error"] as? String)
                 ?? (json["detail"] as? String)
@@ -464,4 +618,45 @@ private extension APIService {
               !token.isEmpty else { return }
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
     }
+}
+
+enum AuthFailureReason {
+    case unauthorized
+    case forbidden
+    case sessionExpired
+    case userNotFound
+}
+
+private extension APIService {
+    private func detectAuthFailure(
+        status: Int,
+        json: [String: Any]?
+    ) -> AuthFailureReason? {
+
+        if status == 401 { return .unauthorized }
+        if status == 403 { return .forbidden }
+
+        let message = (json?["message"] as? String)?.lowercased() ?? ""
+
+        if message.contains("session") && message.contains("expired") {
+            return .sessionExpired
+        }
+
+        if message.contains("user") && message.contains("not found") {
+            return .userNotFound
+        }
+
+        return nil
+    }
+
+}
+
+struct RefreshTokenResponse: Decodable {
+    let status: Int
+    let success: Bool
+    let data: RefreshData?
+}
+
+struct RefreshData: Decodable {
+    let accessToken: String
 }

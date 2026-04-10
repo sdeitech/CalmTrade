@@ -56,9 +56,9 @@ final class ConsecutiveViewController: UIViewController {
             DispatchQueue.main.async {
                 // integrate KRProgressHUD if needed
                 if isLoading {
-                    // KRProgressHUD.show()
+                    // LoaderManager.shared.show()
                 } else {
-                    // KRProgressHUD.dismiss()
+                    // LoaderManager.shared.hide()
                 }
             }
         }
@@ -72,6 +72,10 @@ final class ConsecutiveViewController: UIViewController {
     @IBAction func segTimeframeChanged(_ sender: UISegmentedControl) {
         let filter = mapFilter(sender.selectedSegmentIndex)
         viewModel.fetchConsecutive(filter: filter)
+    }
+    
+    @IBAction func btnBackClk(_ sender: UIButton) {
+        self.navigationController?.popViewController()
     }
 
     private func mapFilter(_ index: Int) -> String {

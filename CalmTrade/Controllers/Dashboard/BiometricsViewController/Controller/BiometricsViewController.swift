@@ -37,12 +37,15 @@ final class BiometricsViewController: UIViewController {
     @IBOutlet weak var lblRestingHrTimestamp: UILabel!
 
     // Existing sleep duration + steps tiles
+    @IBOutlet weak var sleepCycleContainer: UIView!
     @IBOutlet weak var lblSleepTotal: UILabel!
     @IBOutlet weak var lblSleepDate: UILabel!
 
     @IBOutlet weak var lblStepsAverage: UILabel!
     @IBOutlet weak var lblStepsToday: UILabel!
     @IBOutlet weak var lblStepsDate: UILabel!
+    
+    @IBOutlet weak var subscriptionBlurView: UIVisualEffectView!
 
     // MARK: - ViewModel
     private let viewModel = BiometricsViewModel()
@@ -50,6 +53,10 @@ final class BiometricsViewController: UIViewController {
 
     // MARK: - SwiftUI hosting
     private var calmScoreTileController: UIHostingController<CalmScoreBarTile>?
+    private let sleepRecordingToggle = UISwitch()
+    private let sleepRecordingStatusLabel = UILabel()
+    private let sleepRecordingContainerView = UIView()
+    private var sleepRecordingObserverId: UUID?
 
     // MARK: - Formatters
     private lazy var dayFormatter: DateFormatter = {
@@ -63,13 +70,40 @@ final class BiometricsViewController: UIViewController {
         super.viewDidLoad()
         setupSwiftUIGauge()
         setupSleepScoreTileAccessibility()
+        setupSleepRecordingToggle()
         bindViewModel()
+
+        // Add notification observers for app lifecycle
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(appWillEnterForeground),
+            name: UIApplication.willEnterForegroundNotification,
+            object: nil
+        )
+
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(appDidBecomeActive),
+            name: UIApplication.didBecomeActiveNotification,
+            object: nil
+        )
+
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(appDidEnterBackground),
+            name: UIApplication.didEnterBackgroundNotification,
+            object: nil
+        )
+
         viewModel.start()
     }
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         viewModel.startLiveUpdates()
+        applyCalmScoreAccess()
+        PolarManager.shared.startObservingSleepRecordingState()
+        PolarManager.shared.refreshSleepRecordingState()
     }
 
     override func viewWillDisappear(_ animated: Bool) {
@@ -93,7 +127,27 @@ final class BiometricsViewController: UIViewController {
             isStreaming: false,
             trend: TrendData(hrvMs: 0, hrvIsUp: true, hrBpm: 0, hrIsDown: true, sleepHours: 0, sleepIsUp: true)
         )
-        let swiftUIView = CalmScoreBarTile(props: initialProps)
+
+        let onConnectTap: () -> Void = { [weak self] in
+            guard let self = self else { return }
+            let vc = UIStoryboard(name: Constants.Storyboard.Devices, bundle: nil)
+                .instantiateViewController(withIdentifier: "PolarConnectionViewController") as! PolarConnectionViewController
+            vc.isFromStart = false
+            self.navigationController?.pushViewController(vc, animated: true)
+        }
+
+        let onTileTap: () -> Void = { [weak self] in
+            guard let self = self else { return }
+            let details = UIStoryboard(name: Constants.Storyboard.Dashboard, bundle: nil)
+                .instantiateViewController(withIdentifier: "CalmScoreDetailsViewController") as! CalmScoreDetailsViewController
+            self.navigationController?.pushViewController(details, transitionType: .reveal)
+        }
+
+        let swiftUIView = CalmScoreBarTile(
+            props: initialProps,
+            onConnectTap: onConnectTap,
+            onTileTap: onTileTap
+        )
 
         let host = UIHostingController(rootView: swiftUIView)
         host.view.backgroundColor = .clear
@@ -121,24 +175,105 @@ final class BiometricsViewController: UIViewController {
         sleepScoreContainer.alpha = 0.7
     }
 
+    private func setupSleepRecordingToggle() {
+        sleepRecordingContainerView.translatesAutoresizingMaskIntoConstraints = false
+        sleepRecordingContainerView.backgroundColor = UIColor.black.withAlphaComponent(0.18)
+        sleepRecordingContainerView.layer.cornerRadius = 12
+        sleepRecordingContainerView.layer.masksToBounds = true
+        sleepRecordingContainerView.isUserInteractionEnabled = true
+
+        sleepRecordingStatusLabel.translatesAutoresizingMaskIntoConstraints = false
+        sleepRecordingStatusLabel.font = UIFont.systemFont(ofSize: 10, weight: .bold)
+        sleepRecordingStatusLabel.textColor = .white
+        sleepRecordingStatusLabel.adjustsFontForContentSizeCategory = true
+        sleepRecordingStatusLabel.textAlignment = .right
+        sleepRecordingStatusLabel.text = "REC"
+
+        sleepRecordingToggle.translatesAutoresizingMaskIntoConstraints = false
+        sleepRecordingToggle.onTintColor = UIColor(red: 0.19, green: 0.69, blue: 0.78, alpha: 1.0)
+        sleepRecordingToggle.thumbTintColor = .white
+        sleepRecordingToggle.transform = CGAffineTransform(scaleX: 0.75, y: 0.75)
+        sleepRecordingToggle.addTarget(self, action: #selector(didToggleSleepRecording(_:)), for: .valueChanged)
+
+        sleepRecordingContainerView.addSubview(sleepRecordingStatusLabel)
+        sleepRecordingContainerView.addSubview(sleepRecordingToggle)
+        sleepCycleContainer.addSubview(sleepRecordingContainerView)
+        sleepCycleContainer.bringSubviewToFront(sleepRecordingContainerView)
+
+        NSLayoutConstraint.activate([
+            sleepRecordingContainerView.trailingAnchor.constraint(equalTo: sleepCycleContainer.trailingAnchor, constant: -108),
+            sleepRecordingContainerView.topAnchor.constraint(equalTo: sleepCycleContainer.topAnchor, constant: 12),
+            sleepRecordingContainerView.widthAnchor.constraint(equalToConstant: 104),
+            sleepRecordingContainerView.heightAnchor.constraint(equalToConstant: 32),
+
+            sleepRecordingStatusLabel.leadingAnchor.constraint(equalTo: sleepRecordingContainerView.leadingAnchor, constant: 10),
+            sleepRecordingStatusLabel.centerYAnchor.constraint(equalTo: sleepRecordingContainerView.centerYAnchor),
+
+            sleepRecordingToggle.leadingAnchor.constraint(equalTo: sleepRecordingStatusLabel.trailingAnchor, constant: 4),
+            sleepRecordingToggle.centerYAnchor.constraint(equalTo: sleepRecordingContainerView.centerYAnchor),
+            sleepRecordingToggle.trailingAnchor.constraint(equalTo: sleepRecordingContainerView.trailingAnchor, constant: -4)
+        ])
+
+        sleepRecordingObserverId = PolarManager.shared.addSleepRecordingObserver { [weak self] available, enabled in
+            DispatchQueue.main.async {
+                self?.renderSleepRecordingState(available: available, enabled: enabled)
+            }
+        }
+    }
+
     // MARK: - Bindings
     private func bindViewModel() {
         // If you want label-by-label Combine bindings, add here
 
         // SwiftUI gauge props
         viewModel.onPropsUpdate = { [weak self] props in
-            self?.calmScoreTileController?.rootView = CalmScoreBarTile(props: props)
+            let onConnectTap: () -> Void = { [weak self] in
+                guard let self = self else { return }
+                let vc = UIStoryboard(name: Constants.Storyboard.Devices, bundle: nil)
+                    .instantiateViewController(withIdentifier: "PolarConnectionViewController") as! PolarConnectionViewController
+                vc.isFromStart = false
+                self.navigationController?.pushViewController(vc, animated: true)
+            }
+
+            let onTileTap: () -> Void = { [weak self] in
+                guard let self = self else { return }
+                let details = UIStoryboard(name: Constants.Storyboard.Dashboard, bundle: nil)
+                    .instantiateViewController(withIdentifier: "CalmScoreDetailsViewController") as! CalmScoreDetailsViewController
+                self.navigationController?.pushViewController(details, transitionType: .reveal)
+            }
+
+            self?.calmScoreTileController?.rootView = CalmScoreBarTile(
+                props: props,
+                onConnectTap: onConnectTap,
+                onTileTap: onTileTap
+            )
         }
 
         // Legacy labels
         viewModel.onDataUpdated = { [weak self] data in
-            self?.updateUI(with: data)
+            DispatchQueue.main.async {
+                self?.updateUI(with: data)
+            }
         }
 
         // Sleep Score tile
         viewModel.onSleepScoreDidUpdate = { [weak self] tile in
             guard let self = self else { return }
             DispatchQueue.main.async { self.renderSleepScore(tile) }
+        }
+    }
+
+    private func renderSleepRecordingState(available: Bool, enabled: Bool) {
+        if available {
+            sleepRecordingStatusLabel.text = enabled ? "ON" : "OFF"
+            sleepRecordingToggle.isEnabled = enabled
+            sleepRecordingToggle.setOn(enabled, animated: true)
+            sleepRecordingContainerView.alpha = enabled ? 1.0 : 0.7
+        } else {
+            sleepRecordingStatusLabel.text = "N/A"
+            sleepRecordingToggle.setOn(false, animated: true)
+            sleepRecordingToggle.isEnabled = false
+            sleepRecordingContainerView.alpha = 0.65
         }
     }
 
@@ -152,9 +287,28 @@ final class BiometricsViewController: UIViewController {
         lblRmssdLatest.text = data.rmssdLatest
         lblRmssdTimestamp.text = data.rmssdTimestamp
 
+        // Highlight stale RMSSD data
+        if data.isRmssdDataStale {
+            lblRmssdLatest.textColor = .systemRed
+            lblRmssdAverage.textColor = .systemRed
+            lblRmssdTimestamp.text = data.rmssdTimestamp
+        } else {
+            lblRmssdLatest.textColor = .label
+            lblRmssdAverage.textColor = .label
+        }
+
         lblSdnnAverage.text = data.sdnnAverage
         lblSdnnLatest.text = data.sdnnLatest
 //        lblSdnnTimestamp.text = data.sdnnTimestamp
+
+        // Highlight stale SDNN data
+        if data.isSdnnDataStale {
+            lblSdnnLatest.textColor = .systemRed
+            lblSdnnAverage.textColor = .systemRed
+        } else {
+            lblSdnnLatest.textColor = .label
+            lblSdnnAverage.textColor = .label
+        }
 
         lblRestingHrAverage.text = data.restingHeartRateAverage
         lblRestingHrLatest.text = data.restingHeartRateLatest
@@ -166,6 +320,31 @@ final class BiometricsViewController: UIViewController {
         lblStepsAverage.text = data.stepsWeeklyAverage
         lblStepsToday.text = data.stepsToday
         lblStepsDate.text = data.stepsDate
+
+//        logBiometricsSteps(data: data)
+    }
+
+    private func logBiometricsSteps(data: BiometricData) {
+        let cal = Calendar.current
+        let start = cal.startOfDay(for: Date())
+        let end = Date()
+        let repo = CTMetricsRepository.shared
+
+        let mergedToday = Int(StepEngine.stepsTotal(from: start, to: end).rounded())
+        let polarToday = repo.series(kind: .steps, from: start, to: end, source: .polar360)
+            .reduce(0) { $0 + Int($1.value.rounded()) }
+        let appleToday = repo.series(kind: .steps, from: start, to: end, source: .appleHealth)
+            .reduce(0) { $0 + Int($1.value.rounded()) }
+
+        print("=== Biometrics Steps Tile ===")
+        print("Displayed Today: \(data.stepsToday)")
+        print("Displayed Weekly Avg: \(data.stepsWeeklyAverage)")
+        print("Displayed Date: \(data.stepsDate)")
+        print("Window: \(start) -> \(end)")
+        print("Merged Today (StepEngine): \(mergedToday)")
+        print("Polar Raw Today: \(polarToday)")
+        print("Apple Raw Today: \(appleToday)")
+        print("=============================")
     }
 
     // MARK: - Sleep Score rendering (single attributed label)
@@ -224,8 +403,52 @@ final class BiometricsViewController: UIViewController {
         )
     }
 
+    @objc private func appWillEnterForeground() {
+        viewModel.handleAppWillEnterForeground()
+    }
+
+    @objc private func appDidBecomeActive() {
+        viewModel.handleAppDidBecomeActive()
+    }
+
+    @objc private func appDidEnterBackground() {
+        viewModel.handleAppDidEnterBackground()
+    }
+
     deinit {
+        if let sleepRecordingObserverId {
+            PolarManager.shared.removeSleepRecordingObserver(sleepRecordingObserverId)
+        }
+        NotificationCenter.default.removeObserver(self)
         viewModel.stop()
+    }
+
+    @objc private func didToggleSleepRecording(_ sender: UISwitch) {
+        guard sender.isOn == false else {
+            sender.setOn(false, animated: true)
+            showSleepRecordingInfoAlert(
+                title: "Sleep Recording",
+                message: "This toggle currently supports stopping sleep recording only."
+            )
+            return
+        }
+
+        sender.isEnabled = false
+        PolarManager.shared.stopSleepRecording { [weak self] (result: Swift.Result<Void, Error>) in
+            DispatchQueue.main.async {
+                sender.isEnabled = true
+                switch result {
+                case .success:
+                    self?.sleepRecordingStatusLabel.text = "OFF"
+                case .failure(let error):
+                    PolarManager.shared.refreshSleepRecordingState()
+                    self?.showSleepRecordingInfoAlert(
+                        title: "Unable to Stop",
+                        message: error.localizedDescription
+                    )
+                }
+            }
+        }
     }
 
     // MARK: - Actions
@@ -266,6 +489,32 @@ final class BiometricsViewController: UIViewController {
             .instantiateViewController(withIdentifier: "SleepInsightViewController")
         self.navigationController?.pushViewController(vc, transitionType: .fade)
     }
+    
+    @IBAction func btnSleepScoreTapped(_ sender: Any) {
+        let vc = UIStoryboard(name: Constants.Storyboard.Biometrics, bundle: nil)
+            .instantiateViewController(withIdentifier: "SleepScoreViewController") as! SleepScoreViewController
+        self.navigationController?.pushViewController(vc, transitionType: .fade)
+    }
+    
+    @IBAction func btnNightlyRechargeTapped(_ sender: Any) {
+        let vc = UIStoryboard(name: Constants.Storyboard.Biometrics, bundle: nil)
+            .instantiateViewController(withIdentifier: "NightlyRechargeViewController") as! NightlyRechargeViewController
+        self.navigationController?.pushViewController(vc, transitionType: .fade)
+    }
+    
+    @IBAction func didTapFlowerIcon(_ sender: Any) {
+        let deviceManagerVC = UIStoryboard(name: Constants.Storyboard.Devices, bundle: nil).instantiateViewController(withIdentifier: "DeviceManagementViewController") as! DeviceManagementViewController
+        self.navigationController?.pushViewController(deviceManagerVC)
+    }
+    
+    @IBAction func didTapProfileIcon(_ sender: Any) {
+        self.navigationController?.pushViewController(UIStoryboard(name: Constants.Storyboard.ProfileHost, bundle: nil).instantiateViewController(withIdentifier: "ProfileTabsHostViewController") as! ProfileTabsHostViewController,transitionType: .fade)
+    }
+    
+    @IBAction func didTapCalendarIcon(_ sender: Any) {
+        let calendarVC = UIStoryboard(name: Constants.Storyboard.Home, bundle: nil).instantiateViewController(withIdentifier: "CalendarViewController") as! CalendarViewController
+        self.navigationController?.pushViewController(calendarVC)
+    }
 
     private enum Prefs {
         static let hideSleepInfo = "ct.prefs.hideSleepInfo"
@@ -277,6 +526,11 @@ final class BiometricsViewController: UIViewController {
             return
         }
         presentSleepInfoSheet()
+    }
+    
+    @IBAction func btnSubscribeTapped(_ sender: Any) {
+        let vc = UIStoryboard(name: Constants.Storyboard.Profile, bundle: nil).instantiateViewController(withIdentifier: "SubscriptionViewController") as! SubscriptionViewController
+        self.navigationController?.pushViewController(vc, animated: true)
     }
 
     private func presentSleepInfoSheet() {
@@ -323,5 +577,22 @@ final class BiometricsViewController: UIViewController {
         let alert = UIAlertController(title: "How to add sleep", message: msg, preferredStyle: .alert)
         alert.addAction(UIAlertAction(title: "OK", style: .default))
         present(alert, animated: true)
+    }
+
+    private func showSleepRecordingInfoAlert(title: String, message: String) {
+        let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "OK", style: .default))
+        present(alert, animated: true)
+    }
+    
+    //MARK: - Subscription Logic
+    private func applyCalmScoreAccess() {
+        switch FeatureGate.shared.access(for: FeatureKey.calmScoreGauge) {
+        case .allowed:
+            subscriptionBlurView.isHidden = true
+
+        case .locked:
+            subscriptionBlurView.isHidden = false
+        }
     }
 }

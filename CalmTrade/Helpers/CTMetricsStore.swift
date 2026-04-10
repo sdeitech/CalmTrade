@@ -27,6 +27,7 @@ public enum CTMetricSource: String, CaseIterable, Codable {
 public final class CTMetricsStack {
     public static let shared = CTMetricsStack()
     public private(set) var container: NSPersistentContainer
+    private let switchQueue = DispatchQueue(label: "com.calmtrade.metrics.switch")
 
     private init() {
         container = CTMetricsStack.makeContainer(for: SessionManager.shared.current?.id)
@@ -34,31 +35,19 @@ public final class CTMetricsStack {
         NotificationCenter.default.addObserver(
             forName: .userAccountDidChange,
             object: nil,
-            queue: .main
+            queue: nil
         ) { [weak self] note in
             guard let self else { return }
             let userId = (note.object as? User)?.id
-            
-            // 🔐 Block all Core Data readers and wait for them to drain
-            UserStoreSwitchCoordinator.shared.beginSwitch()
-            defer { UserStoreSwitchCoordinator.shared.endSwitch() }
-            
-            // Optionally drain background work on old container
-            self.container.performBackgroundTask { ctx in
-                ctx.performAndWait {
-                    // drain any work if needed
+
+            self.switchQueue.async {
+                let newContainer = CTMetricsStack.makeContainer(for: userId)
+
+                DispatchQueue.main.async {
+                    self.container = newContainer
+                    NotificationCenter.default.post(name: .ctMetricsDidMirror, object: nil)
                 }
             }
-            
-            let oldContainer = self.container
-            let newContainer = CTMetricsStack.makeContainer(for: userId)
-            self.container = newContainer
-            
-            // Tear down old viewContext
-            oldContainer.viewContext.reset()
-            
-            // Notify observers (readers will be unblocked only after endSwitch)
-            NotificationCenter.default.post(name: .ctMetricsDidMirror, object: nil)
         }
     }
 
@@ -202,7 +191,8 @@ public final class CTMetricsRepository {
                        value: Double,
                        unit: String,
                        source: CTMetricSource,
-                       date: Date = Date()) -> CTBiometricPoint? {
+                       date: Date = Date(),
+                       notifyMirror: Bool = true) -> CTBiometricPoint? {
         var result: CTBiometricPoint?
 
         switchCoordinator.withRead {
@@ -236,8 +226,10 @@ public final class CTMetricsRepository {
             }
         }
 
-        DispatchQueue.main.async {
-            NotificationCenter.default.post(name: .ctMetricsDidMirror, object: nil)
+        if notifyMirror {
+            DispatchQueue.main.async {
+                NotificationCenter.default.post(name: .ctMetricsDidMirror, object: nil)
+            }
         }
         return result
     }
@@ -247,8 +239,9 @@ public final class CTMetricsRepository {
                      value: Double,
                      unit: String,
                      source: CTMetricSource,
-                     date: Date = Date()) -> CTBiometricPoint? {
-        upsert(kind: kind, value: value, unit: unit, source: source, date: date)
+                     date: Date = Date(),
+                     notifyMirror: Bool = true) -> CTBiometricPoint? {
+        upsert(kind: kind, value: value, unit: unit, source: source, date: date, notifyMirror: notifyMirror)
     }
 
     // MARK: - Latest

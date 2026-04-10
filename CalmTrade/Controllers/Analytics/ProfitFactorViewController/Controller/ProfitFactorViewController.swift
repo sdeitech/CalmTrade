@@ -106,5 +106,9 @@ final class ProfitFactorViewController: UIViewController {
         let filter = ["daily", "weekly", "monthly", "yearly"][sender.selectedSegmentIndex]
         vm.fetchProfitFactor(filter: filter)
     }
+    
+    @IBAction func btnBackTapped(_ sender: Any) {
+        navigationController?.popViewController()
+    }
 }
 

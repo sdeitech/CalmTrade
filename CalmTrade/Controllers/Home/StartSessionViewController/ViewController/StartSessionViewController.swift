@@ -24,6 +24,8 @@ final class StartSessionViewController: UIViewController {
     @IBOutlet weak var useDefaultButton: UIButton!
     @IBOutlet weak var saveButton: UIButton!
     @IBOutlet weak var backButton: UIButton!
+    
+    @IBOutlet weak var lblDate: UILabel!
 
     // MARK: - Dependencies
 
@@ -39,6 +41,10 @@ final class StartSessionViewController: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        
+        let f = DateFormatter()
+        f.dateStyle = .medium
+        lblDate.text = f.string(from: Date())
 
         backButton.isHidden = !showsBackButton
 
@@ -73,17 +79,17 @@ final class StartSessionViewController: UIViewController {
         }
 
         viewModel.onLoading = { loading in
-            loading ? KRProgressHUD.show()
-                    : KRProgressHUD.dismiss()
+            loading ? LoaderManager.shared.show()
+                    : LoaderManager.shared.hide()
         }
 
         viewModel.onSuccess = { [weak self] in
-            KRProgressHUD.dismiss()
-            self?.dismiss(animated: true)
+            LoaderManager.shared.hide()
+            self?.navigationController?.popViewController()
         }
 
         viewModel.onError = { [weak self] message in
-            KRProgressHUD.dismiss()
+            LoaderManager.shared.hide()
             self?.showAlert(message)
         }
     }
@@ -107,7 +113,7 @@ final class StartSessionViewController: UIViewController {
     }
 
     @IBAction func backTapped() {
-        navigationController?.popViewController(animated: true)
+        navigationController?.popViewController()
     }
 
     // MARK: - UI Helpers

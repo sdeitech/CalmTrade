@@ -75,7 +75,7 @@ final class EmailVerificationViewController: BaseViewController {
     }
     
     @IBAction func btnBackToSignupTapped(_ sender: UIButton) {
-        navigationController?.popViewController(animated: true)
+        navigationController?.popViewController()
     }
     
     // MARK: - Navigation

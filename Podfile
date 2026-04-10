@@ -8,15 +8,16 @@ target 'CalmTrade' do
   pod 'FirebaseFirestore', '~> 11.8.0'
   pod 'FirebaseAnalytics', '~> 11.8.0'
   pod 'FirebaseCrashlytics', '~> 11.8.0'
+  pod 'Firebase/Messaging'
 
   # DO NOT add GoogleUtilities manually – Firebase pulls what it needs
   # pod 'GoogleUtilities'  <-- remove this
 
   # Other dependencies
   pod 'GoogleSignIn'
-  pod 'FBSDKLoginKit'
+  pod 'FBSDKLoginKit', '18.0.1'
   pod 'IQKeyboardManagerSwift'
-  pod 'SwiftGifOrigin', '~> 1.7.0'
+  pod 'SwiftyGif'
   pod 'PolarBleSdk', '~> 6.7'
   pod 'KRProgressHUD'
   pod 'Socket.IO-Client-Swift'

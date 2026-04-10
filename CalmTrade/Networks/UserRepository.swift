@@ -80,6 +80,11 @@ struct User: Codable {
     let photoURL: String?
     let createdAt: Date?
     let lastLoginAt: Date?
+    let twoFactorEnabled: Bool?
+    
+    let subscription: Subscription?
+    let features: [String: Feature]
+
 
     var heightCm: Double?
     var weightKg: Double?
@@ -95,6 +100,16 @@ struct User: Codable {
         self.createdAt = User.parse(dto.createdAt)
         self.lastLoginAt = User.parse(dto.lastLoginAt)
         self.accountId = dto.accountId ?? ""
+        self.twoFactorEnabled = dto.twoFactorEnabled
+        
+        self.subscription = dto.subscription.map {
+            Subscription(plan: $0.plan, hasAccess: $0.hasAccess)
+        }
+
+        self.features = dto.features?.mapValues {
+            Feature(highlight: $0.highlight, hasAccess: $0.hasAccess)
+        } ?? [:]
+
     }
 
     private static func parse(_ iso: String?) -> Date? {
@@ -102,6 +117,10 @@ struct User: Codable {
         let f = ISO8601DateFormatter()
         f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
         return f.date(from: s) ?? ISO8601DateFormatter().date(from: s)
+    }
+    
+    func hasFeature(_ key: String) -> Bool {
+        features[key]?.hasAccess == true
     }
 }
 
@@ -118,4 +137,36 @@ struct VerifyOtpResponse: Decodable {
     let success: Bool
     let message: String?
     let token: String?
+}
+
+struct Feature: Codable {
+    let highlight: Bool
+    let hasAccess: Bool
+}
+
+struct Subscription: Codable {
+    let plan: PlanDTO?
+    let hasAccess: Bool
+}
+
+public struct FeatureDTO: Codable {
+    let highlight: Bool
+    let hasAccess: Bool
+}
+
+public struct SubscriptionDTO: Codable {
+    let plan: PlanDTO?
+    let hasAccess: Bool
+}
+
+public struct PlanDTO: Codable {
+    let planId: String
+    let displayName: String
+    let billingCycle: String
+    let status: String
+    let startDate: String
+    let expiryDate: String
+    let trialEndDate: String
+    let autoRenew: Bool
+    let name: String
 }

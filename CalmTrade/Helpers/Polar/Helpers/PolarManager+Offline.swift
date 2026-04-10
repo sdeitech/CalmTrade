@@ -212,6 +212,17 @@ extension PolarManager {
     // MARK: - Ordered Offline Pipeline
 
     internal func ensureOfflinePipeline(for deviceId: String) {
+        if let dev = connectedDevice {
+            let isOptical = dev.id == deviceId && {
+                let name = dev.name.lowercased()
+                return name.contains("360") || name.contains("verity") || name.contains("oh1")
+            }()
+            if isOptical && !isRealtime360SyncAllowed() {
+                NSLog("[PM] realtime 360 sync locked; skipping offline pipeline for \(deviceId)")
+                return
+            }
+        }
+
         if offlineStartInFlight.contains(deviceId) { return }
         offlineStartInFlight.insert(deviceId)
 

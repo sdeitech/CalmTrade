@@ -2,14 +2,17 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>aps-environment</key>
+	<string>development</string>
 	<key>com.apple.developer.applesignin</key>
 	<array>
 		<string>Default</string>
 	</array>
 	<key>com.apple.developer.associated-domains</key>
 	<array>
-		<string>applinks:44.211.113.36:8087</string>
-		<string>applinks:44.211.113.36</string>
+		<string>applinks:getcalmtrade.com</string>
+		<string>applinks:panel.getcalmtrade.com</string>
+		<string>applinks:api.getcalmtrade.com</string>
 	</array>
 	<key>com.apple.developer.healthkit</key>
 	<true/>

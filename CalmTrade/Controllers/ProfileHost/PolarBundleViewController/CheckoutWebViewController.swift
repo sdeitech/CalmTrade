@@ -8,11 +8,13 @@
 
 import UIKit
 import WebKit
+import KRProgressHUD
 
 final class CheckoutWebViewController: UIViewController, WKNavigationDelegate {
 
     private var webView: WKWebView!
     var checkoutURL: String = ""
+    var bundleVM: PolarBundleViewModel?
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -34,8 +36,40 @@ final class CheckoutWebViewController: UIViewController, WKNavigationDelegate {
         print("🔗 OPENED URL →", urlString)
 
         if urlString.contains("success") {
-            let success = UIStoryboard(name: Constants.Storyboard.ProfileHost, bundle: nil).instantiateViewController(withIdentifier: "OrderSuccessfullViewController") as! OrderSuccessfullViewController
-            navigationController?.pushViewController(success)
+
+            decisionHandler(.cancel)
+
+            LoaderManager.shared.show()
+
+            bundleVM?.syncPayment { [weak self] success in
+                guard let self = self else { return }
+
+                LoaderManager.shared.hide()
+
+                if success {
+
+                    let successVC = UIStoryboard(
+                        name: Constants.Storyboard.ProfileHost,
+                        bundle: nil
+                    ).instantiateViewController(
+                        withIdentifier: "OrderSuccessfullViewController"
+                    ) as! OrderSuccessfullViewController
+
+                    self.navigationController?.pushViewController(successVC, animated: true)
+
+                } else {
+
+                    let alert = UIAlertController(
+                        title: "Verification Failed",
+                        message: "We couldn't verify your payment. Please contact support.",
+                        preferredStyle: .alert
+                    )
+                    alert.addAction(UIAlertAction(title: "OK", style: .default))
+                    self.present(alert, animated: true)
+                }
+            }
+
+            return
         }
 
         decisionHandler(.allow)

@@ -9,9 +9,6 @@
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
     </dependencies>
     <customFonts key="customFonts">
-        <array key="HelveticaNeue.ttc">
-            <string>HelveticaNeue</string>
-        </array>
         <array key="Outfit-Regular.ttf">
             <string>Outfit-Regular</string>
         </array>
@@ -395,8 +392,8 @@ Total</string>
                                                             <color key="textColor" name="placeholderColor"/>
                                                             <nil key="highlightedColor"/>
                                                         </label>
-                                                        <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="2" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="rFb-uV-hef">
-                                                            <rect key="frame" x="42" y="62.666666666666664" width="9" height="19.333333333333336"/>
+                                                        <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="8 trades" textAlignment="right" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" minimumScaleFactor="0.5" translatesAutoresizingMaskIntoConstraints="NO" id="rFb-uV-hef">
+                                                            <rect key="frame" x="8" y="62.666666666666664" width="43" height="19.333333333333336"/>
                                                             <fontDescription key="fontDescription" name="HelveticaNeue-Medium" family="Helvetica Neue" pointSize="16"/>
                                                             <color key="textColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                                             <nil key="highlightedColor"/>
@@ -405,6 +402,7 @@ Total</string>
                                                     <constraints>
                                                         <constraint firstItem="FhM-Zy-tDd" firstAttribute="top" secondItem="XXh-xF-Rdi" secondAttribute="bottom" constant="9.0000000000000036" id="0Ms-lH-3GV"/>
                                                         <constraint firstAttribute="trailing" secondItem="XXh-xF-Rdi" secondAttribute="trailing" constant="8" id="6GT-ev-xp7"/>
+                                                        <constraint firstItem="rFb-uV-hef" firstAttribute="leading" secondItem="Ufq-Xc-HOj" secondAttribute="leading" constant="8" id="UiN-rl-aIy"/>
                                                         <constraint firstItem="XXh-xF-Rdi" firstAttribute="top" secondItem="Ufq-Xc-HOj" secondAttribute="top" constant="6" id="VnS-7J-qOf"/>
                                                         <constraint firstAttribute="trailing" secondItem="rFb-uV-hef" secondAttribute="trailing" constant="8" id="f0S-dm-dnl"/>
                                                         <constraint firstItem="FhM-Zy-tDd" firstAttribute="centerY" relation="lessThanOrEqual" secondItem="Ufq-Xc-HOj" secondAttribute="centerY" id="iDT-cX-Qx6"/>
@@ -588,7 +586,7 @@ Total</string>
                                                                         <rect key="frame" x="16" y="20" width="349" height="24"/>
                                                                         <color key="textColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                                                         <fontDescription key="fontDescription" name="Outfit-Regular" family="Outfit" pointSize="16"/>
-                                                                        <textInputTraits key="textInputTraits"/>
+                                                                        <textInputTraits key="textInputTraits" keyboardType="decimalPad"/>
                                                                         <userDefinedRuntimeAttributes>
                                                                             <userDefinedRuntimeAttribute type="color" keyPath="placeholderColor">
                                                                                 <color key="value" name="placeholderColor"/>
@@ -658,7 +656,7 @@ Total</string>
                                                                         <rect key="frame" x="16" y="20" width="349" height="24"/>
                                                                         <color key="textColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                                                         <fontDescription key="fontDescription" name="Outfit-Regular" family="Outfit" pointSize="16"/>
-                                                                        <textInputTraits key="textInputTraits"/>
+                                                                        <textInputTraits key="textInputTraits" keyboardType="decimalPad"/>
                                                                         <userDefinedRuntimeAttributes>
                                                                             <userDefinedRuntimeAttribute type="color" keyPath="placeholderColor">
                                                                                 <color key="value" name="placeholderColor"/>
@@ -846,6 +844,7 @@ Total</string>
                     </view>
                     <connections>
                         <outlet property="backButton" destination="sr5-HE-ehW" id="Ai6-yW-yZ5"/>
+                        <outlet property="lblDate" destination="rzm-ps-2j3" id="DMG-dz-JIK"/>
                         <outlet property="lblSessionLoss" destination="4Ax-td-eXS" id="7HO-70-2Cy"/>
                         <outlet property="lblTradeLoss" destination="DN1-EW-KhE" id="slH-tT-lOF"/>
                         <outlet property="saveButton" destination="0FI-zM-y3G" id="Lbz-Dm-rd7"/>

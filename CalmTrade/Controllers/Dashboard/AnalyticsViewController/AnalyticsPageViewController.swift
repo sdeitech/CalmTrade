@@ -41,18 +41,55 @@ extension AnalyticsPageViewController: UIPageViewControllerDataSource {
 
     func pageViewController(_ pageViewController: UIPageViewController,
                             viewControllerBefore viewController: UIViewController) -> UIViewController? {
+
         guard let index = orderedVCs.firstIndex(of: viewController),
               index > 0 else { return nil }
-        return orderedVCs[index - 1]
+
+        let previousIndex = index - 1
+        let targetSection = vm.sectionFor(index: previousIndex)
+
+        if targetSection != .topAnalytics {
+            let access = FeatureGate.shared.access(for: FeatureKey.tradeAnalyticsStats)
+            switch access {
+            case .allowed:
+                return orderedVCs[previousIndex]   // ✅ correct index
+            case .locked:
+                FeatureGate.shared.presentUpgradeSheet(for: FeatureKey.tradeAnalyticsStats,
+                                                       from: self)
+                return nil
+            }
+        }
+
+        return orderedVCs[previousIndex]
     }
 
     func pageViewController(_ pageViewController: UIPageViewController,
                             viewControllerAfter viewController: UIViewController) -> UIViewController? {
+
         guard let index = orderedVCs.firstIndex(of: viewController),
               index < orderedVCs.count - 1 else { return nil }
-        return orderedVCs[index + 1]
+
+        let nextIndex = index + 1
+        let targetSection = vm.sectionFor(index: nextIndex)
+
+        if targetSection != .topAnalytics {
+            let access = FeatureGate.shared.access(for: FeatureKey.tradeAnalyticsStats)
+
+            switch access {
+            case .allowed:
+                return orderedVCs[nextIndex]
+            case .locked:
+                FeatureGate.shared.presentUpgradeSheet(for: FeatureKey.tradeAnalyticsStats,
+                                                       from: self)
+                return nil
+            }
+        }
+
+        return orderedVCs[nextIndex]
     }
+
 }
+
 
 extension AnalyticsPageViewController: UIPageViewControllerDelegate {
     func pageViewController(_ pageViewController: UIPageViewController,

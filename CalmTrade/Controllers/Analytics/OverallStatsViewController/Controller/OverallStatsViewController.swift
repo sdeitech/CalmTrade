@@ -63,7 +63,7 @@ final class OverallStatsViewController: BaseViewController {
         
         viewModel.$isLoading
             .sink { [weak self] loading in
-                loading ? KRProgressHUD.show() : KRProgressHUD.dismiss()
+                loading ? LoaderManager.shared.show() : LoaderManager.shared.hide()
             }
             .store(in: &cancellables)
         

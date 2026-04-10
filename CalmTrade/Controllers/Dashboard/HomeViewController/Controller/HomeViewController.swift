@@ -32,6 +32,8 @@ class HomeViewController: BaseViewController, UICollectionViewDataSource, UIColl
     @IBOutlet weak var collectionViewContainerHeight: NSLayoutConstraint!
     
     @IBOutlet weak var btnSetSession: UIButton!
+    
+    @IBOutlet weak var subscriptionBlurView: UIVisualEffectView!
 
     //MARK: - Properties
 
@@ -65,26 +67,26 @@ class HomeViewController: BaseViewController, UICollectionViewDataSource, UIColl
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        NSLog("[Launch] HomeViewController viewDidLoad")
 
         setupSwiftUIGauge()
         setupViewModelBindings()
-        viewModel.determineButtonState()
         setupCollectionViews()
 
-        // Start with HR hidden; will show when streaming starts
-//        viewHR.isHidden = true
+        viewModel.determineButtonState()
 
         showCategory(.positive)
     }
     
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
-        enforceDailySessionSetupIfNeeded()
+        NSLog("[Launch] HomeViewController viewDidAppear")
+        viewModel.fetchEmotionTags()
+        refreshUserProfileIfNeeded()
     }
      
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
-        refreshUserProfileIfNeeded()
         viewModel.startLiveUpdates()
     }
 
@@ -116,6 +118,7 @@ class HomeViewController: BaseViewController, UICollectionViewDataSource, UIColl
             guard let self = self else { return }
             let vc = UIStoryboard(name: Constants.Storyboard.Devices, bundle: nil)
                 .instantiateViewController(withIdentifier: "PolarConnectionViewController") as! PolarConnectionViewController
+            vc.isFromStart = false
             self.navigationController?.pushViewController(vc, animated: true)
         }
 
@@ -163,6 +166,7 @@ class HomeViewController: BaseViewController, UICollectionViewDataSource, UIColl
                     guard let self = self else { return }
                     let vc = UIStoryboard(name: Constants.Storyboard.Devices, bundle: nil)
                         .instantiateViewController(withIdentifier: "PolarConnectionViewController") as! PolarConnectionViewController
+                    vc.isFromStart = false
                     self.navigationController?.pushViewController(vc, animated: true)
                 }
 
@@ -178,6 +182,22 @@ class HomeViewController: BaseViewController, UICollectionViewDataSource, UIColl
                     onConnectTap: onConnectTap,
                     onTileTap: onTileTap
                 )
+            }
+        }
+        
+        viewModel.onEmotionDataLoaded = { [weak self] in
+            guard let self else { return }
+
+            // Reload all (data)
+            self.allCollectionViews.forEach { $0.reloadData() }
+
+            // Force layout only for visible category
+            let activeCV = self.allCollectionViews[self.selectedCategory.rawValue]
+            activeCV.isHidden = false
+            activeCV.layoutIfNeeded()
+
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                self.updateContainerHeight(for: self.selectedCategory)
             }
         }
 
@@ -197,12 +217,13 @@ class HomeViewController: BaseViewController, UICollectionViewDataSource, UIColl
     }
     
     private func refreshUserProfileIfNeeded() {
-        guard let token = SessionManager.shared.accessToken else { return }
+        guard let token = UserDefaults.standard.string(forKey: "accessToken") else { return }
 
         profileService.refreshProfile(accessToken: token) { _, error in
             if let error {
                 print("⚠️ Profile refresh failed:", error)
             }
+            self.applyCalmScoreAccess()
         }
     }
 
@@ -217,11 +238,13 @@ class HomeViewController: BaseViewController, UICollectionViewDataSource, UIColl
             cv.tag = index
             cv.register(nib, forCellWithReuseIdentifier: "EmotionTagCell")
 
-            let layout = UICollectionViewFlowLayout()
+            let layout = LeftAlignedCollectionViewFlowLayout()
             layout.scrollDirection = .vertical
             layout.estimatedItemSize = UICollectionViewFlowLayout.automaticSize
             layout.minimumInteritemSpacing = 10
             layout.minimumLineSpacing = 10
+            layout.sectionInset = .zero
+
             cv.collectionViewLayout = layout
         }
     }
@@ -278,7 +301,7 @@ class HomeViewController: BaseViewController, UICollectionViewDataSource, UIColl
         }
 
         // Force user to set session
-//        navigateToStartSession(showsBackButton: true)
+        navigateToStartSession(showsBackButton: true)
     }
     
     private func navigateToStartSession(showsBackButton: Bool) {
@@ -288,6 +311,19 @@ class HomeViewController: BaseViewController, UICollectionViewDataSource, UIColl
         vc.showsBackButton = showsBackButton
         navigationController?.pushViewController(vc)
     }
+    
+    //MARK: - Subscription Logic
+    private func applyCalmScoreAccess() {
+        switch FeatureGate.shared.access(for: FeatureKey.calmScoreGauge) {
+        case .allowed:
+            subscriptionBlurView.isHidden = true
+
+        case .locked:
+            subscriptionBlurView.isHidden = false
+        }
+    }
+
+    
 
 
     // MARK: - Actions
@@ -358,6 +394,11 @@ class HomeViewController: BaseViewController, UICollectionViewDataSource, UIColl
         }
 
         present(vc, animated: true)
+    }
+    
+    @IBAction func btnSubscribeTapped(_ sender: Any) {
+        let vc = UIStoryboard(name: Constants.Storyboard.Profile, bundle: nil).instantiateViewController(withIdentifier: "SubscriptionViewController") as! SubscriptionViewController
+        self.navigationController?.pushViewController(vc, animated: true)
     }
 
 

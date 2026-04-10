@@ -22,12 +22,58 @@ final class RestingHeartRateDetailViewModel: ObservableObject {
 
     // Repo
     private let repo = CTMetricsRepository.shared
+    private var centerDate: Date = Date()
+
+    private var hasRecentPolar360RestingHeartRate: Bool {
+        guard let latest = repo.latestValue(kind: .restingHeartRate, source: .polar360) else { return false }
+        let age = Date().timeIntervalSince(latest.date)
+        return age <= (14 * 86400)
+    }
+
+    private var preferredRhrSource: CTMetricSource? {
+        switch DeviceManager.shared.currentSource {
+        case .polar360:
+            return .polar360
+        case .polarH10:
+            return hasRecentPolar360RestingHeartRate ? .polar360 : .appleHealth
+        case .appleHealthKit:
+            return hasRecentPolar360RestingHeartRate ? .polar360 : .appleHealth
+        }
+    }
+
+    private var referenceDate: Date {
+        repo.latestValue(kind: .restingHeartRate, source: preferredRhrSource)?.date ?? Date()
+    }
 
     // MARK: - Public
 
     func fetchInitialData(for range: ChartTimeRange) {
         selectedRange = range
+        centerDate = referenceDate
         loadForSelectedRange()
+    }
+
+    func refreshCurrentRange() {
+        loadForSelectedRange()
+    }
+
+    @discardableResult
+    func loadPreviousPeriod() -> Bool {
+        centerDate = shift(center: centerDate, for: selectedRange, direction: -1)
+        loadForSelectedRange()
+        return true
+    }
+
+    @discardableResult
+    func loadNextPeriod() -> Bool {
+        let shifted = shift(center: centerDate, for: selectedRange, direction: 1)
+        let nextCenterDate = min(shifted, referenceDate)
+        let currentAnchor = periodAnchor(for: selectedRange, date: centerDate)
+        let nextAnchor = periodAnchor(for: selectedRange, date: nextCenterDate)
+        guard nextAnchor > currentAnchor else { return false }
+        centerDate = nextCenterDate
+        loadForSelectedRange()
+        return true
     }
 
     // MARK: - Loading (repo-only)
@@ -36,31 +82,29 @@ final class RestingHeartRateDetailViewModel: ObservableObject {
         onIsLoading?(true)
 
         let cal = Calendar.current
-        let end = Date()
-
-        let (anchor, xEnd): (Date, Date) = {
+        let reference = referenceDate
+        let (anchor, fetchEnd, displayEnd): (Date, Date, Date) = {
             switch selectedRange {
             case .daily:
-                let startOfDay = cal.startOfDay(for: end)
-                let xEnd = cal.date(byAdding: .day, value: 1, to: startOfDay)! // next midnight
-                return (startOfDay, xEnd)
+                let startOfDay = cal.startOfDay(for: centerDate)
+                let endOfDay = cal.date(byAdding: .day, value: 1, to: startOfDay)!
+                return (startOfDay, min(endOfDay, reference), endOfDay)
             case .weekly:
-                let startOfWeek = cal.date(from: cal.dateComponents([.yearForWeekOfYear, .weekOfYear], from: end))!
-                let xEnd = cal.date(byAdding: .day, value: 1, to: cal.startOfDay(for: end))!
-                return (startOfWeek, xEnd)
+                let startOfWeek = cal.dateInterval(of: .weekOfYear, for: centerDate)?.start ?? cal.startOfDay(for: centerDate)
+                let endOfWeek = cal.date(byAdding: .day, value: 7, to: startOfWeek)!
+                return (startOfWeek, min(endOfWeek, reference), endOfWeek)
             case .monthly:
-                let startOfMonth = cal.date(from: cal.dateComponents([.year, .month], from: end))!
-                let nextMonth = cal.date(byAdding: .month, value: 1, to: startOfMonth)!
-                return (startOfMonth, nextMonth)
+                let startOfMonth = cal.dateInterval(of: .month, for: centerDate)?.start ?? cal.startOfDay(for: centerDate)
+                let endOfMonth = cal.date(byAdding: .month, value: 1, to: startOfMonth)!
+                return (startOfMonth, min(endOfMonth, reference), endOfMonth)
             }
         }()
 
         DispatchQueue.global(qos: .userInitiated).async {
-            // Fetch samples from local store (detached structs)
             let samples = self.repo.series(kind: .restingHeartRate,
                                            from: anchor,
-                                           to: end,
-                                           source: nil)
+                                           to: fetchEnd,
+                                           source: self.preferredRhrSource)
 
             // Bucket by range and compute average per bucket
             let bucketed = self.bucket(samples: samples, range: self.selectedRange)
@@ -73,11 +117,11 @@ final class RestingHeartRateDetailViewModel: ObservableObject {
                 return "\(Int(round(mean)))"
             }()
 
-            let header = self.headerString(for: self.selectedRange, start: anchor, end: end)
+            let header = self.headerString(for: self.selectedRange, start: anchor, end: displayEnd)
 
             DispatchQueue.main.async {
                 self.points = bucketed
-                self.xDomain = anchor ... xEnd
+                self.xDomain = anchor ... displayEnd
                 self.yMax = maxV
                 self.averageText = avgText
                 self.headerDateText = header
@@ -98,7 +142,7 @@ final class RestingHeartRateDetailViewModel: ObservableObject {
             case .weekly:
                 return cal.startOfDay(for: date)
             case .monthly:
-                return cal.dateInterval(of: .weekOfYear, for: date)?.start ?? cal.startOfDay(for: date)
+                return cal.startOfDay(for: date)
             }
         }
 
@@ -130,12 +174,37 @@ final class RestingHeartRateDetailViewModel: ObservableObject {
         case .weekly:
             df.dateFormat = "MMM d"
             let s = df.string(from: start)
-            let e = df.string(from: cal.date(byAdding: .day, value: 6, to: start)!)
-            let y = cal.component(.year, from: end)
+            let displayEnd = cal.date(byAdding: .day, value: -1, to: end) ?? end
+            let e = df.string(from: displayEnd)
+            let y = cal.component(.year, from: displayEnd)
             return "\(s) - \(e), \(y)"
         case .monthly:
             df.dateFormat = "MMMM yyyy"
             return df.string(from: start)
+        }
+    }
+
+    private func shift(center: Date, for range: ChartTimeRange, direction: Int) -> Date {
+        let cal = Calendar.current
+        switch range {
+        case .daily:
+            return cal.date(byAdding: .day, value: direction, to: center)!
+        case .weekly:
+            return cal.date(byAdding: .weekOfYear, value: direction, to: center)!
+        case .monthly:
+            return cal.date(byAdding: .month, value: direction, to: center)!
+        }
+    }
+
+    private func periodAnchor(for range: ChartTimeRange, date: Date) -> Date {
+        let cal = Calendar.current
+        switch range {
+        case .daily:
+            return cal.startOfDay(for: date)
+        case .weekly:
+            return cal.dateInterval(of: .weekOfYear, for: date)?.start ?? date
+        case .monthly:
+            return cal.dateInterval(of: .month, for: date)?.start ?? date
         }
     }
 }

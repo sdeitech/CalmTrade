@@ -29,6 +29,7 @@ final class SessionManager: ObservableObject {
 
     /// Set the current logged-in user model and persist it
     func setCurrentUser(_ user: User?, token: String? = nil) {
+        let previousUserId = current?.id
 
         print("👤 setCurrentUser:", user?.id ?? "nil")
 
@@ -38,15 +39,13 @@ final class SessionManager: ObservableObject {
             self.accessToken = token
         }
 
-//        persist()
+        persist()
 
-        // 🚫 DO NOT revert to anonymous after login
-        guard let user else { return }
-
-//        NotificationCenter.default.post(
-//            name: .userAccountDidChange,
-//            object: user.id
-//        )
+        let nextUserId = user?.id
+        guard previousUserId != nextUserId else { return }
+        DispatchQueue.main.async {
+            NotificationCenter.default.post(name: .userAccountDidChange, object: user)
+        }
     }
 
     /// Update only the token (e.g. refresh)
@@ -60,7 +59,9 @@ final class SessionManager: ObservableObject {
         current = nil
         accessToken = nil
         clearStorage()
-        NotificationCenter.default.post(name: .userAccountDidChange, object: nil)
+        DispatchQueue.main.async {
+            NotificationCenter.default.post(name: .userAccountDidChange, object: nil)
+        }
     }
 
     // MARK: - Internal Persistence Layer
@@ -100,7 +101,7 @@ final class SessionManager: ObservableObject {
             self.current = decoded
         }
 
-        if let token = ud.string(forKey: Keys.token) {
+        if let token = ud.string(forKey: Keys.token) ?? ud.string(forKey: "accessToken") {
             self.accessToken = token
         }
     }
@@ -116,4 +117,29 @@ final class SessionManager: ObservableObject {
 
 extension Notification.Name {
     static let userAccountDidChange = Notification.Name("UserAccountDidChange")
+}
+
+enum FeatureKey {
+
+    // Core trading & analytics
+    static let calmScoreGauge = "Calmscore gauge"
+    static let tradeAnalyticsStats = "Trade Analytics + Stats"
+    static let tradesHistory = "Trades history"
+    static let manualTradeImport = "Manual trade import"
+    static let multipleAccountHandling = "multiple account handling for trade imports"
+
+    // Broker & sync
+    static let brokerSync = "Broker Sync"
+    static let realtime360Sync = "360 realtime sync"
+
+    // Biometrics & health
+    static let biometricDashboard = "Biometric dashboard"
+    static let chartsForBiometric = "Charts for biometric"
+    static let appleHealthKitSync = "Apple healthkit sync"
+
+    // Emotions & journaling
+    static let emotionTagging = "Emotion tagging"
+    static let customEmotions = "Custom Emotions"
+    static let journalUnlocked = "Journal (Unlocked)"
+
 }

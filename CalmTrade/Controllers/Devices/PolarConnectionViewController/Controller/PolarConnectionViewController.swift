@@ -18,6 +18,7 @@ class PolarConnectionViewController: UIViewController, UITableViewDataSource, UI
     
     // MARK: - Properties
     private let viewModel = PolarConnectionViewModel()
+    var isFromStart: Bool = true
 
     // MARK: - View Lifecycle
     override func viewDidLoad() {
@@ -44,7 +45,7 @@ class PolarConnectionViewController: UIViewController, UITableViewDataSource, UI
         viewModel.stopSearch()
     }
     
-    // MARK: - Setup
+    // MARK: - Setup   
     private func setupViewModelBindings() {
         // Devices list
         viewModel.onDeviceListUpdated = { [weak self] in
@@ -71,13 +72,13 @@ class PolarConnectionViewController: UIViewController, UITableViewDataSource, UI
             // next step: determine FTU state
             self.viewModel.checkFtuStatus()
         }
-
+ 
         viewModel.onConnectionFailed = { [weak self] errorMessage in
             DispatchQueue.main.async {
                 self?.showAlert(message: errorMessage)
             }
         }
-
+  
         // ---------- Firmware Update wiring (new) ----------
 
         // 1) Firmware check (available / not / failed)
@@ -240,6 +241,10 @@ class PolarConnectionViewController: UIViewController, UITableViewDataSource, UI
         vc.continueHandler = { [weak self] in
             self?.dismiss(animated: true) {
                 // 2. Then, push the next view controller.
+                guard let start = self?.isFromStart, start else {
+                    self?.navigationController?.popViewController()
+                    return
+                }
                 let breathingVC = UIStoryboard(name: "Main", bundle: nil).instantiateViewController(withIdentifier: "BreathingViewController") as! BreathingViewController
                 self?.navigationController?.pushViewController(breathingVC, transitionType: .fade)
             }

@@ -34,8 +34,8 @@ final class LoginViewModel: BaseViewModel {
     }
 
     private func isValidEmail(_ s: String) -> Bool {
-        let pattern = #"^\S+@\S+\.\S+$"#
-        return s.range(of: pattern, options: .regularExpression) != nil
+    let pattern = #"^[A-Z0-9a-z._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$"#
+    return NSPredicate(format: "SELF MATCHES %@", pattern).evaluate(with: s)
     }
 
     // MARK: - Reusable profile fetcher
@@ -45,10 +45,7 @@ final class LoginViewModel: BaseViewModel {
             guard let self else { return }
 
             if let dto = dto {
-//                let user = User(from: dto)
                 self.user = dto
-
-//                SessionManager.shared.setCurrentUser(user, token: token)
                 // Connect socket after session is established
                 SocketClient.shared.connect(with: token)
                 completion(true, nil)
@@ -91,12 +88,12 @@ final class LoginViewModel: BaseViewModel {
                         return
                     }
 
-                    guard let token = resp.accessToken, !token.isEmpty else {
+                    guard let token = resp.accessToken, let refreshToken = resp.refreshToken, !token.isEmpty else {
                         completion(false, "Missing access token", false)
                         return
                     }
                     
-                    self.updateUserToken(token)
+                    self.updateUserToken(token, refreshToken: refreshToken)
 
                     // Fetch profile + finalize login
                     self.finalizeLogin(using: token) { ok, msg in
@@ -132,12 +129,12 @@ final class LoginViewModel: BaseViewModel {
                         return
                     }
 
-                    guard let token = resp.accessToken else {
+                    guard let token = resp.accessToken, let refreshToken = resp.refreshToken else {
                         completion(false, "Missing access token", first)
                         return
                     }
                     
-                    self.updateUserToken(token)
+                    self.updateUserToken(token, refreshToken: refreshToken)
 
                     // Load profile
                     self.finalizeLogin(using: token) { ok, msg in
@@ -181,12 +178,12 @@ final class LoginViewModel: BaseViewModel {
                         return
                     }
 
-                    guard let token = resp.accessToken else {
+                    guard let token = resp.accessToken, let refreshToken = resp.refreshToken else {
                         completion(false, "Missing access token", first)
                         return
                     }
                     
-                    self.updateUserToken(token)
+                    self.updateUserToken(token, refreshToken: refreshToken)
 
                     // Load profile
                     self.finalizeLogin(using: token) { ok, msg in
@@ -231,12 +228,12 @@ final class LoginViewModel: BaseViewModel {
                         return
                     }
 
-                    guard let token = resp.accessToken else {
+                    guard let token = resp.accessToken, let refreshToken = resp.refreshToken else {
                         completion(false, "Missing access token", first)
                         return
                     }
                     
-                    self.updateUserToken(token)
+                    self.updateUserToken(token, refreshToken: refreshToken)
 
                     // Load profile
                     self.finalizeLogin(using: token) { ok, msg in

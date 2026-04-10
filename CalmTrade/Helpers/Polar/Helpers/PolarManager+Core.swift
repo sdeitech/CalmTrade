@@ -19,6 +19,8 @@ extension PolarManager {
     // MARK: - Discovery
 
     func startDeviceSearch() {
+        shouldResumeSearchAfterBluetoothOn = true
+
         // If BT is off, prompt immediately and bail early.
         if central.state == .poweredOff {
             presentBluetoothOffAlertIfNeeded()
@@ -56,6 +58,9 @@ extension PolarManager {
     // MARK: - Connect / Disconnect
 
     func connect(to device: ScannedPolarDevice) {
+        // We are moving from manual scan to active connection flow.
+        shouldResumeSearchAfterBluetoothOn = false
+
         if central.state == .poweredOff {
             presentBluetoothOffAlertIfNeeded()
             return
@@ -134,8 +139,11 @@ extension PolarManager {
                 guard let self else { return }
                 if let dev = self.connectedDevice {
                     self.startBestStreaming(for: dev)
-                    if self.autoOfflineSyncOnConnect {
+                    let offlineReady = self.api.isFeatureReady(dev.id, feature: .feature_polar_offline_recording)
+                    if self.autoOfflineSyncOnConnect && offlineReady {
                         self.ensureOfflinePipeline(for: dev.id)
+                    } else if self.autoOfflineSyncOnConnect {
+                        NSLog("[PM] waitForConnection: offline feature not ready yet for \(dev.id); waiting for feature callback")
                     }
                 }
             }, onError: { err in print("waitForConnection error:", err) })
@@ -166,6 +174,18 @@ extension PolarManager {
     }
 
     private func attemptAutoReconnectIfNeeded() {
+        
+        let allowed = FeatureGate.shared.access(for: FeatureKey.realtime360Sync)
+        var permission = Bool()
+        switch allowed {
+        case .allowed:
+            permission = true
+        case .locked:
+            permission = false
+        }
+        
+        guard permission else { return }
+        
         switch connectionState {
         case .connected, .connecting: return
         case .disconnected: break
@@ -198,5 +218,7 @@ extension PolarManager {
     }
 
     func enableAutoReconnectOnLaunch() { attemptAutoReconnectIfNeeded() }
-    func resumeAutoReconnectOnForeground() { attemptAutoReconnectIfNeeded() }
+    func resumeAutoReconnectOnForeground() {
+        attemptAutoReconnectIfNeeded()
+    }
 }

@@ -90,44 +90,30 @@ public enum RHRAvgComputer {
         packet: P360SleepPacket?,
         previousRhr: Double? = nil
     ) -> RHRAvgResult {
-        // 1) HealthKit if present and fresh (<36h)
+        // Polar nightly sleep packet is the authoritative source.
+        if let pkt = packet,
+           let rhr360 = computeFromPolar360(pkt) {
+            var rhr = rhr360.value
+            if let prev = previousRhr { rhr = 0.7 * rhr + 0.3 * prev }
+
+            return .init(valueBpm: rhr,
+                         source: .polar360,
+                         timestamp: pkt.sleepEnd,
+                         qualityFlag: rhr360.quality)
+        }
+
+        // Apple Health is only a fallback when Polar nightly RHR is unavailable.
         if let hk = hkRhr, let age = hkAgeHours, age < 36 {
             return .init(valueBpm: hk.value,
                          source: .appleHealth,
-                         timestamp: Date(),
+                         timestamp: hk.date,
                          qualityFlag: "good")
         }
 
-        // 2) Derive from Polar 360 last-night sleep
-        guard let pkt = packet,
-              let rhr360 = computeFromPolar360(pkt) else {
-            // 3) Unknown
-            return .init(valueBpm: nil,
-                         source: .appleHealth, // keep source neutral for "unknown"
-                         timestamp: Date(),
-                         qualityFlag: "unknown")
-        }
-
-        var rhr = rhr360.value
-        // 5) Optional smoothing
-        if let prev = previousRhr { rhr = 0.7 * rhr + 0.3 * prev }
-
-        // 6) Disagreement guard
-        if let hk = hkRhr {
-            let delta = abs(hk.value - rhr)
-            let preferHK = (delta > 8) && (rhr360.quality != "good")
-            if preferHK {
-                return .init(valueBpm: hk.value,
-                             source: .appleHealth,
-                             timestamp: Date(),
-                             qualityFlag: "good")
-            }
-        }
-
-        return .init(valueBpm: rhr,
-                     source: .polar360,
-                     timestamp: pkt.sleepEnd,
-                     qualityFlag: rhr360.quality)
+        return .init(valueBpm: nil,
+                     source: .appleHealth,
+                     timestamp: Date(),
+                     qualityFlag: "unknown")
     }
 
     // MARK: - Helpers

@@ -175,10 +175,8 @@ final class SignUpViewModel: BaseViewModel {
             guard let self else { return }
 
             if let dto = dto {
-//                let user = User(from: dto)
                 self.user = dto
 
-                SessionManager.shared.setCurrentUser(user, token: token)
                 SocketClient.shared.connect(with: token)
 
                 completion(true, nil, isFirst)
@@ -203,11 +201,11 @@ final class SignUpViewModel: BaseViewModel {
 
                 switch result {
                 case .Success(let resp):
-                    guard let token = resp?.accessToken else {
+                    guard let token = resp?.accessToken, let refreshToken = resp?.refreshToken else {
                         completion(false, "Missing access token", resp?.isFirstTimeUser ?? false)
                         return
                     }
-                    self.updateUserToken(token)
+                    self.updateUserToken(token, refreshToken: refreshToken)
                     self.finalizeSocialLogin(resp: resp, completion: completion)
 
                 case .Error(let msg):
@@ -240,11 +238,11 @@ final class SignUpViewModel: BaseViewModel {
 
                 switch result {
                 case .Success(let resp):
-                    guard let token = resp?.accessToken else {
+                    guard let token = resp?.accessToken, let refreshToken = resp?.refreshToken else {
                         completion(false, "Missing access token", resp?.isFirstTimeUser ?? false)
                         return
                     }
-                    self.updateUserToken(token)
+                    self.updateUserToken(token, refreshToken: refreshToken)
                     self.finalizeSocialLogin(resp: resp, completion: completion)
 
                 case .Error(let msg):
@@ -279,11 +277,11 @@ final class SignUpViewModel: BaseViewModel {
 
                 switch result {
                 case .Success(let resp):
-                    guard let token = resp?.accessToken else {
+                    guard let token = resp?.accessToken, let refreshToken = resp?.refreshToken else {
                         completion(false, "Missing access token", resp?.isFirstTimeUser ?? false)
                         return
                     }
-                    self.updateUserToken(token)
+                    self.updateUserToken(token, refreshToken: refreshToken)
                     self.finalizeSocialLogin(resp: resp, completion: completion)
 
                 case .Error(let msg):

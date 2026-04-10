@@ -64,6 +64,7 @@ class VerificationCodeViewController: BaseViewController {
             guard let self = self else { return }
             self.btnConfirm.isEnabled = true
             if isValid {
+                UserDefaults.standard.set(LoginHandler.email.rawValue, forKey: kLoginHandler)
                 let vc = UIStoryboard(name: "Main", bundle: nil)
                     .instantiateViewController(withIdentifier: "EmailVerifiedViewController") as! EmailVerifiedViewController
                 self.navigationController?.pushViewController(vc, transitionType: .fade)

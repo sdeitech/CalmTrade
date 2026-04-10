@@ -90,11 +90,11 @@ final class Polar360SleepIngestor {
 
         let cal = Calendar.current
         let now = Date()
-        
+
         // Yesterday 00:00
         let todayStart = cal.startOfDay(for: now)
         let yesterdayStart = cal.date(byAdding: .day, value: -1, to: todayStart)!
-        
+
         // Fetch window: yesterday 00:00 → now
         let from = yesterdayStart
         let to = now
@@ -103,6 +103,68 @@ final class Polar360SleepIngestor {
 
         // Always ingest fresh sleep for yesterday + today
         fetchAndIngest(deviceId: deviceId, from: from, to: to)
+    }
+
+    // MARK: - Public API (Option 2 – manual fetch for specific date range)
+
+    /// Manually fetch sleep data for a specific date range.
+    /// This method can be called from UI to fetch sleep data for user-selected dates.
+    ///
+    /// - Parameters:
+    ///   - deviceId: The Polar device ID
+    ///   - from: Start date for the fetch range
+    ///   - to: End date for the fetch range
+    ///   - completion: Callback when the fetch is complete
+    func fetchSleepDataForDateRange(
+        deviceId: String,
+        from: Date,
+        to: Date,
+        completion: @escaping (Swift.Result<String, Error>) -> Void
+    ) {
+        guard !deviceId.isEmpty else {
+            completion(.failure(NSError(domain: "Polar360SleepIngestor", code: 1, userInfo: [NSLocalizedDescriptionKey: "Device ID is empty"])))
+            return
+        }
+
+        NSLog("[P360Sleep] Manual fetch for device %@ window %@ → %@", deviceId, from as NSDate, to as NSDate)
+
+        fetchAndIngest(deviceId: deviceId, from: from, to: to) { result in
+            switch result {
+            case .success(let count):
+                completion(.success("Successfully fetched and saved \(count) sleep segments"))
+            case .failure(let error):
+                completion(.failure(error))
+            }
+        }
+    }
+
+    // Overloaded version of fetchAndIngest to support completion callback
+    private func fetchAndIngest(
+        deviceId: String,
+        from: Date,
+        to: Date,
+        completion: @escaping (Swift.Result<Int, Error>) -> Void = { _ in }
+    ) {
+        source.fetchSleepSegments(deviceId: deviceId, from: from, to: to) { [weak self] result in
+            guard let self else {
+                completion(.failure(NSError(domain: "Polar360SleepIngestor", code: 2, userInfo: [NSLocalizedDescriptionKey: "Self reference lost"])))
+                return
+            }
+
+            switch result {
+            case .failure(let err):
+                NSLog("[P360Sleep] fetch failed for %@: %@", deviceId, err.localizedDescription)
+                completion(.failure(err))
+            case .success(let segments):
+                guard !segments.isEmpty else {
+                    NSLog("[P360Sleep] no segments to ingest for %@", deviceId)
+                    completion(.success(0))
+                    return
+                }
+                self.persist(segments: segments)
+                completion(.success(segments.count))
+            }
+        }
     }
 
     // MARK: - Core ingestion pipeline

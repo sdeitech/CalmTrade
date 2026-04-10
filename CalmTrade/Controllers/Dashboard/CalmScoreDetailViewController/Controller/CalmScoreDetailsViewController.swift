@@ -10,6 +10,12 @@ import Combine
 import SwiftUI
 
 final class CalmScoreDetailsViewController: UIViewController, UICollectionViewDelegate {
+    private enum ChartTransitionStyle: Equatable {
+        case none
+        case crossDissolve
+        case slideFromLeft
+        case slideFromRight
+    }
 
     // MARK: - IBOutlets
     @IBOutlet weak var graphContainerView: UIView!
@@ -27,6 +33,7 @@ final class CalmScoreDetailsViewController: UIViewController, UICollectionViewDe
 
     // Single SwiftUI host (we swap its rootView to whatever chart is needed)
     private var chartHost: UIHostingController<AnyView>!
+    private var pendingTransitionStyle: ChartTransitionStyle = .none
 
     // History datasource
     private var dataSource: UICollectionViewDiffableDataSource<Int, CalmHistoryItem>!
@@ -46,6 +53,8 @@ final class CalmScoreDetailsViewController: UIViewController, UICollectionViewDe
 
     // Anchors for label generation
     private var hourAnchorStart: Date = Calendar.current.dateInterval(of: .hour, for: Date())?.start ?? Date()
+    private var dayAnchorDate: Date = Date()
+    private var weekAnchorDate: Date = Date()
     private var monthAnchorDate: Date = Date()
     private var yearAnchorDate: Date = Date()
 
@@ -57,23 +66,30 @@ final class CalmScoreDetailsViewController: UIViewController, UICollectionViewDe
 
         configureSegmented()
         embedChart()
+        installPagingGestures()
         configureCollection()
         bindViewModel()
 
         // Default to Hour tab and request minute-scale data (source scale for Hour)
         timeScaleSegmented.selectedSegmentIndex = 0
-        viewModel.setScale(.minute)
+        resetAnchor(for: .H)
+        viewModel.setScale(.minute, end: visibleWindowEnd(for: .H))
         viewModel.start()
 
         // Build initial caches for W/M/Y from the store so first swap is correct
-        rebuildCachesFromStore(for: .W)
-        rebuildCachesFromStore(for: .M)
-        rebuildCachesFromStore(for: .Y)
+        rebuildCachesFromStore(for: .W, anchor: weekAnchorDate)
+        rebuildCachesFromStore(for: .M, anchor: monthAnchorDate)
+        rebuildCachesFromStore(for: .Y, anchor: yearAnchorDate)
     }
 
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         updateCollectionHeightForTwoRows()
+    }
+    
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        navigationController?.interactivePopGestureRecognizer?.isEnabled = false
     }
 
     override func motionEnded(_ motion: UIEvent.EventSubtype, with event: UIEvent?) {
@@ -128,11 +144,9 @@ final class CalmScoreDetailsViewController: UIViewController, UICollectionViewDe
     }
 
     private func refreshChart() {
-        var tx = Transaction()
-        tx.disablesAnimations = true
-        withTransaction(tx) {
-            chartHost.rootView = makeChartView()
-        }
+        let nextView = makeChartView()
+        applyTransitionIfNeeded(on: chartHost.view)
+        chartHost.rootView = nextView
     }
 
     private func makeChartView() -> AnyView {
@@ -148,10 +162,10 @@ final class CalmScoreDetailsViewController: UIViewController, UICollectionViewDe
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             )
         case .D:
-            return AnyView(DayChartView(hourlyRanges: hourlyRangesToday)
+            return AnyView(DayChartView(hourlyRanges: hourlyRangesToday, anchor: dayAnchorDate)
                 .frame(maxWidth: .infinity, maxHeight: .infinity))
         case .W:
-            return AnyView(WeekChartView(weekRanges)
+            return AnyView(WeekChartView(weekRanges, weekAnchor: weekAnchorDate)
                 .frame(maxWidth: .infinity, maxHeight: .infinity))
         case .M:
             return AnyView(MonthChartView(dailyRanges: monthDailyRanges, monthAnchorDate: monthAnchorDate)
@@ -184,6 +198,16 @@ final class CalmScoreDetailsViewController: UIViewController, UICollectionViewDe
         collectionView.isPagingEnabled = true
     }
 
+    private func installPagingGestures() {
+        let left = UISwipeGestureRecognizer(target: self, action: #selector(didSwipeLeft))
+        left.direction = .left
+        graphContainerView.addGestureRecognizer(left)
+
+        let right = UISwipeGestureRecognizer(target: self, action: #selector(didSwipeRight))
+        right.direction = .right
+        graphContainerView.addGestureRecognizer(right)
+    }
+
     // MARK: - Bindings
 
     private func bindViewModel() {
@@ -192,22 +216,14 @@ final class CalmScoreDetailsViewController: UIViewController, UICollectionViewDe
             .sink { [weak self] points in
                 guard let self else { return }
 
-                // Update anchors for labels if we have at least one point
-                if let lastDate = points.last?.date {
-                    self.hourAnchorStart = Calendar.current
-                        .dateInterval(of: .hour, for: lastDate)?.start ?? self.hourAnchorStart
-                    self.monthAnchorDate = lastDate
-                    self.yearAnchorDate = lastDate
-                }
-
                 // For Day view: build 24 hourly slots from HOURLY points (VM emits .hour)
                 let timed = points.map { TimedPoint(date: $0.date, value: max(0, min(100, $0.value))) }
-                self.hourlyRangesToday = Self.makeDayRanges(from: timed, anchor: Date())
+                self.hourlyRangesToday = Self.makeDayRanges(from: timed, anchor: self.dayAnchorDate)
 
                 // For W/M/Y we rebuild directly from the store (windowed & bucketed correctly)
-                self.rebuildCachesFromStore(for: .W)
-                self.rebuildCachesFromStore(for: .M)
-                self.rebuildCachesFromStore(for: .Y)
+                self.rebuildCachesFromStore(for: .W, anchor: self.weekAnchorDate)
+                self.rebuildCachesFromStore(for: .M, anchor: self.monthAnchorDate)
+                self.rebuildCachesFromStore(for: .Y, anchor: self.yearAnchorDate)
 
                 self.refreshChart()
                 self.updateTimeframeLabel()
@@ -304,43 +320,40 @@ final class CalmScoreDetailsViewController: UIViewController, UICollectionViewDe
         case .H:
             break
         case .D:
-            hourlyRangesToday = Self.makeDayRanges(from: timed, anchor: Date())
+            hourlyRangesToday = Self.makeDayRanges(from: timed, anchor: dayAnchorDate)
         case .W:
-            rebuildCachesFromStore(for: .W)
+            rebuildCachesFromStore(for: .W, anchor: weekAnchorDate)
         case .M:
-            rebuildCachesFromStore(for: .M)
+            rebuildCachesFromStore(for: .M, anchor: monthAnchorDate)
         case .Y:
-            rebuildCachesFromStore(for: .Y)
+            rebuildCachesFromStore(for: .Y, anchor: yearAnchorDate)
         }
     }
 
     // MARK: - Store-backed cache builders for W / M / Y
-    private func rebuildCachesFromStore(for tab: Tab) {
+    private func rebuildCachesFromStore(for tab: Tab, anchor: Date) {
         let store = CalmScoreStore.shared
-        let now = Date()
         switch tab {
         case .W:
-            // Daily buckets from start-of-week…now
-            let startOfWeek = cal.dateInterval(of: .weekOfYear, for: now)!.start
-            let aggs = store.fetchSeries(scale: .day, start: startOfWeek, end: now)
+            let startOfWeek = cal.dateInterval(of: .weekOfYear, for: anchor)!.start
+            let end = min(cal.date(byAdding: .day, value: 7, to: startOfWeek)!.addingTimeInterval(-1), Date())
+            let aggs = store.fetchSeries(scale: .day, start: startOfWeek, end: end)
             let pts = aggs.map { TimedPoint(date: $0.bucketStart, value: max(0, min(100, $0.avg))) }
-            weekRanges = Self.makeWeekRanges(from: pts, anchor: now)
+            weekRanges = Self.makeWeekRanges(from: pts, anchor: anchor)
 
         case .M:
-            // Daily buckets from first-of-month…now
-            let startOfMonth = cal.dateInterval(of: .month, for: now)!.start
-            let aggs = store.fetchSeries(scale: .day, start: startOfMonth, end: now)
+            let startOfMonth = cal.dateInterval(of: .month, for: anchor)!.start
+            let end = min(cal.date(byAdding: .month, value: 1, to: startOfMonth)!.addingTimeInterval(-1), Date())
+            let aggs = store.fetchSeries(scale: .day, start: startOfMonth, end: end)
             let pts = aggs.map { TimedPoint(date: $0.bucketStart, value: max(0, min(100, $0.avg))) }
-            monthAnchorDate = now
-            monthDailyRanges = Self.makeMonthRanges(from: pts, anchor: monthAnchorDate)
+            monthDailyRanges = Self.makeMonthRanges(from: pts, anchor: anchor)
 
         case .Y:
-            // Monthly buckets from Jan 1…now
-            let startOfYear = cal.dateInterval(of: .year, for: now)!.start
-            let aggs = store.fetchSeries(scale: .month, start: startOfYear, end: now)
+            let startOfYear = cal.dateInterval(of: .year, for: anchor)!.start
+            let end = min(cal.date(byAdding: .year, value: 1, to: startOfYear)!.addingTimeInterval(-1), Date())
+            let aggs = store.fetchSeries(scale: .month, start: startOfYear, end: end)
             let pts = aggs.map { TimedPoint(date: $0.bucketStart, value: max(0, min(100, $0.avg))) }
-            yearAnchorDate = now
-            yearMonthlyRanges = Self.makeYearRanges(from: pts, anchor: yearAnchorDate)
+            yearMonthlyRanges = Self.makeYearRanges(from: pts, anchor: anchor)
 
         default:
             break
@@ -350,28 +363,25 @@ final class CalmScoreDetailsViewController: UIViewController, UICollectionViewDe
     // MARK: - Actions
 
     @objc private func scaleChanged() {
-        // 1) Instant rebuild from what we already have
-        recomputeCachesFromCurrentGraph()
-        refreshChart()
+        pendingTransitionStyle = .crossDissolve
+        resetAnchor(for: currentTab)
+        reloadVisibleTabData()
+    }
 
-        // 2) Ask VM for the correct SOURCE scale for this tab
-        switch currentTab {
-        case .H: viewModel.setScale(.minute)  // hour tab: minute buckets
-        case .D: viewModel.setScale(.hour)    // day tab: hourly buckets
-        case .W: viewModel.setScale(.day)     // week tab: daily buckets (we fetch window via store)
-        case .M: viewModel.setScale(.day)     // month tab: daily buckets
-        case .Y: viewModel.setScale(.month)   // year tab: monthly buckets
+    @objc private func didSwipeLeft() { // newer period
+        guard canPageForward(for: currentTab) else {
+            pendingTransitionStyle = .none
+            return
         }
+        shiftAnchor(for: currentTab, direction: 1)
+        pendingTransitionStyle = .slideFromLeft
+        reloadVisibleTabData()
+    }
 
-        // 3) Make sure W/M/Y caches are up-to-date for the newly selected tab
-        switch currentTab {
-        case .W, .M, .Y:
-            rebuildCachesFromStore(for: currentTab)
-        default:
-            break
-        }
-
-        updateTimeframeLabel()
+    @objc private func didSwipeRight() { // older period
+        shiftAnchor(for: currentTab, direction: -1)
+        pendingTransitionStyle = .slideFromRight
+        reloadVisibleTabData()
     }
 
     @IBAction func btnBackClk(_ sender: UIButton) {
@@ -532,7 +542,6 @@ extension CalmScoreDetailsViewController: UICollectionViewDelegateFlowLayout, UI
 
 extension CalmScoreDetailsViewController {
     private func updateTimeframeLabel() {
-        let now = Date()
         switch currentTab {
         case .H:
             let start = hourAnchorStart
@@ -540,12 +549,11 @@ extension CalmScoreDetailsViewController {
             timeframeLabel.text = hourRangeText(start: start, end: end)
 
         case .D:
-            let day = viewModel.graph.last?.date ?? now
-            timeframeLabel.text = dayText(for: day)
+            timeframeLabel.text = dayText(for: dayAnchorDate)
 
         case .W:
-            let startOfWeek = cal.dateInterval(of: .weekOfYear, for: now)?.start ?? now
-            let endOfWeek = cal.date(byAdding: .day, value: 7, to: startOfWeek)?.addingTimeInterval(-1) ?? now
+            let startOfWeek = cal.dateInterval(of: .weekOfYear, for: weekAnchorDate)?.start ?? weekAnchorDate
+            let endOfWeek = cal.date(byAdding: .day, value: 7, to: startOfWeek)?.addingTimeInterval(-1) ?? weekAnchorDate
             timeframeLabel.text = weekRangeText(start: startOfWeek, end: endOfWeek)
 
         case .M:
@@ -600,5 +608,124 @@ extension CalmScoreDetailsViewController {
     private func yearText(for startOfYear: Date) -> String {
         let df = DateFormatter(); df.dateFormat = "yyyy"
         return df.string(from: startOfYear)
+    }
+
+    private func resetAnchor(for tab: Tab) {
+        let now = Date()
+        switch tab {
+        case .H:
+            hourAnchorStart = cal.dateInterval(of: .hour, for: now)?.start ?? now
+        case .D:
+            dayAnchorDate = now
+        case .W:
+            weekAnchorDate = now
+        case .M:
+            monthAnchorDate = now
+        case .Y:
+            yearAnchorDate = now
+        }
+    }
+
+    private func shiftAnchor(for tab: Tab, direction: Int) {
+        switch tab {
+        case .H:
+            hourAnchorStart = cal.date(byAdding: .hour, value: direction, to: hourAnchorStart) ?? hourAnchorStart
+        case .D:
+            dayAnchorDate = cal.date(byAdding: .day, value: direction, to: dayAnchorDate) ?? dayAnchorDate
+        case .W:
+            weekAnchorDate = cal.date(byAdding: .weekOfYear, value: direction, to: weekAnchorDate) ?? weekAnchorDate
+        case .M:
+            monthAnchorDate = cal.date(byAdding: .month, value: direction, to: monthAnchorDate) ?? monthAnchorDate
+        case .Y:
+            yearAnchorDate = cal.date(byAdding: .year, value: direction, to: yearAnchorDate) ?? yearAnchorDate
+        }
+    }
+
+    private func visibleAnchor(for tab: Tab) -> Date {
+        switch tab {
+        case .H: return hourAnchorStart
+        case .D: return dayAnchorDate
+        case .W: return weekAnchorDate
+        case .M: return monthAnchorDate
+        case .Y: return yearAnchorDate
+        }
+    }
+
+    private func periodAnchor(for tab: Tab, date: Date) -> Date {
+        switch tab {
+        case .H:
+            return cal.dateInterval(of: .hour, for: date)?.start ?? date
+        case .D:
+            return cal.startOfDay(for: date)
+        case .W:
+            return cal.dateInterval(of: .weekOfYear, for: date)?.start ?? date
+        case .M:
+            return cal.dateInterval(of: .month, for: date)?.start ?? date
+        case .Y:
+            return cal.dateInterval(of: .year, for: date)?.start ?? date
+        }
+    }
+
+    private func canPageForward(for tab: Tab) -> Bool {
+        periodAnchor(for: tab, date: visibleAnchor(for: tab)) < periodAnchor(for: tab, date: Date())
+    }
+
+    private func visibleWindowEnd(for tab: Tab) -> Date {
+        let now = Date()
+        let start = periodAnchor(for: tab, date: visibleAnchor(for: tab))
+        let end: Date
+        switch tab {
+        case .H:
+            end = cal.date(byAdding: .hour, value: 1, to: start)?.addingTimeInterval(-1) ?? start
+        case .D:
+            end = cal.date(byAdding: .day, value: 1, to: start)?.addingTimeInterval(-1) ?? start
+        case .W:
+            end = cal.date(byAdding: .day, value: 7, to: start)?.addingTimeInterval(-1) ?? start
+        case .M:
+            end = cal.date(byAdding: .month, value: 1, to: start)?.addingTimeInterval(-1) ?? start
+        case .Y:
+            end = cal.date(byAdding: .year, value: 1, to: start)?.addingTimeInterval(-1) ?? start
+        }
+        return min(end, now)
+    }
+
+    private func reloadVisibleTabData() {
+        let end = visibleWindowEnd(for: currentTab)
+        switch currentTab {
+        case .H:
+            viewModel.setScale(.minute, end: end)
+        case .D:
+            viewModel.setScale(.hour, end: end)
+        case .W:
+            viewModel.setScale(.day, end: end)
+            rebuildCachesFromStore(for: .W, anchor: weekAnchorDate)
+            refreshChart()
+        case .M:
+            viewModel.setScale(.day, end: end)
+            rebuildCachesFromStore(for: .M, anchor: monthAnchorDate)
+            refreshChart()
+        case .Y:
+            viewModel.setScale(.month, end: end)
+            rebuildCachesFromStore(for: .Y, anchor: yearAnchorDate)
+            refreshChart()
+        }
+        updateTimeframeLabel()
+    }
+
+    private func applyTransitionIfNeeded(on view: UIView) {
+        defer { pendingTransitionStyle = .none }
+        switch pendingTransitionStyle {
+        case .none:
+            return
+        case .crossDissolve:
+            UIView.transition(with: view, duration: 0.22, options: [.transitionCrossDissolve, .allowAnimatedContent], animations: nil)
+        case .slideFromLeft, .slideFromRight:
+            let transition = CATransition()
+            transition.type = .push
+            transition.duration = 0.28
+            transition.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+            transition.subtype = pendingTransitionStyle == .slideFromLeft ? .fromRight : .fromLeft
+            view.layer.add(transition, forKey: "CalmScoreChartPaging")
+        }
     }
 }

@@ -6,6 +6,8 @@
 import Foundation
 import PolarBleSdk
 
+
+@MainActor
 protocol DeviceManagementViewModelDelegate: AnyObject {
     func vmDidUpdateCurrentDevice(_ vm: DeviceManagementViewModel)
     func vmDidStartLongOperation(_ vm: DeviceManagementViewModel, title: String)

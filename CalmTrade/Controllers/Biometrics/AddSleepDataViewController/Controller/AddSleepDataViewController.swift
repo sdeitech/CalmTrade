@@ -67,7 +67,7 @@ class AddSleepDataViewController: UIViewController, UICalendarSelectionSingleDat
             if success {
                 print("Sleep data saved successfully!")
                 DispatchQueue.main.async {
-                    self?.navigationController?.popViewController(animated: true)
+                    self?.navigationController?.popViewController()
                 }
             } else {
                 // Show an alert to the user
@@ -77,7 +77,7 @@ class AddSleepDataViewController: UIViewController, UICalendarSelectionSingleDat
     }
     
     @IBAction func backButtonTapped(_ sender: Any) {
-        navigationController?.popViewController(animated: true)
+        navigationController?.popViewController()
     }
     
     @IBAction func calendarButtonTapped(_ sender: UIButton) {

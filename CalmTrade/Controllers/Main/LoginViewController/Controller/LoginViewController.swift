@@ -52,18 +52,17 @@ class LoginViewController: BaseViewController {
         vm.email = txtEmail.text ?? ""
         vm.password = txtPassword.text ?? ""
         sender.isEnabled = false
-        KRProgressHUD.show()
+        LoaderManager.shared.show()
         
         vm.submit { [weak self] success, message, needsVerification in
             guard let self = self else { return }
             sender.isEnabled = true
-            KRProgressHUD.dismiss()
+            LoaderManager.shared.hide()
             
             if success {
                 // Dashboard
-                let tabBarController = UIStoryboard(name: Constants.Storyboard.Dashboard, bundle: nil)
-                    .instantiateViewController(withIdentifier: "TabbarController") as! TabbarController
-                self.navigationController?.pushViewController(tabBarController, transitionType: .reveal, duration: 0.03)
+                UserDefaults.standard.set(LoginHandler.email.rawValue, forKey: kLoginHandler)
+                self.openDashboard()
             } else if needsVerification {
                 // Email verification
                 let vc = UIStoryboard(name: "Main", bundle: nil)
@@ -97,11 +96,12 @@ class LoginViewController: BaseViewController {
                             self.showAlert(message: "Couldn’t retrieve Google ID token.")
                             return
                         }
-                        KRProgressHUD.show()
+                        LoaderManager.shared.show()
                         self.viewModel.googleAuth(idToken: idToken) { [weak self] ok, msg, isFirst  in
                             print("🟢 VC completion thread:", Thread.isMainThread)
                             guard let self = self else { return }
-                            KRProgressHUD.dismiss()
+                            LoaderManager.shared.hide()
+                            UserDefaults.standard.set(LoginHandler.google.rawValue, forKey: kLoginHandler)
                             if ok {
                                 if isFirst {
                                     let connectVC = UIStoryboard(name: Constants.Storyboard.Devices, bundle: nil)
@@ -143,11 +143,12 @@ class LoginViewController: BaseViewController {
                         self.showAlert(message: "Facebook login succeeded, but access token is missing.")
                         return
                     }
-                    KRProgressHUD.show()
+                    LoaderManager.shared.show()
                     self.viewModel.facebookAuth(accessToken: token,name: name,email: email,userId: userId, imageUrl: imageUrl) { [weak self] ok, msg, isFirst in
                         guard let self = self else { return }
-                        KRProgressHUD.dismiss()
+                        LoaderManager.shared.hide()
                         if ok {
+                            UserDefaults.standard.set(LoginHandler.facebook.rawValue, forKey: kLoginHandler)
                             if isFirst {
                                 let connectVC = UIStoryboard(name: Constants.Storyboard.Devices, bundle: nil)
                                     .instantiateViewController(withIdentifier: "ConnectViewController") as! ConnectViewController
@@ -186,11 +187,12 @@ class LoginViewController: BaseViewController {
                         self.showAlert(message: "Missing Apple given name or family name.")
                         return
                     }
-                    KRProgressHUD.show()
+                    LoaderManager.shared.show()
                     self.viewModel.appleAuth(identityToken: idToken, authorizationCode: authCode, givenName: givenName, familyName: familyName) { [weak self] ok, msg, isFirst in
-                        KRProgressHUD.dismiss()
+                        LoaderManager.shared.hide()
                         guard let self = self else { return }
                         if ok {
+                            UserDefaults.standard.set(LoginHandler.apple.rawValue, forKey: kLoginHandler)
                             if isFirst {
                                 let connectVC = UIStoryboard(name: Constants.Storyboard.Devices, bundle: nil)
                                     .instantiateViewController(withIdentifier: "ConnectViewController") as! ConnectViewController
@@ -220,7 +222,7 @@ class LoginViewController: BaseViewController {
     private func openDashboard() {
         let dashBoard = UIStoryboard(name: Constants.Storyboard.Dashboard, bundle: nil)
             .instantiateViewController(withIdentifier: "TabbarController") as! TabbarController
-        self.navigationController?.pushViewController(dashBoard, transitionType: .reveal, duration: 0.03)
+        self.navigationController?.setViewControllers([dashBoard], animated: true)
     }
     
     func updateUI(for view: UIView, label: UILabel, isFocused: Bool) {

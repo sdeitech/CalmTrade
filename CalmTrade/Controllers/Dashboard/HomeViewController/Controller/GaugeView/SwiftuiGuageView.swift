@@ -96,7 +96,7 @@ struct CalmScoreBarTile: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             Spacer()
-            
+
             // Top row: last update + device pill
             HStack(alignment: .center) {
                 Text(Self.format(date: props.lastUpdate))
@@ -111,14 +111,14 @@ struct CalmScoreBarTile: View {
                 )
             }
             .padding(.bottom, 56)
-            
+
             GaugeBar(score: props.score)
                 .frame(height: 36)
                 .padding(.top, 30)
-            
+
             TrendRow(trend: props.trend)
                 .padding(.top, 18)
-            
+
             HStack {
                 Spacer()
                 Text("CalmScore")
@@ -127,7 +127,7 @@ struct CalmScoreBarTile: View {
                     .padding(.top, 8)
                 Spacer()
             }
-            
+
             Spacer()
         }
         .padding(20)
@@ -331,13 +331,20 @@ struct DevicePill: View {
                 Text("Sleep")
                     .foregroundColor(.greyText)
                     .font(.system(size: 18, weight: .medium, design: .rounded))
-                Text("\(trend.sleepIsUp ? "↑" : "↓") \(String(format: "%.1f", trend.sleepHours)) h")
+                Text("\(trend.sleepIsUp ? "↑" : "↓") \(Self.formatSleepHours(trend.sleepHours))")
                     .foregroundColor(trend.sleepIsUp ? .green : .red)
                     .font(.system(size: 16, weight: .light, design: .rounded))
                 
                 Spacer()
             }
             //.font(.system(size: 20, weight: .regular, design: .rounded))
+        }
+
+        private static func formatSleepHours(_ hours: Double) -> String {
+            let totalMinutes = Int((hours * 60.0).rounded())
+            let h = totalMinutes / 60
+            let m = totalMinutes % 60
+            return "\(h)h \(m)m"
         }
     }
     

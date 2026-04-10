@@ -33,17 +33,17 @@ enum BuildConfig {
 
     static var baseURL: String {
         switch current {
-        case .local:   return "https://vdfqw6hb-8086.inc1.devtunnels.ms/"
+        case .local:   return "https://pnh6dngr-8000.inc1.devtunnels.ms/"//"https://vdfqw6hb-8000.inc1.devtunnels.ms/"
         case .staging: return "http://44.211.113.36:8086/"
-        case .live:    return "https://api.yourdomain.com"
+        case .live:    return "https://api.getcalmtrade.com/"
         }
     }
 
     static var websocketURL: URL {
         switch current {
-        case .local:   return URL(string: "https://vdfqw6hb-8086.inc1.devtunnels.ms")!
+        case .local:   return URL(string: "https://pnh6dngr-8000.inc1.devtunnels.ms/")!
         case .staging: return URL(string: "http://44.211.113.36:8086/")!
-        case .live:    return URL(string: "wss://api.yourdomain.com/socket")!
+        case .live:    return URL(string: "https://api.getcalmtrade.com/")!
         }
     }
 }

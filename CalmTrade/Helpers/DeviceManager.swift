@@ -32,6 +32,8 @@ final class DeviceManager {
     }
 
     var currentSource: DeviceSource = .appleHealthKit
+    private var didConfigureOnLaunch = false
+    private let configureQueue = DispatchQueue(label: "com.calmtrade.device-manager.configure")
 
     // MARK: - Live RMSSD / SDNN cache (for smoothing / UI hints)
     private struct LiveRMSSD { let valueMs: Double; let timestamp: Date }
@@ -44,6 +46,18 @@ final class DeviceManager {
         liveRMSSD = .init(valueMs: rmssdMs, timestamp: Date())
         liveSDNN = .init(valueMs: sdnnMs, timestamp: Date())
         DebugLog.shared.log("Live RMSSD: \(Int(rmssdMs)) ms, SDNN: \(Int(sdnnMs)) ms (ttl=\(Int(liveTTL))s)")
+    }
+
+    func currentLiveRMSSD() -> (value: Double, timestamp: Date)? {
+        guard let live = liveRMSSD,
+              Date().timeIntervalSince(live.timestamp) <= liveTTL else { return nil }
+        return (live.valueMs, live.timestamp)
+    }
+
+    func currentLiveSDNN() -> (value: Double, timestamp: Date)? {
+        guard let live = liveSDNN,
+              Date().timeIntervalSince(live.timestamp) <= liveTTL else { return nil }
+        return (live.valueMs, live.timestamp)
     }
 
     // MARK: - Repositories
@@ -92,18 +106,23 @@ final class DeviceManager {
     // MARK: - App bootstrap
     /// Call once on app launch (AppDelegate/SceneDelegate) to enable background syncs.
     func configureOnLaunch() {
-        // HealthKit: read-only + background delivery
-        HealthKitService.shared.requestAuthorization { ok, _ in
-            guard ok else {
-                DebugLog.shared.log("HealthKit authorization denied")
-                return
-            }
-            HealthKitService.shared.startBackgroundMirroring()
-        }
+        configureQueue.async {
+            guard !self.didConfigureOnLaunch else { return }
+            self.didConfigureOnLaunch = true
 
-        // Polar: attach live routing → local store; enable auto reconnect
-        LiveDataRouter.shared.attachToPolar(.shared)
-        PolarManager.shared.enableAutoReconnectOnLaunch()
+            // HealthKit: read-only + background delivery
+            HealthKitService.shared.requestAuthorization { ok, _ in
+                guard ok else {
+                    DebugLog.shared.log("HealthKit authorization denied")
+                    return
+                }
+                HealthKitService.shared.startBackgroundMirroring()
+            }
+
+            // Polar: attach live routing -> local store; enable auto reconnect
+            LiveDataRouter.shared.attachToPolar(.shared)
+            PolarManager.shared.enableAutoReconnectOnLaunch()
+        }
     }
 
     // MARK: - Legacy HealthKit wrappers

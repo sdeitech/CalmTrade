@@ -6,6 +6,7 @@
 //
 
 import UIKit
+import KRProgressHUD
 
 final class ProfileTabsHostViewController: UIViewController {
 
@@ -31,6 +32,9 @@ final class ProfileTabsHostViewController: UIViewController {
     @IBOutlet weak var securityContent: UIView!
     @IBOutlet weak var polarContent: UIView!
     @IBOutlet weak var settingsContent: UIView!
+    
+    @IBOutlet weak var lblName: UILabel!
+    @IBOutlet weak var lblEmail: UILabel!
 
     // MARK: - PageVC (embedded via Container View → Embed segue)
     private weak var pageVC: UIPageViewController?
@@ -39,6 +43,7 @@ final class ProfileTabsHostViewController: UIViewController {
 
     // MARK: - ViewModels
     private let tabsVM = TabsHostViewModel(initial: .profile)
+    private let deleteAccountViewModel = DeleteAccountViewModel()
 
     // MARK: - Lifecycle
     override func viewDidLoad() {
@@ -58,6 +63,11 @@ final class ProfileTabsHostViewController: UIViewController {
         // But still push initial icons/state right away:
         tabsVM.bootstrap()
     }
+    
+    override func viewWillAppear(_ animated: Bool) {
+        lblName.text = SessionManager.shared.current?.displayName
+        lblEmail.text = SessionManager.shared.current?.email
+    }
 
     // The Container View’s embed segue will hit here, giving us the UIPageViewController.
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
@@ -71,8 +81,7 @@ final class ProfileTabsHostViewController: UIViewController {
                 makeProfilePage(),
                 makeSecurityPage(),
                 makePolarUpgradePage(),
-                makeSecurityPage()
-//                makeSettingsPage()
+                makeSettingPage()
             ]
             currentIndex = tabsVM.selectedIndex
 
@@ -118,6 +127,38 @@ final class ProfileTabsHostViewController: UIViewController {
             self.currentIndex = newIndex
             UIImpactFeedbackGenerator(style: .light).impactOccurred()
         }
+        
+        deleteAccountViewModel.onLoading = { isLoading in
+            isLoading ? LoaderManager.shared.show() : LoaderManager.shared.hide()
+        }
+
+        deleteAccountViewModel.onSuccess = { [weak self] in
+            guard let self else { return }
+
+            // Clear everything
+            UserDefaults.standard.removePersistentDomain(
+                forName: Bundle.main.bundleIdentifier!
+            )
+            SocketClient.shared.disconnect()
+
+            let loginVC = UIStoryboard(
+                name: Constants.Storyboard.Main,
+                bundle: nil
+            ).instantiateViewController(withIdentifier: "LoginViewController") as! LoginViewController
+
+            self.navigationController?.setViewControllers([loginVC], animated: true)
+        }
+
+        deleteAccountViewModel.onError = { [weak self] msg in
+            let alert = UIAlertController(
+                title: "Error",
+                message: msg,
+                preferredStyle: .alert
+            )
+            alert.addAction(UIAlertAction(title: "OK", style: .default))
+            self?.present(alert, animated: true)
+        }
+
     }
 
     // MARK: - Page builders
@@ -136,9 +177,8 @@ final class ProfileTabsHostViewController: UIViewController {
                 let balanceVC = UIStoryboard(name: Constants.Storyboard.Profile, bundle: nil).instantiateViewController(withIdentifier: "SetBalanceViewController") as! SetBalanceViewController
                 self.navigationController?.pushViewController(balanceVC, transitionType: .moveIn(direction: .fromLeft))
             case .emotionalTags:
-                UserDefaults.standard.removeObject(forKey: "accessToken")
-                self.navigationController?.pushViewController(UIStoryboard(name: Constants.Storyboard.Main, bundle: nil).instantiateViewController(withIdentifier: "LoginViewController") as! LoginViewController, transitionType: .pop(from: .fromLeft))
-                SocketClient.shared.disconnect()
+                let manageEmotionVC = UIStoryboard(name: Constants.Storyboard.Profile, bundle: nil).instantiateViewController(withIdentifier: "ManageEmotionsViewController") as! ManageEmotionsViewController
+                self.navigationController?.pushViewController(manageEmotionVC, transitionType: .moveIn(direction: .fromLeft))
             case .accountDetails:
                 let accountDetailVC = UIStoryboard(name: Constants.Storyboard.Profile, bundle: nil).instantiateViewController(withIdentifier: "AccountDetailsViewController") as! AccountDetailsViewController
                 accountDetailVC.configure(accessToken: UserDefaults.standard.string(forKey: "access_token") ?? "")
@@ -157,6 +197,8 @@ final class ProfileTabsHostViewController: UIViewController {
 
     private func makeSecurityPage() -> UIViewController {
         let vc = storyboard!.instantiateViewController(withIdentifier: "SecurityListViewController") as! SecurityListViewController
+        let handler = UserDefaults.standard.string(forKey: kLoginHandler)
+        let isEmailLogin = handler == LoginHandler.email.rawValue
         let vm = SecurityListViewModel()
         vc.viewModel = vm
 
@@ -164,14 +206,92 @@ final class ProfileTabsHostViewController: UIViewController {
             guard let self = self else { return }
             switch action {
             case .changePassword:
-                // push your ChangePassword screen
-                break
+                if isEmailLogin {
+                    let changePasswordVC = UIStoryboard(name: Constants.Storyboard.Security, bundle: nil)
+                        .instantiateViewController(withIdentifier: "ChangePasswordViewController") as! ChangePasswordViewController
+                    self.navigationController?.pushViewController(changePasswordVC)
+                } else {
+                    self.showAlert(
+                        message: "This action isn’t available for social sign-in accounts. Please use an email login to manage this setting."
+                    )
+                }
             case .changeEmail:
-                break
+                if isEmailLogin {
+                    let changeEmailVC = UIStoryboard(name: Constants.Storyboard.Security, bundle: nil)
+                        .instantiateViewController(withIdentifier: "ChangeEmailViewController") as! ChangeEmailViewController
+                    self.navigationController?.pushViewController(changeEmailVC)
+                } else {
+                    self.showAlert(
+                        message: "This action isn’t available for social sign-in accounts. Please use an email login to manage this setting."
+                    )
+                }
             case .twoFactor:
-                break
+                if isEmailLogin {
+                    let twoFactorVC = UIStoryboard(name: Constants.Storyboard.Security, bundle: nil)
+                        .instantiateViewController(withIdentifier: "TwoFactorViewController") as! TwoFactorViewController
+                    self.navigationController?.pushViewController(twoFactorVC)
+                } else {
+                    self.showAlert(
+                        message: "This action isn’t available for social sign-in accounts. Please use an email login to manage this setting."
+                    )
+                }
             case .dataManagement:
-                break
+                let dataManageVC = UIStoryboard(name: Constants.Storyboard.Security, bundle: nil)
+                    .instantiateViewController(withIdentifier: "DataManagementViewController") as! DataManagementViewController
+                self.navigationController?.pushViewController(dataManageVC)
+            }
+        }
+        return vc
+    }
+    
+    private func makeSettingPage() -> UIViewController {
+        let vc = storyboard!.instantiateViewController(withIdentifier: "AppSettingViewController") as! AppSettingViewController
+        let handler = UserDefaults.standard.string(forKey: kLoginHandler)
+        let isEmailLogin = handler == LoginHandler.email.rawValue
+        let vm = AppSettingViewModel()
+        vc.viewModel = vm
+
+        vm.onRoute = { [weak self] action in
+            guard let self = self else { return }
+            switch action {
+            case .notification:
+                let notificationSettingVC = UIStoryboard(name: Constants.Storyboard.Setting, bundle: nil)
+                    .instantiateViewController(withIdentifier: "NotificationSettingsViewController") as! NotificationSettingsViewController
+                self.navigationController?.pushViewController(notificationSettingVC)
+            case .connectWearable:
+                let access = FeatureGate.shared.access(for: FeatureKey.realtime360Sync)
+                switch access {
+                case .allowed:
+                    let twoFactorVC = UIStoryboard(name: Constants.Storyboard.Devices, bundle: nil)
+                        .instantiateViewController(withIdentifier: "PolarConnectionViewController") as! PolarConnectionViewController
+                    twoFactorVC.isFromStart = false
+                    self.navigationController?.pushViewController(twoFactorVC)
+                case .locked:
+                    FeatureGate.shared.presentUpgradeSheet(for: FeatureKey.realtime360Sync, from: self)
+                }
+            case .deleteAccount:
+                let sheet = DeleteAccountBottomSheetViewController()
+                sheet.modalPresentationStyle = .overFullScreen
+                sheet.modalTransitionStyle = .crossDissolve
+
+                sheet.onConfirm = { [weak self] in
+                    guard let self else { return }
+
+                    let userId = SessionManager.shared.current?.id
+                    self.deleteAccountViewModel.deleteAccount(userId: userId ?? "")
+                }
+
+                present(sheet, animated: true)
+            case .logout:
+                let sheet = LogoutBottomSheetViewController()
+                sheet.modalPresentationStyle = .overFullScreen
+                sheet.modalTransitionStyle = .crossDissolve
+
+                sheet.onConfirm = { [weak self] in
+                    SessionLogoutManager.shared.forceLogout()
+                }
+
+                present(sheet, animated: true)
             }
         }
         return vc

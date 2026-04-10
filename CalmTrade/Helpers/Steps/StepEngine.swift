@@ -11,7 +11,6 @@ import Foundation
 enum StepEngine {
     // MARK: - Dependencies
     private static let repo = CTMetricsRepository.shared
-    private static let priority: [CTMetricSource] = [.polar360, .appleHealth]
 
     // MARK: - Cache
     // Cache by [start,end) minute window (second precision is fine here).
@@ -60,26 +59,23 @@ enum StepEngine {
             return m.map { ($0.key, $0.value) }
         }
 
-        let aPolar = aggregate(polar)
-        let aApple = aggregate(apple)
+        let aPolar = aggregate(polar).sorted { $0.0 < $1.0 }
+        let aApple = aggregate(apple).sorted { $0.0 < $1.0 }
 
-        // Merge with priority (fold lower priority first, overwrite with higher)
-        var merged: [Date: (CTMetricSource, Int)] = [:]
-        func fold(_ xs: [(Date, Int)], src: CTMetricSource) {
-            for (ts, v) in xs {
-                if let cur = merged[ts] {
-                    let keepCur = priority.firstIndex(of: cur.0)! <= priority.firstIndex(of: src)!
-                    if !keepCur { merged[ts] = (src, v) }
-                } else {
-                    merged[ts] = (src, v)
-                }
-            }
+        // Strict source policy:
+        // - Polar connected -> Polar only
+        // - Polar disconnected -> Apple only
+        let isPolarConnected: Bool = {
+            if case .connected = PolarManager.shared.connectionState { return true }
+            return false
+        }()
+
+        let result: [(Date, Int)]
+        if isPolarConnected {
+            result = aPolar.isEmpty ? aApple : aPolar
+        } else {
+            result = aApple
         }
-
-        fold(aApple, src: .appleHealth)
-        fold(aPolar, src: .polar360)
-
-        let result = merged.keys.sorted().map { ($0, merged[$0]!.1) }
 
         // Store in cache
         cacheQueue.async(flags: .barrier) { cache[key] = result }

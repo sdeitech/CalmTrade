@@ -50,17 +50,22 @@ final class SubscriptionViewController: UIViewController {
     // MARK: - Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
-
-        subscriptionScrollView.isHidden = true        // show MAIN screen by default
-        mainScrollView.isHidden = true             // hide until plans load
-        disableSubscribeButton()
-
         setupPlanSelectionTable()
 
         bindViewModel()
 
-        vm.fetchCurrentSubscription()   // load current plan
         vm.fetchPlans()                 // load upgrade options
+    }
+    
+    override func viewDidAppear(_ animated: Bool) {
+        vm.selectedPlanId = nil
+        
+        subscriptionScrollView.isHidden = true        // show MAIN screen by default
+        mainScrollView.isHidden = true             // hide until plans load
+        
+        disableSubscribeButton()
+        
+        vm.fetchCurrentSubscription()   // load current plan
     }
 
     override func viewDidLayoutSubviews() {
@@ -122,7 +127,8 @@ final class SubscriptionViewController: UIViewController {
     }
 
     private func updateCurrentPlanUI(_ sub: SubscriptionRecord) {
-
+        mainScrollView.isHidden = false
+        
         if sub.status == "trial", let trialEnd = sub.trialEndDate {
             lblCurrentPlanExpiry.text = "Trial ends on \(formatDate(trialEnd))"
         } else if let exp = sub.expiryDate {
@@ -134,7 +140,7 @@ final class SubscriptionViewController: UIViewController {
         updateCurrentPlanBackground(sub.planDetails?.name ?? "")
 
         // Disable upgrade if user is already Elite
-        let isElite = sub.planDetails?.name.lowercased() == "elite"
+        let isElite = sub.planDetails?.name?.lowercased() == "elite"
         btnUpgrade.isUserInteractionEnabled = !isElite
         btnUpgrade.alpha = isElite ? 0.4 : 1.0
     }
@@ -230,6 +236,10 @@ final class SubscriptionViewController: UIViewController {
             vc.checkoutURL = url
             self.navigationController?.pushViewController(vc, animated: true)
         }
+    }
+    
+    @IBAction func btnBackClk(_ sender: Any) {
+        navigationController?.popViewController()
     }
 }
 

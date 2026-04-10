@@ -12,6 +12,10 @@ final class SocketClient: NSObject {
     static let shared = SocketClient()
     private override init() {}
 
+    deinit {
+        disconnect()  // Ensure cleanup when SocketClient is deallocated
+    }
+
     // MARK: - Config
     private var baseURL: URL { BuildConfig.websocketURL }  // keep using your existing config
 
@@ -19,22 +23,53 @@ final class SocketClient: NSObject {
     private let socketPath: String = "/socket.io"
 
     // MARK: - State
+    private let stateQueue = DispatchQueue(label: "com.calmtrade.socketclient.state")
     private var token: String?
     private var manager: SocketManager?
     private var socket: SocketIOClient?
 
     // MARK: - Public API (unchanged)
     func connect(with token: String) {
+        let normalizedToken = token.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !normalizedToken.isEmpty else { return }
+
+        stateQueue.async { [weak self] in
+            self?.connectLocked(with: normalizedToken)
+        }
+    }
+
+    func disconnect() {
+        stateQueue.async { [weak self] in
+            self?.disconnectLocked()
+        }
+    }
+
+    /// Sends a message with your `{key, data}` schema over Socket.IO
+    func send(key: String, payload: [String: Any]? = nil) {
+        stateQueue.async { [weak self] in
+            self?.emitLocked(key: key, payload: payload ?? [:])
+        }
+    }
+
+    // MARK: - Internal state machine
+    private func connectLocked(with token: String) {
+        if self.token == token, let status = socket?.status, status == .connected || status == .connecting {
+            return
+        }
+
+        if manager != nil || socket != nil {
+            disconnectLocked(emitLogicalDisconnect: false)
+        }
+
         self.token = token
 
         // Build SocketManager with auth + options
         var cfg: SocketIOClientConfiguration = [
-            .log(true),
+            .log(false),
             .path(socketPath),
             .reconnects(true),
             .reconnectWait(2),
             .reconnectAttempts(-1),           // infinite
-            .forceNew(true),
             .forceWebsockets(true)            // skip polling if you want only WS
         ]
 
@@ -47,79 +82,63 @@ final class SocketClient: NSObject {
             cfg.insert(.secure(true))
         }
 
-        manager = SocketManager(socketURL: baseURL, config: cfg)
-        socket  = manager?.defaultSocket
+        let manager = SocketManager(socketURL: baseURL, config: cfg)
+        let socket = manager.defaultSocket
+        self.manager = manager
+        self.socket = socket
 
         // --- Event wiring ---
-        socket?.on(clientEvent: .connect) { [weak self] _, _ in
+        socket.on(clientEvent: .connect) { [weak self] _, _ in
             guard let self = self else { return }
-            NSLog("🟢 Socket.IO connected → emitting 'connection' & 'Authenticate'")
 
             // 1) announce connection
-            self.emit(key: "connection", payload: ["ts": Int(Date().timeIntervalSince1970)])
+            self.stateQueue.async {
+                self.emitLocked(key: "connection", payload: ["ts": Int(Date().timeIntervalSince1970)])
 
-            // 2) authenticate (capital A)
-            if let t = self.token, !t.isEmpty {
-                self.emit(key: "Authenticate", payload: ["token": t])
+                // 2) authenticate (capital A)
+                if let t = self.token, !t.isEmpty {
+                    self.emitLocked(key: "Authenticate", payload: ["token": t])
+                }
             }
         }
 
-        socket?.on(clientEvent: .error) { data, _ in
-            NSLog("🔴 Socket.IO error: \(data)")
+        socket.on(clientEvent: .error) { _, _ in
         }
 
-        socket?.on(clientEvent: .disconnect) { data, _ in
-            NSLog("🟠 Socket.IO disconnected: \(data)")
+        socket.on(clientEvent: .disconnect) { _, _ in
         }
 
         // Example server push handlers (adjust to the events your server emits)
-        socket?.on("connection-ack") { data, _ in
-            NSLog("🟢 server ack’d connection \(data)")
+        socket.on("connection-ack") { _, _ in
         }
-        socket?.on("auth-ok") { data, _ in
-            NSLog("🟢 server authenticated token \(data)")
+        socket.on("auth-ok") { _, _ in
         }
-        socket?.on("auth-error") { [weak self] data, _ in
-            NSLog("🔴 auth failed \(data)")
+        socket.on("auth-error") { [weak self] _, _ in
             self?.disconnect()
         }
-        socket?.on("server-disconnect") { [weak self] data, _ in
-            NSLog("🟠 server requested disconnect \(data)")
+        socket.on("server-disconnect") { [weak self] _, _ in
             self?.disconnect()
         }
 
         // Connect
-        NSLog("🔵 Socket.IO connecting → \(baseURL.absoluteString)\(socketPath)")
-        socket?.connect()
+        socket.connect()
     }
 
-    func disconnect() {
-        // Emit your logical disconnect (server can listen to this)
-        emit(key: "disconnect", payload: ["ts": Int(Date().timeIntervalSince1970)])
+    private func disconnectLocked(emitLogicalDisconnect: Bool = true) {
+        if emitLogicalDisconnect {
+            emitLocked(key: "disconnect", payload: ["ts": Int(Date().timeIntervalSince1970)])
+        }
 
         socket?.disconnect()
+        socket?.removeAllHandlers()
         manager = nil
-        socket  = nil
-        token   = nil
-        NSLog("🟠 Socket.IO disconnect invoked")
-    }
-
-    /// Sends a message with your `{key, data}` schema over Socket.IO
-    func send(key: String, payload: [String: Any]? = nil) {
-//        emit(key: key, payload: payload ?? [:])
+        socket = nil
+        token = nil
     }
 
     // MARK: - Internal emit helper
-    private func emit(key: String, payload: [String: Any]) {
-        // Two common patterns. Pick the one your backend expects:
-
-        // (A) Single channel (e.g. "message") with envelope {key,data}
-        // socket?.emit("message", ["key": key, "data": payload])
-
-        // (B) Event-per-key (simpler if your backend registers handlers by name)
+    private func emitLocked(key: String, payload: [String: Any]) {
         socket?.emit(key, payload)
-
-//        NSLog("📤 emit \(key): \(payload)")
     }
 }
 

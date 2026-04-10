@@ -34,36 +34,14 @@ final class HomeViewModel: BaseViewModel {
     private var polarObserverId: UUID?
     
     // MARK: - Emotion chips
-    var positiveEmotions: [EmotionTag] = [
-        EmotionTag(title: "Calm", isSelected: false),
-        EmotionTag(title: "Clarity", isSelected: false),
-        EmotionTag(title: "Focused", isSelected: false),
-        EmotionTag(title: "Confidence", isSelected: false),
-        EmotionTag(title: "Gratitude", isSelected: false)
-    ]
-    
-    var negativeEmotions: [EmotionTag] = [
-        EmotionTag(title: "Fear", isSelected: false),
-        EmotionTag(title: "Greed", isSelected: false),
-        EmotionTag(title: "Frustration", isSelected: false),
-        EmotionTag(title: "FOMO", isSelected: false),
-        EmotionTag(title: "Revenge", isSelected: false)
-    ]
-    
-    var neutralEmotions: [EmotionTag] = [
-        EmotionTag(title: "Boredom", isSelected: false),
-        EmotionTag(title: "Distraction", isSelected: false),
-        EmotionTag(title: "Uncertainty", isSelected: false),
-        EmotionTag(title: "Curiosity", isSelected: false)
-    ]
-    
-    var cognitiveEmotions: [EmotionTag] = [
-        EmotionTag(title: "Anticipatory High", isSelected: false),
-        EmotionTag(title: "Indecision", isSelected: false),
-        EmotionTag(title: "Execution Freeze", isSelected: false),
-        EmotionTag(title: "System Override", isSelected: false),
-        EmotionTag(title: "Spike Stress", isSelected: false)
-    ]
+    // MARK: - Backend-driven emotions
+    var positiveEmotions: [EmotionTag] = []
+    var negativeEmotions: [EmotionTag] = []
+    var neutralEmotions: [EmotionTag] = []
+    var cognitiveEmotions: [EmotionTag] = []
+
+    var onEmotionDataLoaded: (() -> Void)?
+
     
     // MARK: - Internals
     private var selectionTimers: [String: Timer] = [:]
@@ -106,33 +84,34 @@ final class HomeViewModel: BaseViewModel {
         hubToken = CalmScoreHub.shared.addListener { [weak self] session, bundle, props in
             guard let self else { return }
             self.lastBiometrics = bundle
-            
+
             // Start from incoming props
             var p = props
-            
+
             // Pill: show "Connect" instead of "Apple HK"
             if p.deviceSource == .appleHK {
                 p.deviceSource = .connect
                 p.isStreaming = false
             }
-            
+
             self.isCalm360Connected = (p.deviceSource == .calm360)
             if !self.isCalm360Connected { p.batteryPercent = nil }
-            
-//            // HR visibility: show if we’re streaming on a Polar device
+
+//            // HR visibility: show if we're streaming on a Polar device
 //            let shouldShowHR = p.isStreaming && (p.deviceSource == .h10 || p.deviceSource == .calm360)
 //            self.onHRVisibility?(shouldShowHR)
-//            
+//
 //            if shouldShowHR {
 //                let hrBpm = Int(round(p.trend.hrBpm))
 //                let ts = self.formatTimestamp(p.lastUpdate)
 //                self.onHRValue?("\(hrBpm) bpm", ts)
 //            }
-            
+
+
             // Override sleep trend so Home gauge matches unified SleepRepository
             self.overrideSleepTrend(baseProps: p)
         }
-        
+
         // Follow Polar battery/snapshots
         PolarManager.shared.onBatteryUpdate = { [weak self] deviceId, level, _ in
             guard let self else { return }
@@ -154,6 +133,56 @@ final class HomeViewModel: BaseViewModel {
             guard let self else { return }
             if case .disconnected = state {
                 self.pushBattery(nil)
+            }
+        }
+    }
+    
+    func fetchEmotionTags() {
+        APIService().startService(
+            with: .GET,
+            path: "emotionalTags/tags",
+            parameters: nil,
+            files: nil,
+            modelType: EmotionTagsResponse.self
+        ) { [weak self] result in
+            DispatchQueue.main.async {
+                guard let self else { return }
+
+                switch result {
+                case .Success(let response):
+                    guard let categories = response?.categories else { return }
+                    self.mapEmotionCategories(categories)
+                    self.onEmotionDataLoaded?()
+
+                case .Error: break
+                }
+            }
+        }
+    }
+
+    private func mapEmotionCategories(_ categories: [EmotionCategoryDTO]) {
+
+        for category in categories {
+            let mappedTags = category.tags.map {
+                EmotionTag(
+                    title: $0.name,
+                    valence: $0.valence,
+                    arousal: $0.arousal,
+                    isSelected: false
+                )
+            }
+
+            switch category.name.lowercased() {
+            case "positive":
+                positiveEmotions = mappedTags
+            case "negative":
+                negativeEmotions = mappedTags
+            case "neutral":
+                neutralEmotions = mappedTags
+            case "cognitive":
+                cognitiveEmotions = mappedTags
+            default:
+                break
             }
         }
     }
@@ -281,21 +310,21 @@ final class HomeViewModel: BaseViewModel {
     private func overrideSleepTrend(baseProps p0: CalmScoreTileProps) {
         workQ.async { [weak self] in
             guard let self else { return }
-            
+
             let now = Date()
-            
-            // Current night (latest) from unified repo
-            let currentNight = SleepRepository.shared.latestNight()
-            let currentHours = currentNight?.hours
-            
-            // Previous night using the same unified pipeline
+
+            // Canonical current-night sleep value from repository.
+            let currentHours = SleepRepository.shared.latestNight()?.hours
+
+            // Canonical previous-night sleep value from repository.
             let prevAnchor = Calendar.current.date(byAdding: .day, value: -1, to: now)
                 ?? now.addingTimeInterval(-86400)
-            let prevNight = self.latestNightBefore(date: prevAnchor)
-            let prevHours = prevNight?.hours
-            
+            let prevHours = SleepRepository.shared.latestNightBefore(date: prevAnchor)?.hours
+
             var p = p0
-            
+
+            // Print sleep data being retrieved
+
             if let curH = currentHours {
                 var t = p.trend
                 t.sleepHours = curH
@@ -304,7 +333,9 @@ final class HomeViewModel: BaseViewModel {
                 }
                 p.trend = t
             }
-            
+
+            // Print the data we're getting from Health app in the ViewModel
+
             self.currentProps = p
             DispatchQueue.main.async {
                 self.onPropsUpdate?(p)
@@ -326,23 +357,10 @@ final class HomeViewModel: BaseViewModel {
     }
     
     // MARK: - Unified sleep helper (same logic pattern as BiometricsViewModel)
-    
+
     /// Find the last full sleep night strictly before the given anchor.
     private func latestNightBefore(date: Date) -> (date: Date, hours: Double)? {
-        // Look 48h back from anchor for any segments
-        let start = date.addingTimeInterval(-48 * 3600)
-        let segs = SleepRepository.shared.unifiedSegments(from: start, to: date)
-        guard let last = segs.last else { return nil }
-        
-        // Bucket to that night's "sleep day start"
-        let bucket = SleepRepository.shared.sleepDayStart(for: last.start)
-        let nextBucket = bucket.addingTimeInterval(24 * 3600)
-        
-        let nightSegs = SleepRepository.shared.unifiedSegments(from: bucket, to: nextBucket)
-        let secs = nightSegs.reduce(0.0) {
-            $0 + max(0.0, $1.end.timeIntervalSince($1.start))
-        }
-        return (bucket, secs / 3600.0)
+        SleepRepository.shared.latestNightBefore(date: date)
     }
     
     private func postSessionEmotion(
@@ -350,20 +368,10 @@ final class HomeViewModel: BaseViewModel {
         trigger: String = "BeforeTrade",
         note: String? = nil
     ) {
-        guard
-            let sessionId = UserDefaults.standard.string(forKey: "ct.activeSessionId"),
-            let props = currentProps
-        else {
-            return
-        }
 
         let params: [String: Any] = [
-            "sessionId": sessionId,
             "emotionTags": [emotion.title],
             "primaryEmotion": emotion.title,
-            "calmScore": "\(Int(props.score))",
-            "trigger": trigger,
-            "note": note ?? ""
         ]
 
         APIService().startService(
@@ -377,8 +385,7 @@ final class HomeViewModel: BaseViewModel {
             case .Success:
                 break // fire-and-forget by design
 
-            case .Error(let message):
-                print("❌ session/emotions failed:", message)
+            case .Error: break
             }
         }
     }
